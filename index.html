@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0d1117">
+    <title>60' Hunter</title>
+
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="https://img.icons8.com/color/512/aim.png">
+
+    <style>
+        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --text: #c9d1d9; }
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 16px; padding-bottom: 100px; }
+        
+        /* HEADER */
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; padding-bottom: 15px; margin-bottom: 20px; }
+        h1 { margin: 0; font-size: 1.4rem; color: var(--green); display: flex; align-items: center; gap: 10px; }
+        
+        /* INSTALL BUTTON */
+        #installBtn {
+            display: none; /* Hidden until ready */
+            background: #1f6feb; color: white; border: none; padding: 8px 16px; 
+            border-radius: 8px; font-weight: bold; font-size: 0.9rem;
+        }
+
+        /* CARDS */
+        .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .score-row { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; margin: 10px 0; }
+        .score-box { background: #21262d; padding: 5px 12px; border-radius: 6px; border: 1px solid #30363d; }
+        .pred-box { background: rgba(46, 160, 67, 0.1); padding: 10px; border-radius: 8px; margin-top: 10px; color: var(--green); font-weight: bold;}
+        
+        /* UTILS */
+        .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 18px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+        .player-btn { width: 100%; background: #21262d; border: 1px solid #30363d; color: #ccc; padding: 10px; margin-top: 10px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1><img src="https://img.icons8.com/color/512/aim.png" style="width:28px;"> Hunter</h1>
+        <button id="installBtn">⬇ Install</button>
+    </header>
+
+    <div id="content">
+        <div style="text-align:center; padding-top:50px; color:#888;">
+            <p>Ready to Hunt.</p>
+        </div>
+    </div>
+
+    <button class="scan-btn" onclick="runScan()" id="mainBtn">🎯 SCAN MARKETS</button>
+
+    <script>
+        // --- 1. HIDDEN SERVICE WORKER TRICK (Makes it installable without 3rd file) ---
+        if ('serviceWorker' in navigator) {
+            const swCode = `self.addEventListener('fetch', () => {});`; // Dummy engine
+            const blob = new Blob([swCode], {type: 'application/javascript'});
+            navigator.serviceWorker.register(URL.createObjectURL(blob));
+        }
+
+        // --- 2. INSTALL PROMPT LOGIC ---
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.style.display = 'block'; // Show blue button
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') installBtn.style.display = 'none';
+                deferredPrompt = null;
+            }
+        });
+
+        // --- 3. APP LOGIC ---
+        const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
+        const content = document.getElementById('content');
+        const mainBtn = document.getElementById('mainBtn');
+
+        async function runScan() {
+            mainBtn.innerText = "Scanning..."; mainBtn.disabled = true;
+            content.innerHTML = "";
+            try {
+                const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", {
+                    headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" }
+                });
+                const data = await res.json();
+                
+                if(!data.response || data.results === 0) {
+                    content.innerHTML = "<p style='text-align:center; margin-top:50px'>No live games.</p>";
+                } else {
+                    // Filter 50-80 mins
+                    const hunters = data.response.filter(m => m.fixture.status.elapsed >= 50 && m.fixture.status.elapsed <= 80);
+                    if(hunters.length === 0) content.innerHTML = "<p style='text-align:center; margin-top:50px'>No games in 50-80min window.</p>";
+                    else hunters.forEach(m => createCard(m));
+                }
+            } catch(e) { alert("Error connecting."); }
+            mainBtn.innerText = "🎯 SCAN MARKETS"; mainBtn.disabled = false;
+        }
+
+        function createCard(m) {
+            const div = document.createElement('div');
+            div.className = 'match-card';
+            div.innerHTML = `
+                <div style="font-size:0.8rem; color:#888; margin-bottom:5px;">${m.league.name} • ${m.fixture.status.elapsed}'</div>
+                <div class="score-row">
+                    <span>${m.teams.home.name}</span>
+                    <span class="score-box">${m.goals.home}-${m.goals.away}</span>
+                    <span>${m.teams.away.name}</span>
+                </div>
+                <div class="pred-box">
+                    ${(m.goals.home === m.goals.away) ? "⚠️ Draw Risk / Tight" : "⚽ Late Goal Opportunity"}
+                </div>
+                <button class="player-btn" onclick="checkPlayers(this, ${m.fixture.id})">🕵️ Check Players</button>
+                <div id="p-${m.fixture.id}"></div>
+            `;
+            content.appendChild(div);
+        }
+
+        async function checkPlayers(btn, id) {
+            btn.innerText = "Checking...";
+            try {
+                const res = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, {
+                    headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" }
+                });
+                const data = await res.json();
+                const area = document.getElementById(`p-${id}`);
+                
+                let html = "";
+                if(data.response && data.response.length > 0) {
+                    data.response.forEach(t => t.players.forEach(p => {
+                        if(p.statistics[0].shots.on >= 2 && p.statistics[0].goals.total === 0) 
+                            html += `<div style="color:#d29922; margin-top:5px;">🎯 ${p.player.name} due to score</div>`;
+                    }));
+                }
+                area.innerHTML = html || "<div style='font-size:0.8rem; color:#666; text-align:center; margin-top:5px'>No obvious signals.</div>";
+            } catch(e) { }
+            btn.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
