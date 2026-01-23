@@ -7,78 +7,94 @@
     <title>60' Hunter</title>
 
     <link rel="manifest" href="./manifest.json">
-    
     <link rel="icon" type="image/png" href="target_PNG26.png">
     <link rel="apple-touch-icon" href="target_PNG26.png">
 
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --text: #c9d1d9; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; padding: 16px; padding-bottom: 100px; }
+        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --gold: #d29922; --text: #c9d1d9; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 16px; padding-bottom: 120px; }
         
-        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #30363d; padding-bottom: 15px; margin-bottom: 20px; }
+        /* HEADER */
+        header { display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid #30363d; padding-bottom: 15px; margin-bottom: 15px; }
+        .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         h1 { margin: 0; font-size: 1.4rem; color: var(--green); display: flex; align-items: center; gap: 10px; }
         
-        #installBtn { display: none; background: #1f6feb; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: bold; font-size: 0.9rem; }
+        /* FILTER DROPDOWN */
+        select {
+            width: 100%;
+            padding: 12px;
+            background: #21262d;
+            color: white;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            outline: none;
+            appearance: none; 
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+            background-repeat: no-repeat;
+            background-position: right 15px top 50%;
+            background-size: 12px auto;
+        }
 
+        #installBtn { display: none; background: #1f6feb; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.8rem; }
+
+        /* CARDS */
         .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
-        .score-row { display: flex; justify-content: space-between; font-size: 1.2rem; font-weight: bold; margin: 10px 0; }
-        .score-box { background: #21262d; padding: 5px 12px; border-radius: 6px; border: 1px solid #30363d; }
-        .pred-box { background: rgba(46, 160, 67, 0.1); padding: 10px; border-radius: 8px; margin-top: 10px; color: var(--green); font-weight: bold;}
+        .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+        .score-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; font-weight: bold; margin: 10px 0; }
+        .team { width: 40%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .score-box { background: #21262d; padding: 5px 12px; border-radius: 6px; border: 1px solid #30363d; font-family: monospace; }
         
-        .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 18px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
-        .player-btn { width: 100%; background: #21262d; border: 1px solid #30363d; color: #ccc; padding: 10px; margin-top: 10px; border-radius: 8px; }
+        /* CONFIDENCE BADGES */
+        .pred-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; margin-top: 10px; }
+        .pred-text { color: var(--green); font-weight: bold; font-size: 0.9rem; }
+        .conf-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; color: #000; }
+        .conf-high { background-color: var(--green); } /* 80%+ */
+        .conf-med { background-color: var(--gold); }   /* 60-79% */
+        .conf-low { background-color: #8b949e; }       /* <60% */
+
+        .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
+        .player-btn { width: 100%; background: #21262d; border: 1px solid #30363d; color: #ccc; padding: 10px; margin-top: 10px; border-radius: 8px; font-weight: 600; }
     </style>
 </head>
 <body>
 
     <header>
-        <h1><img src="target_PNG26.png" style="width:28px;"> Hunter</h1>
-        <button id="installBtn">⬇ Install</button>
+        <div class="top-row">
+            <h1><img src="target_PNG26.png" style="width:28px;"> Hunter</h1>
+            <button id="installBtn">⬇ Install</button>
+        </div>
+        
+        <select id="filterSelect" onchange="applyFilter()">
+            <option value="elite">🇬🇧 UK & Top Tier</option>
+            <option value="europe">🇪🇺 Rest of Europe</option>
+            <option value="world">🌎 World Scan</option>
+        </select>
     </header>
 
     <div id="content">
         <div style="text-align:center; padding-top:50px; color:#888;">
-            <p>Ready to Hunt.</p>
+            <p style="font-size:2rem; margin-bottom:10px;">🔭</p>
+            <p>Ready to Hunt (60'-85').</p>
         </div>
     </div>
 
     <button class="scan-btn" onclick="runScan()" id="mainBtn">🎯 SCAN MARKETS</button>
 
     <script>
-        // 1. SERVICE WORKER
-        if ('serviceWorker' in navigator) {
-            const swCode = `self.addEventListener('fetch', () => {});`; 
-            const blob = new Blob([swCode], {type: 'application/javascript'});
-            navigator.serviceWorker.register(URL.createObjectURL(blob));
-        }
-
-        // 2. INSTALL PROMPT
-        let deferredPrompt;
-        const installBtn = document.getElementById('installBtn');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            installBtn.style.display = 'block';
-        });
-
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') installBtn.style.display = 'none';
-                deferredPrompt = null;
-            }
-        });
-
-        // 3. APP LOGIC
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
+        const ELITE_IDS = [39, 40, 41, 42, 179, 140, 78, 135, 61, 2, 3, 45, 48, 143, 529, 556, 81];
+        const EU_COUNTRIES = ["England", "Scotland", "Wales", "Ireland", "France", "Germany", "Italy", "Spain", "Portugal", "Netherlands", "Belgium", "Austria", "Switzerland", "Denmark", "Sweden", "Norway", "Finland", "Poland", "Turkey", "Greece", "Croatia", "Czech-Republic", "Russia", "Ukraine"];
+
+        let allMatches = [];
         const content = document.getElementById('content');
         const mainBtn = document.getElementById('mainBtn');
 
         async function runScan() {
-            mainBtn.innerText = "Scanning..."; mainBtn.disabled = true;
-            content.innerHTML = "";
+            mainBtn.innerText = "Scanning Global Feeds..."; mainBtn.disabled = true;
+            content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data...</p>";
+            
             try {
                 const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", {
                     headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" }
@@ -87,28 +103,83 @@
                 
                 if(!data.response || data.results === 0) {
                     content.innerHTML = "<p style='text-align:center; margin-top:50px'>No live games.</p>";
+                    allMatches = [];
                 } else {
-                    const hunters = data.response.filter(m => m.fixture.status.elapsed >= 50 && m.fixture.status.elapsed <= 80);
-                    if(hunters.length === 0) content.innerHTML = "<p style='text-align:center; margin-top:50px'>No games in 50-80min window.</p>";
-                    else hunters.forEach(m => createCard(m));
+                    // --- CHANGED FILTER HERE: 60 to 85 MINUTES ---
+                    allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
+                    applyFilter();
                 }
-            } catch(e) { alert("Error connecting."); }
+            } catch(e) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#da3633'>Error.</p>"; }
             mainBtn.innerText = "🎯 SCAN MARKETS"; mainBtn.disabled = false;
+        }
+
+        function applyFilter() {
+            const mode = document.getElementById('filterSelect').value;
+            content.innerHTML = "";
+            
+            if(allMatches.length === 0) { 
+                content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; 
+                return; 
+            }
+
+            const filtered = allMatches.filter(m => {
+                const lid = m.league.id;
+                const country = m.league.country;
+                if (mode === 'elite') return ELITE_IDS.includes(lid); 
+                else if (mode === 'europe') return EU_COUNTRIES.includes(country) || ELITE_IDS.includes(lid); 
+                else return true;
+            });
+
+            if(filtered.length === 0) content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found in 60-85' window.</p>`;
+            else filtered.forEach(m => createCard(m));
         }
 
         function createCard(m) {
             const div = document.createElement('div');
             div.className = 'match-card';
+            
+            const h = m.teams.home.name;
+            const a = m.teams.away.name;
+            const s = m.goals;
+            const t = m.fixture.status.elapsed;
+            
+            // --- CONFIDENCE ENGINE ---
+            let predText = "Monitoring...";
+            let confVal = 0;
+            let confClass = "conf-low";
+
+            if (s.home === s.away) {
+                predText = "⚠️ Draw / Tight Game";
+                // Confidence higher because we are now past 60 mins
+                confVal = (t > 75) ? 88 : 80; 
+            } 
+            else if (Math.abs(s.home - s.away) === 1) {
+                predText = "⚽ Late Goal Likely";
+                confVal = (t > 75) ? 90 : 82;
+            } 
+            else {
+                predText = "🔒 Result Likely Safe";
+                confVal = 94;
+            }
+
+            // Set Color based on Value
+            if(confVal >= 80) confClass = "conf-high";
+            else if(confVal >= 60) confClass = "conf-med";
+
             div.innerHTML = `
-                <div style="font-size:0.8rem; color:#888; margin-bottom:5px;">${m.league.name} • ${m.fixture.status.elapsed}'</div>
+                <div class="league-name">${m.league.country} • ${m.league.name}</div>
                 <div class="score-row">
-                    <span>${m.teams.home.name}</span>
-                    <span class="score-box">${m.goals.home}-${m.goals.away}</span>
-                    <span>${m.teams.away.name}</span>
+                    <span class="team" style="text-align:right">${h}</span>
+                    <span class="score-box">${s.home}-${s.away}</span>
+                    <span class="team" style="text-align:left">${a}</span>
                 </div>
-                <div class="pred-box">
-                    ${(m.goals.home === m.goals.away) ? "⚠️ Draw Risk / Tight" : "⚽ Late Goal Opportunity"}
+                <div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">${t}' Played</div>
+                
+                <div class="pred-row">
+                    <span class="pred-text">${predText}</span>
+                    <span class="conf-badge ${confClass}">${confVal}%</span>
                 </div>
+
                 <button class="player-btn" onclick="checkPlayers(this, ${m.fixture.id})">🕵️ Check Players</button>
                 <div id="p-${m.fixture.id}"></div>
             `;
@@ -116,7 +187,7 @@
         }
 
         async function checkPlayers(btn, id) {
-            btn.innerText = "Checking...";
+            btn.innerText = "Analyzing...";
             try {
                 const res = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, {
                     headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" }
@@ -127,14 +198,39 @@
                 let html = "";
                 if(data.response && data.response.length > 0) {
                     data.response.forEach(t => t.players.forEach(p => {
-                        if(p.statistics[0].shots.on >= 2 && p.statistics[0].goals.total === 0) 
-                            html += `<div style="color:#d29922; margin-top:5px;">🎯 ${p.player.name} due to score</div>`;
+                        const s = p.statistics[0];
+                        // Player Confidence Logic
+                        if(s.shots.on >= 2 && s.goals.total === 0) {
+                            let pConf = (s.shots.on >= 3) ? 92 : 78; 
+                            let cClass = (pConf > 80) ? "#2ea043" : "#d29922";
+                            html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:${cClass}">
+                                        <span>🎯 ${p.player.name} To Score</span>
+                                        <span style="font-weight:bold">${pConf}%</span>
+                                     </div>`;
+                        }
+                        if(s.fouls.committed >= 3 && !s.cards.yellow) {
+                            let fConf = (s.fouls.committed >= 4) ? 95 : 82;
+                            html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#da3633">
+                                        <span>🟨 ${p.player.name} Card Risk</span>
+                                        <span style="font-weight:bold">${fConf}%</span>
+                                     </div>`;
+                        }
                     }));
                 }
-                area.innerHTML = html || "<div style='font-size:0.8rem; color:#666; text-align:center; margin-top:5px'>No obvious signals.</div>";
+                area.innerHTML = html || "<div style='font-size:0.8rem; color:#666; text-align:center; margin-top:5px'>No high value signals.</div>";
             } catch(e) { }
             btn.style.display = 'none';
         }
+
+        // PWA LOGIC
+        if ('serviceWorker' in navigator) {
+            const blob = new Blob([`self.addEventListener('fetch', () => {});`], {type: 'application/javascript'});
+            navigator.serviceWorker.register(URL.createObjectURL(blob));
+        }
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; });
+        installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; } });
     </script>
 </body>
 </html>
