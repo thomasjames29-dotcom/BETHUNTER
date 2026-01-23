@@ -42,17 +42,25 @@
         /* CARDS */
         .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
         .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
-        .score-row { display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; font-weight: bold; margin: 10px 0; }
-        .team { width: 40%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .score-box { background: #21262d; padding: 5px 12px; border-radius: 6px; border: 1px solid #30363d; font-family: monospace; }
+        
+        /* SCORE ROW UPGRADE */
+        .score-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 10px 0; }
+        
+        .team-col { width: 40%; display: flex; flex-direction: column; }
+        .team-name { font-size: 1rem; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        
+        /* GOAL TIMES */
+        .goal-times { font-size: 0.75rem; color: var(--gold); margin-top: 4px; min-height: 14px; font-family: monospace; }
+        
+        .score-box { background: #21262d; padding: 8px 14px; border-radius: 8px; border: 1px solid #30363d; font-family: monospace; font-size: 1.2rem; font-weight: bold; }
         
         /* CONFIDENCE BADGES */
         .pred-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; margin-top: 10px; }
         .pred-text { color: var(--green); font-weight: bold; font-size: 0.9rem; }
         .conf-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; color: #000; }
-        .conf-high { background-color: var(--green); } /* 80%+ */
-        .conf-med { background-color: var(--gold); }   /* 60-79% */
-        .conf-low { background-color: #8b949e; }       /* <60% */
+        .conf-high { background-color: var(--green); } 
+        .conf-med { background-color: var(--gold); }   
+        .conf-low { background-color: #8b949e; }      
 
         .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
         .player-btn { width: 100%; background: #21262d; border: 1px solid #30363d; color: #ccc; padding: 10px; margin-top: 10px; border-radius: 8px; font-weight: 600; }
@@ -105,7 +113,6 @@
                     content.innerHTML = "<p style='text-align:center; margin-top:50px'>No live games.</p>";
                     allMatches = [];
                 } else {
-                    // --- CHANGED FILTER HERE: 60 to 85 MINUTES ---
                     allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
                     applyFilter();
                 }
@@ -138,11 +145,28 @@
             const div = document.createElement('div');
             div.className = 'match-card';
             
-            const h = m.teams.home.name;
-            const a = m.teams.away.name;
+            const h = m.teams.home;
+            const a = m.teams.away;
             const s = m.goals;
             const t = m.fixture.status.elapsed;
             
+            // --- GOAL TIMESTAMPS LOGIC ---
+            // We parse the events array if it exists
+            let hGoals = "";
+            let aGoals = "";
+            
+            if (m.events) {
+                hGoals = m.events
+                    .filter(e => e.type === 'Goal' && e.team.id === h.id)
+                    .map(e => e.time.elapsed + "'")
+                    .join(', ');
+                
+                aGoals = m.events
+                    .filter(e => e.type === 'Goal' && e.team.id === a.id)
+                    .map(e => e.time.elapsed + "'")
+                    .join(', ');
+            }
+
             // --- CONFIDENCE ENGINE ---
             let predText = "Monitoring...";
             let confVal = 0;
@@ -150,7 +174,6 @@
 
             if (s.home === s.away) {
                 predText = "⚠️ Draw / Tight Game";
-                // Confidence higher because we are now past 60 mins
                 confVal = (t > 75) ? 88 : 80; 
             } 
             else if (Math.abs(s.home - s.away) === 1) {
@@ -162,17 +185,26 @@
                 confVal = 94;
             }
 
-            // Set Color based on Value
             if(confVal >= 80) confClass = "conf-high";
             else if(confVal >= 60) confClass = "conf-med";
 
             div.innerHTML = `
                 <div class="league-name">${m.league.country} • ${m.league.name}</div>
+                
                 <div class="score-row">
-                    <span class="team" style="text-align:right">${h}</span>
+                    <div class="team-col" style="align-items:flex-end; text-align:right;">
+                        <span class="team-name">${h.name}</span>
+                        <span class="goal-times">${hGoals}</span>
+                    </div>
+                    
                     <span class="score-box">${s.home}-${s.away}</span>
-                    <span class="team" style="text-align:left">${a}</span>
+                    
+                    <div class="team-col" style="align-items:flex-start; text-align:left;">
+                        <span class="team-name">${a.name}</span>
+                        <span class="goal-times">${aGoals}</span>
+                    </div>
                 </div>
+                
                 <div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">${t}' Played</div>
                 
                 <div class="pred-row">
@@ -199,7 +231,6 @@
                 if(data.response && data.response.length > 0) {
                     data.response.forEach(t => t.players.forEach(p => {
                         const s = p.statistics[0];
-                        // Player Confidence Logic
                         if(s.shots.on >= 2 && s.goals.total === 0) {
                             let pConf = (s.shots.on >= 3) ? 92 : 78; 
                             let cClass = (pConf > 80) ? "#2ea043" : "#d29922";
