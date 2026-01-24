@@ -87,7 +87,7 @@
         <div style="text-align:center; padding-top:50px; color:#888;">
             <p style="font-size:2rem; margin-bottom:10px;">🔭</p>
             <p>Ready to Hunt (60'-85').</p>
-            <p style="font-size:0.8rem; color:#555">Blocking Friendlies.</p>
+            <p style="font-size:0.8rem; color:#555">Blocking: Friendlies, Youth, Reserve</p>
         </div>
     </div>
 
@@ -170,25 +170,27 @@
             if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
 
             const filtered = allMatches.filter(m => {
-                // --- NUCLEAR FRIENDLY FILTER ---
-                // We check League Name, Country Name, and Round Name for the word "Friend"
-                const leagueName = (m.league.name || "").toLowerCase();
-                const countryName = (m.league.country || "").toLowerCase();
-                const roundName = (m.league.round || "").toLowerCase();
+                // --- NUCLEAR FILTER: NO FRIENDLIES, NO YOUTH, NO RESERVES ---
+                const league = (m.league.name || "").toLowerCase();
+                const country = (m.league.country || "").toLowerCase();
+                const round = (m.league.round || "").toLowerCase();
                 
-                if(leagueName.includes("friend") || countryName.includes("world") || roundName.includes("friend")) {
-                    return false; // DELETE IT
+                // The Bad Words List
+                const blocked = ["friend", "youth", "u19", "u20", "u21", "u23", "reserve", "women", "(w)"];
+                
+                // If any part of the data contains a blocked word, skip it
+                if(blocked.some(word => league.includes(word) || country.includes(word) || round.includes(word))) {
+                    return false;
                 }
 
                 const lid = m.league.id;
-                const country = m.league.country;
                 if (mode === 'elite') return ELITE_IDS.includes(lid); 
                 else if (mode === 'europe') return EU_COUNTRIES.includes(country) || ELITE_IDS.includes(lid); 
                 else return true;
             });
 
             if(filtered.length === 0) {
-                content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found.</p>`;
+                content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found (Junk blocked).</p>`;
             } else {
                 filtered.forEach(m => {
                     const t = m.fixture.status.elapsed;
