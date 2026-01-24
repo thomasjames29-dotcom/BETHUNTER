@@ -65,14 +65,12 @@
         /* BUTTONS */
         .btn-row { display: flex; gap: 10px; margin-top: 10px; }
         .player-btn { flex: 1; background: #21262d; border: 1px solid #30363d; color: #ccc; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer;}
-        
-        /* NEW DEEP ANALYZE BUTTON */
         .analyze-btn { flex: 1; background: rgba(163, 113, 247, 0.15); border: 1px solid var(--purple); color: var(--purple); padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; }
 
         /* ANALYSIS RESULT AREA */
         .analysis-box {
             background: #1c1c1c; border: 1px solid var(--purple); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem;
-            display: none; /* Hidden by default */
+            display: none; 
         }
         .stat-bar { display: flex; justify-content: space-between; margin-bottom: 4px; color: #bbb; font-size: 0.8rem; }
         .stat-val { font-weight: bold; color: white; }
@@ -212,7 +210,6 @@
                 filtered.forEach(m => {
                     const t = m.fixture.status.elapsed;
                     const s = m.goals;
-                    // Auto-Ping Logic
                     if ((Math.abs(s.home - s.away) === 1 && t > 75) || (s.home === s.away && t > 75)) {
                         highValueFound = true;
                     }
@@ -250,7 +247,7 @@
 
             if (s.home === s.away) {
                 predText = "⚠️ Draw / Tight";
-                confVal = (t > 75) ? 75 : 70; // Lower base confidence for draws until analyzed
+                confVal = (t > 75) ? 75 : 70;
             } 
             else if (Math.abs(s.home - s.away) === 1) {
                 predText = "⚽ Late Goal Likely";
@@ -320,7 +317,6 @@
                     return;
                 }
 
-                // Extract Stats (Safely handle missing data)
                 const hStats = data.response[0].statistics;
                 const aStats = data.response[1].statistics;
 
@@ -336,13 +332,11 @@
                 const hCorn = getStat(hStats, "Corner Kicks");
                 const aCorn = getStat(aStats, "Corner Kicks");
 
-                // --- PRESSURE ALGORITHM ---
-                // Weights: SoT=5, Corner=2, TotalShot=1
                 const hPressure = (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
                 const aPressure = (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
 
                 let verdict = "";
-                let vColor = "#888"; // Grey default
+                let vColor = "#888";
                 let newConf = 0;
 
                 const totalPress = hPressure + aPressure;
@@ -350,24 +344,23 @@
 
                 if (totalPress < 20) {
                     verdict = "💤 LOW ENERGY / DEADLOCK";
-                    newConf = 90; // High confidence that nothing will happen
+                    newConf = 90;
                     vColor = "#8b949e";
                 } else if (diff > 30) {
                     const leader = hPressure > aPressure ? hName : aName;
                     verdict = `🔥 SIEGE: ${leader} Pushing!`;
-                    newConf = 92; // High confidence goal coming
-                    vColor = "#2ea043"; // Green
+                    newConf = 92;
+                    vColor = "#2ea043";
                 } else if (totalPress > 50 && diff < 15) {
                     verdict = "⚔️ OPEN GAME (Both Attacking)";
-                    newConf = 85; // Goal likely from either
-                    vColor = "#a371f7"; // Purple
+                    newConf = 85;
+                    vColor = "#a371f7";
                 } else {
                     verdict = "⚖️ BALANCED / TACTICAL";
-                    newConf = 60; // Unsure
-                    vColor = "#d29922"; // Gold
+                    newConf = 60;
+                    vColor = "#d29922";
                 }
 
-                // Render Visuals
                 statBox.innerHTML = `
                     <div style="text-align:center; margin-bottom:10px; font-weight:bold; color:${vColor}; font-size:1rem; border-bottom:1px solid #333; padding-bottom:5px;">
                         ${verdict}
@@ -389,7 +382,6 @@
                     </div>
                 `;
                 
-                // Update Prediction Badge Live
                 predText.innerText = verdict;
                 predText.style.color = vColor;
                 predBadge.innerText = newConf + "%";
@@ -424,7 +416,7 @@
                         }
                         if(s.fouls.committed >= 3 && !s.cards.yellow) {
                             let fConf = (s.fouls.committed >= 4) ? 95 : 82;
-                            html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#da3633">
+                            html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#ffffff">
                                         <span>🟨 ${p.player.name} Card Risk</span>
                                         <span style="font-weight:bold">${fConf}%</span>
                                      </div>`;
