@@ -67,4 +67,371 @@
         .gauge-away { background: var(--purple); height: 100%; transition: width 0.5s; }
         .gauge-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #888; margin-top:-2px; margin-bottom: 10px; }
 
-        .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-
+        .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="top-row">
+            <h1><img src="target_PNG26.png" style="width:28px;"> Hunter Pro</h1>
+            <button id="pilotBtn" class="pilot-btn" onclick="togglePilot()">
+                <div class="pilot-dot"></div> Auto-Pilot
+            </button>
+        </div>
+        
+        <select id="filterSelect" onchange="applyFilter()">
+            <option value="elite">🇬🇧 UK & Top Tier</option>
+            <option value="europe">🇪🇺 Rest of Europe</option>
+            <option value="world">🌎 World Scan</option>
+        </select>
+    </header>
+
+    <div id="content">
+        <div style="text-align:center; padding-top:50px; color:#888;">
+            <p style="font-size:2rem; margin-bottom:10px;">🔭</p>
+            <p>Ready to Hunt (60'-85').</p>
+            <p style="font-size:0.8rem; color:#555">Active: Red Card Radar • Live Odds • Pressure Gauge</p>
+        </div>
+    </div>
+
+    <button class="scan-btn" onclick="runScan()" id="mainBtn">🎯 SCAN MARKETS</button>
+
+    <script>
+        const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
+        
+        // --- ELITE IDS ---
+        // Removed 41 (League 1) and 42 (League 2)
+        const ELITE_IDS = [39, 40, 179, 140, 78, 135, 61, 2, 3, 45, 48, 143, 529, 556, 81];
+        
+        const EU_COUNTRIES = [
+            "Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", 
+            "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", 
+            "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", 
+            "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", 
+            "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", 
+            "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", 
+            "Spain", "Sweden", "Switzerland", "Turkey", "Ukraine", "Wales"
+        ];
+
+        let allMatches = [];
+        let pilotMode = false;
+        let pilotInterval;
+        
+        const content = document.getElementById('content');
+        const mainBtn = document.getElementById('mainBtn');
+        const pilotBtn = document.getElementById('pilotBtn');
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playPing() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        }
+
+        function togglePilot() {
+            pilotMode = !pilotMode;
+            if(pilotMode) {
+                pilotBtn.classList.add('active');
+                pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (60s)`;
+                playPing(); 
+                runScan(true); 
+                pilotInterval = setInterval(() => runScan(true), 60000); 
+            } else {
+                pilotBtn.classList.remove('active');
+                pilotBtn.innerHTML = `<div class="pilot-dot"></div> Auto-Pilot`;
+                clearInterval(pilotInterval);
+            }
+        }
+
+        async function runScan(isAuto = false) {
+            if(!isAuto) {
+                mainBtn.innerText = "Scanning Global Feeds..."; mainBtn.disabled = true;
+                content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data...</p>";
+            } else {
+                mainBtn.innerText = "🤖 Auto-Scanning...";
+            }
+            try {
+                const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", {
+                    headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" }
+                });
+                const data = await res.json();
+                if(!data.response || data.results === 0) {
+                    if(!isAuto) content.innerHTML = "<p style='text-align:center; margin-top:50px'>No live games.</p>";
+                    allMatches = [];
+                } else {
+                    allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
+                    allMatches.sort((a, b) => b.fixture.status.elapsed - a.fixture.status.elapsed);
+                    applyFilter(isAuto);
+                }
+            } catch(e) { if(!isAuto) content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#da3633'>Error.</p>"; }
+            mainBtn.innerText = "🎯 SCAN MARKETS"; mainBtn.disabled = false;
+        }
+
+        function applyFilter(isAuto = false) {
+            const mode = document.getElementById('filterSelect').value;
+            content.innerHTML = "";
+            let highValueFound = false;
+            if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
+
+            const filtered = allMatches.filter(m => {
+                const league = (m.league.name || "").toLowerCase();
+                const blocked = ["friendly", "friendlies", "club friendlies", "u19", "u20", "u21", "u23", "youth", "reserve", "reserves"];
+                if(blocked.some(word => league.includes(word))) return false; 
+                const lid = m.league.id;
+                const country = m.league.country;
+                if (mode === 'elite') return ELITE_IDS.includes(lid); 
+                else if (mode === 'europe') return EU_COUNTRIES.includes(country) || ELITE_IDS.includes(lid); 
+                else return true;
+            });
+
+            if(filtered.length === 0) {
+                content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found.</p>`;
+            } else {
+                filtered.forEach(m => {
+                    const t = m.fixture.status.elapsed;
+                    const s = m.goals;
+                    if ((Math.abs(s.home - s.away) === 1 && t > 75) || (s.home === s.away && t > 75)) highValueFound = true;
+                    createCard(m);
+                });
+            }
+            if(isAuto && highValueFound) playPing();
+        }
+
+        function createCard(m) {
+            const div = document.createElement('div');
+            div.className = 'match-card';
+            
+            const h = m.teams.home;
+            const a = m.teams.away;
+            const s = m.goals;
+            const t = m.fixture.status.elapsed;
+            const lid = m.league.id;
+            
+            let hGoals = "", aGoals = "";
+            let hRed = false, aRed = false;
+
+            if (m.events) {
+                hGoals = m.events.filter(e => e.type === 'Goal' && e.team.id === h.id).map(e => e.time.elapsed + "'").join(', ');
+                aGoals = m.events.filter(e => e.type === 'Goal' && e.team.id === a.id).map(e => e.time.elapsed + "'").join(', ');
+                
+                // RED CARD DETECTION
+                hRed = m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === h.id);
+                aRed = m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === a.id);
+            }
+
+            // RED CARD HTML
+            const hRedBadge = hRed ? "<div class='red-card-badge'>🟥 RED CARD</div>" : "";
+            const aRedBadge = aRed ? "<div class='red-card-badge'>🟥 RED CARD</div>" : "";
+
+            let upsetHtml = "";
+            if (ELITE_IDS.includes(lid) && s.home < s.away && (s.away - s.home === 1)) {
+                upsetHtml = `<div class="upset-badge">🔥 UPSET ALERT: ${h.name} Chasing!</div>`;
+            }
+
+            let predText = "Monitoring...";
+            let confVal = 0;
+            let confClass = "conf-low";
+
+            if (s.home === s.away) {
+                predText = "⚠️ Draw / Tight";
+                confVal = (t > 75) ? 75 : 70;
+                // If opponent has red card, boost confidence for a winner
+                if(hRed || aRed) { predText = "⚔️ 10 Men vs 11"; confVal = 85; }
+            } 
+            else if (Math.abs(s.home - s.away) === 1) {
+                predText = "⚽ Late Goal Likely";
+                confVal = (t > 75) ? 90 : 82;
+            } 
+            else {
+                predText = "🔒 Result Likely Safe";
+                confVal = 94;
+            }
+            
+            if(upsetHtml !== "") { predText = "🔥 Favorite Chasing"; confVal = 95; }
+            
+            if(confVal >= 80) confClass = "conf-high"; else if(confVal >= 60) confClass = "conf-med";
+
+            div.innerHTML = `
+                <div class="league-name">${m.league.country} • ${m.league.name}</div>
+                <div class="score-row">
+                    <div class="team-col" style="align-items:flex-end; text-align:right;">
+                        <span class="team-name">${h.name}</span>
+                        <span class="goal-times">${hGoals}</span>
+                        ${hRedBadge}
+                    </div>
+                    <span class="score-box">${s.home}-${s.away}</span>
+                    <div class="team-col" style="align-items:flex-start; text-align:left;">
+                        <span class="team-name">${a.name}</span>
+                        <span class="goal-times">${aGoals}</span>
+                        ${aRedBadge}
+                    </div>
+                </div>
+                <div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">${t}' Played</div>
+                ${upsetHtml}
+                <div class="pred-row">
+                    <span class="pred-text" id="pred-text-${m.fixture.id}">${predText}</span>
+                    <span class="conf-badge ${confClass}" id="pred-badge-${m.fixture.id}">${confVal}%</span>
+                </div>
+                <div class="btn-row">
+                    <button class="player-btn" onclick="checkPlayers(this, ${m.fixture.id})">🕵️ Check Players</button>
+                    <button class="analyze-btn" onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name}', '${a.name}')">⚡ Analyze & Odds</button>
+                </div>
+                <div id="p-${m.fixture.id}"></div>
+                <div id="stats-${m.fixture.id}" class="analysis-box"></div>
+            `;
+            content.appendChild(div);
+        }
+
+        async function deepAnalyze(btn, id, hName, aName) {
+            btn.innerText = "Scanning...";
+            const statBox = document.getElementById(`stats-${id}`);
+            const predText = document.getElementById(`pred-text-${id}`);
+            const predBadge = document.getElementById(`pred-badge-${id}`);
+            statBox.style.display = 'block';
+            statBox.innerHTML = "<div style='color:#888; text-align:center;'>Fetching Data...</div>";
+
+            try {
+                // PARALLEL FETCH: STATS + ODDS
+                const [statRes, oddsRes] = await Promise.all([
+                    fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
+                    fetch(`https://v3.football.api-sports.io/odds/live?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } })
+                ]);
+                
+                const statData = await statRes.json();
+                const oddsData = await oddsRes.json();
+
+                if(!statData.response || statData.response.length === 0) {
+                    statBox.innerHTML = "<div style='color:#da3633; text-align:center;'>No Live Stats.</div>";
+                    btn.innerText = "⚡ Analyze";
+                    return;
+                }
+
+                // 1. PROCESS STATS
+                const hStats = statData.response[0].statistics;
+                const aStats = statData.response[1].statistics;
+                const getStat = (arr, type) => { const i = arr.find(s => s.type === type); return i ? (i.value || 0) : 0; };
+
+                const hSoT = getStat(hStats, "Shots on Goal");
+                const aSoT = getStat(aStats, "Shots on Goal");
+                const hTotal = getStat(hStats, "Total Shots");
+                const aTotal = getStat(aStats, "Total Shots");
+                const hCorn = getStat(hStats, "Corner Kicks");
+                const aCorn = getStat(aStats, "Corner Kicks");
+
+                const hPressure = (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
+                const aPressure = (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
+                const totalPress = hPressure + aPressure || 1; 
+                const hPercent = Math.round((hPressure / totalPress) * 100);
+                const aPercent = 100 - hPercent;
+
+                // 2. PROCESS ODDS
+                let oddsHTML = "<div style='text-align:center; color:#666; font-size:0.8rem; margin-top:5px;'>Odds Locked / Unavailable</div>";
+                if(oddsData.response && oddsData.response.length > 0 && oddsData.response[0].odds.length > 0) {
+                    const vals = oddsData.response[0].odds[0].values; // Match Winner
+                    const homeOdd = vals.find(v => v.value === "Home")?.odd || "-";
+                    const drawOdd = vals.find(v => v.value === "Draw")?.odd || "-";
+                    const awayOdd = vals.find(v => v.value === "Away")?.odd || "-";
+                    oddsHTML = `<div style="display:flex; justify-content:space-between; margin-top:8px; background:#111; padding:5px; border-radius:4px; font-family:monospace;">
+                        <span style="color:#2ea043">1: ${homeOdd}</span>
+                        <span style="color:#888">X: ${drawOdd}</span>
+                        <span style="color:#a371f7">2: ${awayOdd}</span>
+                    </div>`;
+                }
+
+                // 3. LOGIC & RENDER
+                let verdict = "";
+                let vColor = "#888";
+                const diff = Math.abs(hPressure - aPressure);
+
+                if (totalPress < 20) { verdict = "💤 LOW ENERGY"; vColor = "#8b949e"; }
+                else if (diff > 30) { 
+                    const leader = hPressure > aPressure ? hName : aName;
+                    verdict = `🔥 SIEGE: ${leader}`; vColor = "#2ea043"; 
+                } 
+                else if (totalPress > 50 && diff < 15) { verdict = "⚔️ OPEN GAME"; vColor = "#a371f7"; } 
+                else { verdict = "⚖️ BALANCED"; vColor = "#d29922"; }
+
+                statBox.innerHTML = `
+                    <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}</div>
+                    
+                    <div class="gauge-labels">
+                        <span>${hName} (${hPercent}%)</span>
+                        <span>${aName} (${aPercent}%)</span>
+                    </div>
+                    <div class="gauge-container">
+                        <div class="gauge-home" style="width:${hPercent}%"></div>
+                        <div class="gauge-away" style="width:${aPercent}%"></div>
+                    </div>
+
+                    <div class="stat-bar">
+                        <span>Shots on Target</span>
+                        <span class="stat-val">${hSoT} - ${aSoT}</span>
+                    </div>
+                    <div class="stat-bar">
+                        <span>Corners</span>
+                        <span class="stat-val">${hCorn} - ${aCorn}</span>
+                    </div>
+                    ${oddsHTML}
+                `;
+                
+                // Update Badge
+                predText.innerText = verdict; 
+                predText.style.color = vColor;
+                
+            } catch(e) { statBox.innerHTML = "<div style='color:#da3633;'>Error analyzing.</div>"; }
+            btn.innerText = "⚡ Analyze & Odds";
+        }
+
+        async function checkPlayers(btn, id) {
+            btn.innerText = "Checking...";
+            try {
+                const res = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, {
+                    headers: { "x-rapidapi-key": API_KEY }
+                });
+                const data = await res.json();
+                const area = document.getElementById(`p-${id}`);
+                
+                let html = "";
+                if(data.response && data.response.length > 0) {
+                    data.response.forEach(t => t.players.forEach(p => {
+                        const s = p.statistics[0];
+                        if(s.shots.on >= 2 && s.goals.total === 0) {
+                            html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#2ea043">
+                                        <span>🎯 ${p.player.name} To Score</span>
+                                        <span style="font-weight:bold">${s.shots.on} SoT</span>
+                                     </div>`;
+                        }
+                        if(s.fouls.committed >= 3 && !s.cards.yellow) {
+                            // WHITE TEXT for Card Risk
+                            html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#ffffff">
+                                        <span>🟨 ${p.player.name} Card Risk</span>
+                                        <span style="font-weight:bold">${s.fouls.committed} Fouls</span>
+                                     </div>`;
+                        }
+                    }));
+                }
+                area.innerHTML = html || "<div style='font-size:0.8rem; color:#666; text-align:center; margin-top:5px'>No high value signals.</div>";
+            } catch(e) { }
+            btn.style.display = 'none';
+        }
+
+        if ('serviceWorker' in navigator) {
+            const blob = new Blob([`self.addEventListener('fetch', () => {});`], {type: 'application/javascript'});
+            navigator.serviceWorker.register(URL.createObjectURL(blob));
+        }
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; });
+        installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; } });
+    </script>
+</body>
+</html>
