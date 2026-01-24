@@ -2,471 +2,432 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#1a1a2e">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0d1117">
+    <title>60' Hunter Pro</title>
 
-    <title>UWLK4 Champions</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-    
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" type="image/png" href="target_PNG26.png">
+    <link rel="apple-touch-icon" href="target_PNG26.png">
+
     <style>
-        /* --- CORE STYLES --- */
-        :root { --bg: #1a1a2e; --panel: #16213e; --accent: #0f3460; --gold: #ffd700; --text: #f1f1f1; --green: #4caf50; --red: #e94560; --purple: #9c27b0; --blue: #4361ee; }
-        html, body { height: 100%; width: 100%; margin: 0; padding: 0; overflow: hidden; background-color: #000; font-family: 'VT323', monospace; color: var(--text); display: flex; flex-direction: column; font-size: 20px; user-select: none; -webkit-user-select: none; }
+        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --gold: #d29922; --red: #da3633; --purple: #a371f7; --text: #c9d1d9; --bar-bg: #30363d; }
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 16px; padding-bottom: 120px; }
         
-        .crt::before { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03)); z-index: 99999; background-size: 100% 2px, 3px 100%; pointer-events: none; }
-        .view-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; z-index: 1; }
-        .view-container.active { display: flex; z-index: 10; }
-
-        /* --- MAP & HUD --- */
-        #map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
-        #map { width: 100%; height: 100%; background: #050505; }
-        .leaflet-layer { filter: contrast(1.1) brightness(0.8) saturate(0); } 
-        #hud-layer { position: absolute; bottom: 80px; left: 0; width: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; z-index: 20; }
-        .active-contracts-box { background: linear-gradient(to top, rgba(0,0,0,0.95), transparent); padding: 10px; pointer-events: auto; }
-        .active-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .drawer-toggle { background: var(--accent); color: #fff; text-align: center; padding: 5px; font-size: 14px; cursor: pointer; pointer-events: auto; border-radius: 10px 10px 0 0; width: 140px; margin: 0 auto; border: 1px solid #4cc9f0; border-bottom: none; }
-
-        /* --- UI COMPONENTS --- */
-        .full-panel { background: var(--bg); height: 100%; width: 100%; overflow-y: auto; padding-bottom: 200px; box-sizing: border-box; -webkit-overflow-scrolling: touch; }
-        .slot { background: #0f3460; border: 2px solid #533483; border-radius: 6px; padding: 8px; text-align: center; position: relative; font-size: 16px; cursor: pointer; transition: transform 0.1s; }
-        .slot:active { transform: scale(0.95); }
-        .slot.ready { border-color: var(--gold); background: #332200; animation: pulse 1s infinite; }
-        .progress-bar { height: 6px; background: #000; margin-top: 4px; border-radius: 3px; overflow: hidden; }
-        .progress-fill { height: 100%; background: #4cc9f0; width: 0%; transition: width 0.5s; }
-        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .item-card { background: #222; border: 1px solid #555; padding: 5px; text-align: center; font-size: 12px; cursor: pointer; border-radius: 4px; transition: transform 0.1s; }
-        .item-card:active { transform: scale(0.9); }
-        .item-qty { color: var(--gold); font-size: 10px; display: block; margin-top: 2px; }
-        .color-dot { width: 24px; height: 24px; border-radius: 50%; margin: 0 auto; border: 2px solid #fff; box-shadow: 0 2px 2px #000; }
-
-        /* --- VISUALS --- */
-        .pitch-container { height: 450px; background: #388e3c; border: 4px solid #fff; margin: 10px; position: relative; border-radius: 4px; background-image: repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(0,0,0,0.1) 40px, rgba(0,0,0,0.1) 80px); }
-        .pitch-player { position: absolute; width: 64px; transform: translateX(-50%); text-align: center; cursor: pointer; z-index: 10; transition: top 0.5s, left 0.5s; }
-        .pitch-player:active { transform: translateX(-50%) scale(0.9); }
-        .p-card { background: var(--bg); border: 2px solid #fff; border-radius: 4px; padding: 2px; }
-        .player-face-sm { width: 32px; height: 32px; margin: 0 auto; display: block; border-radius: 4px; background: #333; overflow: hidden; }
-        .mgr-preview { height: 128px; width: 128px; margin: 0 auto; background: #333; border: 4px solid #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-        .preview-area { display: flex; justify-content: center; gap: 20px; margin: 20px 0; }
-        .preview-box { width: 100px; height: 100px; border: 2px solid #4cc9f0; background: #222; display: flex; align-items: center; justify-content: center; position: relative; }
-        .preview-label { position: absolute; bottom: -20px; width: 100%; text-align: center; font-size: 14px; color: #aaa; }
-        #club-inventory-container, #achievements-box { display: none; background: #111; border: 2px solid var(--accent); padding: 10px; margin-bottom: 20px; }
-        .customizer-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px; margin-bottom: 10px; border: 1px solid #444; }
-        .arrow-btn { background: #444; color: #fff; border: none; padding: 5px 15px; font-size: 20px; cursor: pointer; transition: transform 0.1s; }
-        .arrow-btn:active { transform: scale(0.9); }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .stat-item { background: #16213e; border: 1px solid #4cc9f0; padding: 10px; text-align: center; border-radius: 5px; }
-        .stat-val { font-size: 24px; color: var(--gold); display: block; }
-        .stat-lbl { font-size: 14px; color: #aaa; }
-
-        /* --- SQUAD LIST & RARITY --- */
-        .squad-list-item { display: flex; align-items: center; background: #222; border: 1px solid #444; margin-bottom: 5px; padding: 8px; cursor: pointer; transition: background 0.2s; }
-        .squad-list-item:active { background: #444; }
-        .squad-list-face { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: #555; margin-right: 10px; border: 1px solid #fff; }
-        .squad-list-info { flex-grow: 1; text-align: left; }
-        .squad-list-ovr { font-size: 20px; font-weight: bold; color: var(--gold); margin-right: 10px; }
+        /* HEADER */
+        header { display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid #30363d; padding-bottom: 15px; margin-bottom: 15px; }
+        .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        h1 { margin: 0; font-size: 1.4rem; color: var(--green); display: flex; align-items: center; gap: 10px; }
         
-        .list-common { border-left: 5px solid #4caf50; } .list-rare { border-left: 5px solid #4361ee; } .list-epic { border-left: 5px solid #9c27b0; } .list-legendary { border-left: 5px solid #ffd700; } .list-mythical { border-left: 5px solid #fff; box-shadow: 0 0 10px rgba(76, 201, 240, 0.5); }
-        .card-common { border-color: #4caf50; background: linear-gradient(135deg, #1a2e1a, #0f3460); }
-        .card-rare { border-color: #4361ee; background: linear-gradient(135deg, #1a1a3e, #0f3460); }
-        .card-epic { border-color: #9c27b0; background: linear-gradient(135deg, #2e1a3e, #0f3460); }
-        .card-legendary { border-color: #ffd700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.3); background: linear-gradient(135deg, #3e3e1a, #0f3460); }
-        .card-mythical { border-color: #fff; box-shadow: 0 0 30px rgba(255, 255, 255, 0.5), inset 0 0 20px #fff; background: linear-gradient(135deg, #222, #444); position: relative; overflow: hidden; }
-        .card-mythical::after { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(circle, #4cc9f0 2px, transparent 2.5px); background-size: 30px 30px; animation: sparkles 2s infinite linear; opacity: 0.7; pointer-events: none; }
-        @keyframes sparkles { 0% { transform: translateY(0); opacity:0; } 50% { opacity:1; } 100% { transform: translateY(-30px); opacity:0; } }
+        /* AUTO-PILOT TOGGLE */
+        .pilot-btn {
+            background: #21262d; border: 1px solid #30363d; color: #888;
+            padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;
+            display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.3s;
+        }
+        .pilot-btn.active { background: rgba(46, 160, 67, 0.2); border-color: var(--green); color: var(--green); }
+        .pilot-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; }
+        .pilot-btn.active .pilot-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
 
-        .full-player-card { border: 4px solid #fff; border-radius: 10px; padding: 15px; text-align: center; color: #fff; max-width: 250px; margin: 0 auto; position: relative; }
-        .fpc-header { display: flex; justify-content: space-between; margin-bottom: 10px; } .fpc-ovr { font-size: 40px; line-height: 1; text-shadow: 2px 2px 0 #000; } .fpc-pos { font-size: 20px; background: #fff; color: #000; padding: 2px 5px; font-weight: bold; } .fpc-face { height: 100px; width: 100px; margin: 0 auto; background: rgba(0,0,0,0.3); border-radius: 50%; border: 2px solid #fff; overflow: hidden; } .fpc-name { font-size: 24px; margin: 10px 0; text-transform: uppercase; color: #fff; text-shadow: 2px 2px 0 #000; } .fpc-trait { font-size: 14px; color: #fff; background: rgba(0,0,0,0.5); padding: 2px 5px; margin-bottom: 10px; display: inline-block; border-radius: 4px; }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; text-align: left; font-size: 16px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; } .stat-row { display: flex; justify-content: space-between; } .stat-lbl { color: #ccc; } .stat-val { color: #fff; font-weight: bold; }
+        select { width: 100%; padding: 12px; background: #21262d; color: white; border: 1px solid #30363d; border-radius: 8px; font-size: 1rem; font-weight: bold; outline: none; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
 
-        /* --- LEAGUE & MATCH --- */
-        .league-box { background: #222; border: 2px solid var(--gold); padding: 10px; margin-bottom: 10px; text-align: center; }
-        .league-title { color: var(--gold); font-size: 24px; }
-        .league-stats { display: flex; justify-content: space-around; margin-top: 5px; }
+        /* CARDS */
+        .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; }
+        .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
+        .score-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 10px 0; }
+        .team-col { width: 40%; display: flex; flex-direction: column; }
+        .team-name { font-size: 1rem; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .goal-times { font-size: 0.75rem; color: var(--gold); margin-top: 4px; min-height: 14px; font-family: monospace; }
+        .score-box { background: #21262d; padding: 8px 14px; border-radius: 8px; border: 1px solid #30363d; font-family: monospace; font-size: 1.2rem; font-weight: bold; }
         
-        .live-match-log { height: 200px; overflow-y: auto; background: #000; border: 1px solid #444; padding: 10px; text-align: left; font-family: monospace; font-size: 16px; margin-bottom: 10px; }
-        .log-goal { color: var(--green); font-weight: bold; }
-        .log-miss { color: var(--red); }
-        .score-board { font-size: 40px; text-align: center; color: var(--gold); margin-bottom: 10px; letter-spacing: 5px; }
+        /* BADGES */
+        .pred-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; margin-top: 10px; }
+        .pred-text { color: var(--green); font-weight: bold; font-size: 0.9rem; }
+        .conf-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; color: #000; }
+        .conf-high { background-color: var(--green); } 
+        .conf-med { background-color: var(--gold); }   
+        .conf-low { background-color: #8b949e; }
+        
+        .upset-badge { background: rgba(218, 54, 51, 0.15); border: 1px solid var(--red); color: var(--red); font-size: 0.75rem; font-weight: bold; text-align: center; padding: 6px; border-radius: 6px; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .red-card-badge { background: rgba(218, 54, 51, 0.2); border: 1px solid var(--red); color: white; font-weight: bold; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; }
 
-        /* --- UI & MODAL --- */
-        #nav-bar { position: fixed; bottom: 0; width: 100%; height: 70px; background: #101018; border-top: 2px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
-        .nav-btn { color: #666; font-size: 14px; text-align: center; width: 100%; padding: 10px 0; }
-        .nav-btn.active { color: #4cc9f0; text-shadow: 0 0 10px rgba(76, 201, 240, 0.5); border-top: 4px solid #4cc9f0; margin-top: -4px; }
-        .map-btn { position: absolute; z-index: 50; background: var(--accent); border: 2px solid #fff; color: #fff; padding: 10px; border-radius: 50%; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        #gps-btn { top: 20px; right: 20px; } #home-btn { top: 20px; left: 50%; transform: translateX(-50%); width: auto; background: rgba(0,0,0,0.8); border-radius: 20px; font-size: 16px; display: none; }
-        #modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 9999; display: none; align-items: center; justify-content: center; }
-        .modal-box { width: 90%; max-width: 400px; background: var(--panel); border: 2px solid #4cc9f0; padding: 20px; text-align: center; max-height: 80vh; overflow-y: auto; animation: popIn 0.3s; }
-        .btn { background: var(--blue); color: white; border: none; padding: 10px; width: 100%; margin-top: 10px; font-family: inherit; font-size: 18px; border-radius: 4px; box-shadow: 0 4px 0 #2a3eb1; cursor: pointer; }
-        .btn:active { transform: translateY(4px); box-shadow: none; }
-        .btn-green { background: var(--green); box-shadow: 0 4px 0 #2e7d32; } .btn-red { background: var(--red); box-shadow: 0 4px 0 #b71c1c; } .btn-purple { background: var(--purple); box-shadow: 0 4px 0 #7b1fa2; }
+        /* BUTTONS */
+        .btn-row { display: flex; gap: 10px; margin-top: 10px; }
+        .player-btn { flex: 1; background: #21262d; border: 1px solid #30363d; color: #ccc; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer;}
+        .analyze-btn { flex: 1; background: rgba(163, 113, 247, 0.15); border: 1px solid var(--purple); color: var(--purple); padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; }
 
-        #intro-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #101018; z-index: 20000; display: flex; flex-direction: column; align-items: center; justify-content: center; background-image: linear-gradient(rgba(16, 16, 24, 0.9), rgba(16, 16, 24, 0.9)), repeating-linear-gradient(0deg, transparent, transparent 2px, #000 3px); }
-        .title-container { text-align: center; animation: slideDown 1s ease-out; }
-        .game-title { font-size: 60px; color: var(--gold); margin: 0; text-shadow: 4px 4px 0 #000, 0 0 20px rgba(255, 215, 0, 0.5); line-height: 0.8; letter-spacing: 2px; }
-        .start-btn { margin-top: 50px; font-size: 24px; color: #4cc9f0; background: transparent; cursor: pointer; animation: blink 1s infinite; border: 2px solid transparent; padding: 15px 30px; font-family: inherit; text-transform: uppercase; }
-        .login-box { display: none; border: 2px solid var(--gold); padding: 20px; background: rgba(0,0,0,0.9); width: 80%; max-width: 350px; box-shadow: 0 0 30px rgba(255, 215, 0, 0.2); animation: popIn 0.5s; }
-        .input-field { background: #000; border: 1px solid #444; color: #fff; width: 100%; padding: 10px; font-family: 'VT323'; font-size: 20px; margin-bottom: 15px; text-transform: uppercase; box-sizing: border-box; }
+        /* ANALYSIS BOX */
+        .analysis-box { background: #1c1c1c; border: 1px solid var(--purple); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; display: none; }
+        .stat-bar { display: flex; justify-content: space-between; margin-bottom: 4px; color: #bbb; font-size: 0.8rem; }
+        .stat-val { font-weight: bold; color: white; }
+        
+        /* PRESSURE GAUGE */
+        .gauge-container { height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin: 5px 0 15px 0; display: flex; }
+        .gauge-home { background: var(--green); height: 100%; transition: width 0.5s; }
+        .gauge-away { background: var(--purple); height: 100%; transition: width 0.5s; }
+        .gauge-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #888; margin-top:-2px; margin-bottom: 10px; }
 
-        .confetti { position: absolute; width: 10px; height: 10px; background: #f00; animation: fall linear forwards; pointer-events: none; z-index: 99999; }
-        @keyframes fall { 0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
-        @keyframes pulse { 0% { box-shadow: 0 0 5px var(--gold); } 50% { box-shadow: 0 0 20px var(--gold); } }
-        @keyframes slideDown { 0% { transform: translateY(-50px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
-        .pixel-icon svg { filter: drop-shadow(0 4px 4px rgba(0,0,0,0.8)); transition: transform 0.2s; }
-        .icon-bounce svg { animation: bounce 1s infinite alternate; }
-        @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
+        .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
     </style>
 </head>
-<body class="crt">
+<body>
 
-    <div id="intro-layer">
-        <div class="title-container" id="title-box">
-            <div style="font-size:80px; margin-bottom:10px;">⚽</div>
-            <h1 class="game-title">UWLK4<br><span style="font-size:24px; color:#fff; letter-spacing:4px; display:block; margin-top:10px;">CHAMPIONS LEAGUE</span></h1>
-            <button class="start-btn" onclick="initAudio(); showLogin()">- TAP TO START -</button>
+    <header>
+        <div class="top-row">
+            <h1><img src="target_PNG26.png" style="width:28px;"> Hunter Pro</h1>
+            <button id="pilotBtn" class="pilot-btn" onclick="togglePilot()">
+                <div class="pilot-dot"></div> Auto-Pilot
+            </button>
         </div>
-        <div class="login-box" id="login-box">
-            <h2 style="color:var(--gold); margin-top:0;">MANAGER LICENSE</h2>
-            <input type="text" id="inp-name" class="input-field" placeholder="MANAGER NAME" maxlength="12">
-            <input type="email" id="inp-email" class="input-field" placeholder="EMAIL ADDRESS">
-            <button class="btn btn-green" onclick="createAccount()">REGISTER CLUB</button>
-            <button class="btn" style="background:#444;" onclick="backToTitle()">CANCEL</button>
-        </div>
-    </div>
-
-    <div id="view-map" class="view-container">
-        <div id="map-container"><div id="map"></div></div>
-        <button id="gps-btn" class="map-btn" onclick="toggleGPS()">🚶</button>
-        <div id="home-btn" class="map-btn" onclick="restSquad()">🏠 AT HOME - TAP TO REST</div>
-        <div id="hud-layer">
-            <button class="drawer-toggle" onclick="openContractModal()">OPEN BAG ▲</button>
-            <div class="active-contracts-box">
-                <div style="font-size:14px; color:#aaa; margin-bottom:5px;">ACTIVE CONTRACTS</div>
-                <div class="active-row" id="active-grid"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="view-squad" class="view-container full-panel">
-        <div style="padding:15px; text-align:center;">
-            <h2>SQUAD (OVR: <span id="team-ovr">0</span>)</h2>
-            
-            <div class="league-box" id="league-box">
-                <div class="league-title" id="div-name">DIVISION 10</div>
-                <div class="league-stats">
-                    <span id="league-pts">0 PTS</span> | <span id="league-rec">0-0-0</span>
-                </div>
-            </div>
-
-            <div style="display:flex; gap:10px; justify-content:center; margin-bottom:10px;">
-                <button class="btn btn-green" style="width:auto;" onclick="autoPick()">AUTO-PICK</button>
-                <button class="btn" style="width:auto;" onclick="changeFormation()">TACTICS: <span id="formation-display">4-4-2</span></button>
-            </div>
-        </div>
-        <div class="pitch-container" id="pitch"></div>
         
-        <div style="padding:15px;">
-            <button class="btn btn-purple" onclick="playMatch()" style="margin-top:10px;">⚽ PLAY LEAGUE MATCH</button>
-            <h3 style="color:#aaa; border-bottom:1px solid #444; padding-bottom:5px; margin-top:20px;">ALL SIGNED PLAYERS</h3>
-            <div id="squad-list-container"></div>
+        <select id="filterSelect" onchange="applyFilter()">
+            <option value="elite">🇬🇧 UK & Top Tier</option>
+            <option value="europe">🇪🇺 Rest of Europe</option>
+            <option value="world">🌎 World Scan</option>
+        </select>
+    </header>
+
+    <div id="content">
+        <div style="text-align:center; padding-top:50px; color:#888;">
+            <p style="font-size:2rem; margin-bottom:10px;">🔭</p>
+            <p>Ready to Hunt (60'-85').</p>
+            <p style="font-size:0.8rem; color:#555">Active: Red Card Radar • Live Odds • Pressure Gauge</p>
         </div>
     </div>
 
-    <div id="view-club" class="view-container full-panel">
-        <div style="padding:20px; text-align:center;">
-            <h1 id="club-name-display" style="color:var(--gold); margin:0;">MY CLUB</h1>
-            <div style="display:flex; justify-content:center; gap:20px; margin-top:10px;">
-                <span>💰 <span id="coin-count">0</span></span>
-                <span>👥 <span id="fan-count">0</span></span>
-            </div>
-        </div>
-        <div id="stadium-render" style="height:150px; background:linear-gradient(#87CEEB,#4CAF50); border:4px solid #fff; margin:10px; display:flex; align-items:flex-end; justify-content:center;"></div>
-        <div style="padding:15px;">
-            <h2>IDENTITY & CRAFTING</h2>
-            <div class="preview-area">
-                <div class="preview-box"><div id="kit-preview" style="width:100%; height:100%"></div><div class="preview-label">KIT</div></div>
-                <div class="preview-box"><div id="badge-preview" style="width:100%; height:100%"></div><div class="preview-label">BADGE</div></div>
-            </div>
-            <button class="btn" onclick="toggleClubInventory()" id="inv-toggle-btn">SHOW INVENTORY ▼</button>
-            <div id="club-inventory-container">
-                <h3 style="color:#aaa; border-bottom:1px solid #444;">DYES</h3><div class="grid-4" id="dye-grid"></div>
-                <h3 style="color:#aaa; border-bottom:1px solid #444; margin-top:15px;">PATTERNS</h3><div class="grid-4" id="pattern-grid"></div>
-                <h3 style="color:#aaa; border-bottom:1px solid #444; margin-top:15px;">BADGES</h3><div class="grid-4" id="badge-grid"></div>
-            </div>
-            <h2 style="margin-top:20px;">MANAGEMENT</h2>
-            <div class="grid-2">
-                <div class="slot"><div>⚡ AGENT</div><span style="color:var(--gold)">500 C</span><button class="btn btn-purple" style="font-size:14px;padding:5px;" onclick="buyItem('agent')">BUY</button></div>
-                <div class="slot"><div>🔎 SCOUT</div><span style="color:var(--gold)">200 C</span><button class="btn" style="font-size:14px;padding:5px;" onclick="buyItem('scout')">BUY</button></div>
-            </div>
-            <div style="background:#222; padding:10px; border:1px solid var(--purple); margin:15px 0; display:flex; justify-content:space-between; align-items:center;">
-                <div style="color:var(--purple); font-size:18px;">⚡ SUPER AGENTS</div><div style="font-size:24px; color:#fff;">x<span id="agent-count">0</span></div>
-            </div>
-            <button class="btn btn-green" onclick="buildStadium()">🏗️ SET HOME HERE</button>
-            <button class="btn" onclick="renameClub()">✏️ RENAME CLUB</button>
-            <h2 style="margin-top:30px; color:var(--red);">DATA CONTROL</h2>
-            <div class="grid-2"><button class="btn" onclick="exportSave()">💾 EXPORT</button><button class="btn" onclick="document.getElementById('file-input').click()">📂 IMPORT</button></div>
-            <input type="file" id="file-input" style="display:none" onchange="importSave(this)">
-            <button class="btn btn-red" onclick="hardReset()" style="margin-top:10px;">⚠️ WIPE DATA</button>
-        </div>
-    </div>
+    <button class="scan-btn" onclick="runScan()" id="mainBtn">🎯 SCAN MARKETS</button>
 
-    <div id="view-mgr" class="view-container full-panel">
-        <div style="padding:20px; text-align:center;">
-            <h2>MANAGER PROFILE</h2>
-            <div id="manager-preview" class="mgr-preview"></div>
-            <h1 id="mgr-name-display" style="color:var(--text); margin:10px 0 0 0;">NAME</h1>
-            <div style="color:#aaa; font-size:14px;">ID: <span id="mgr-id-display" style="color:var(--gold)">---</span></div>
-            <div style="margin-top:20px;">
-                <div class="customizer-row"><button class="arrow-btn" onclick="changeMgrLook('hair', -1)">◄</button><span>HAIR STYLE</span><button class="arrow-btn" onclick="changeMgrLook('hair', 1)">►</button></div>
-                <div class="customizer-row"><button class="arrow-btn" onclick="changeMgrLook('hairCol', -1)">◄</button><span>HAIR COLOR</span><button class="arrow-btn" onclick="changeMgrLook('hairCol', 1)">►</button></div>
-                <div class="customizer-row"><button class="arrow-btn" onclick="changeMgrLook('skin', -1)">◄</button><span>SKIN TONE</span><button class="arrow-btn" onclick="changeMgrLook('skin', 1)">►</button></div>
-                <div class="customizer-row"><button class="arrow-btn" onclick="changeMgrLook('suit', -1)">◄</button><span>SUIT COLOR</span><button class="arrow-btn" onclick="changeMgrLook('suit', 1)">►</button></div>
-            </div>
-            <button class="btn btn-purple" onclick="toggleAchievements()" style="margin-top:20px;">🏆 VIEW ACHIEVEMENTS</button>
-            <div id="achievements-box" style="display:none; margin-top:20px;"><div id="ach-list"></div></div>
-            <div class="stats-grid">
-                <div class="stat-item"><span class="stat-val" id="stat-dist">0.0</span><span class="stat-lbl">KM WALKED</span></div>
-                <div class="stat-item"><span class="stat-val" id="stat-contracts">0</span><span class="stat-lbl">SIGNED</span></div>
-                <div class="stat-item"><span class="stat-val" id="stat-wins">0</span><span class="stat-lbl">WINS</span></div>
-                <div class="stat-item"><span class="stat-val" id="stat-fans">0</span><span class="stat-lbl">FAN VISITS</span></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="nav-bar">
-        <div class="nav-btn active" onclick="switchView('map', this); playSound('click')">MAP</div>
-        <div class="nav-btn" onclick="switchView('squad', this); playSound('click')">SQUAD</div>
-        <div class="nav-btn" onclick="switchView('club', this); playSound('click')">CLUB</div>
-        <div class="nav-btn" onclick="switchView('mgr', this); playSound('click')">BOSS</div>
-    </div>
-
-    <div id="modal-overlay"><div class="modal-box" id="modal-content"></div></div>
-
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const CONFIG = { INTERACTION_RADIUS: 250, HOME_RADIUS: 200, SPAWN_DIST_TRIGGER: 500, DISTANCES: { BRONZE: 500, SILVER: 800, GOLD: 1500, PLATINUM: 3000 } };
-        const SAVE_KEY = 'pitchwalker_master_save';
-        const DATA = { FIRST: ["Lionel","Cristiano","Erling","Kylian","Kevin","Harry","Mo"], LAST: ["Messy","Penaldo","Haal-and-Oats","Mmmbop","De Brownie","Pain","Salad"], POS: ['GK','DEF','MID','FWD'], TRAITS: ["Glass Ankles","Penalty Merchant","VAR Favorite","Brick Wall"], 
-            FACES: { 
-                EYES:[`<rect x="11" y="14" width="2" height="2" fill="#000"/><rect x="19" y="14" width="2" height="2" fill="#000"/>`, `<rect x="11" y="14" width="3" height="1" fill="#000"/><rect x="18" y="14" width="3" height="1" fill="#000"/>`], 
-                HAIR:[`<path d="M10 6 H22 V10 H10 Z" />`, `<path d="M10 4 H22 V12 H10 Z" />`, `<path d="M12 2 H20 V8 H12 Z" />`, `<path d="M8 4 H24 V14 H8 Z" />`],
-                MOUTH:[`<rect x="13" y="19" width="6" height="1" fill="#a55"/>`, `<path d="M13 19 Q16 22 19 19" fill="none" stroke="#a55" stroke-width="1"/>`] 
-            } 
-        };
-        const MGR_OPTS = { HAIR: DATA.FACES.HAIR, SKIN: ['#ffccaa', '#8d5524', '#c68642', '#e0ac69'], HAIR_COL: ['#000', '#552200', '#ccaa00', '#888'], SUIT: ['#0f3460', '#1a1a2e', '#4caf50', '#8B4513'] };
-        const ACHIEVEMENTS = [ { id:'walk_5km', title:"Pro Walker", desc:"Walk 5km", target:5000, stat:'dist', rewardType:'hair', rewardIdx:3, item:"AFRO HAIR" }, { id:'sign_10', title:"Scout Master", desc:"Sign 10 Players", target:10, stat:'contracts', rewardType:'suit', rewardIdx:3, item:"BROWN SUIT" }, { id:'dream_team', title:"Dream Team", desc:"Reach 85 OVR", target:85, stat:'bestOvr', item:"1000 Coins" }, { id:'plat_find', title:"Treasure Hunter", desc:"Find Platinum Case", target:1, stat:'platFound', item:"10 SUPER AGENTS" } ];
-        const DYES = { 'red': '#e63946', 'blue': '#4361ee', 'green': '#4caf50', 'gold': '#ffd700', 'white': '#ffffff', 'black': '#111111', 'purple': '#9c27b0', 'cyan': '#00bcd4' };
+        const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
+        const ELITE_IDS = [39, 40, 41, 42, 179, 140, 78, 135, 61, 2, 3, 45, 48, 143, 529, 556, 81];
+        const EU_COUNTRIES = [
+            "Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", 
+            "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", 
+            "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", 
+            "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", 
+            "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", 
+            "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", 
+            "Spain", "Sweden", "Switzerland", "Turkey", "Ukraine", "Wales"
+        ];
+
+        let allMatches = [];
+        let pilotMode = false;
+        let pilotInterval;
         
-        const PATTERNS = [ (c1,c2) => `<rect x="2" y="1" width="8" height="8" fill="${c1}"/>`, (c1,c2) => `<rect x="2" y="1" width="8" height="8" fill="${c1}"/><rect x="4" y="1" width="2" height="8" fill="${c2}"/><rect x="8" y="1" width="2" height="8" fill="${c2}"/>`, (c1,c2) => `<rect x="2" y="1" width="8" height="8" fill="${c1}"/><rect x="2" y="3" width="8" height="2" fill="${c2}"/><rect x="2" y="7" width="8" height="2" fill="${c2}"/>` ];
-        const BADGES = [(c1,c2) => `<rect x="2" y="1" width="8" height="8" fill="${c1}" stroke="#fff" stroke-width="0.5"/><circle cx="6" cy="5" r="2" fill="${c2}"/>`, (c1,c2) => `<circle cx="6" cy="5" r="4" fill="${c1}" stroke="#fff" stroke-width="0.5"/><path d="M4 5 H8" stroke="${c2}" stroke-width="2"/>`];
-        const FORMATIONS = {
-            '4-4-2': { GK:{t:'85%',l:'50%'}, LB:{t:'70%',l:'20%'}, CB1:{t:'70%',l:'40%'}, CB2:{t:'70%',l:'60%'}, RB:{t:'70%',l:'80%'}, LM:{t:'45%',l:'20%'}, CM1:{t:'45%',l:'40%'}, CM2:{t:'45%',l:'60%'}, RM:{t:'45%',l:'80%'}, ST1:{t:'15%',l:'35%'}, ST2:{t:'15%',l:'65%'} },
-            '4-3-3': { GK:{t:'85%',l:'50%'}, LB:{t:'70%',l:'20%'}, CB1:{t:'70%',l:'40%'}, CB2:{t:'70%',l:'60%'}, RB:{t:'70%',l:'80%'}, CM1:{t:'50%',l:'30%'}, CM2:{t:'50%',l:'50%'}, CM3:{t:'50%',l:'70%'}, LW:{t:'20%',l:'20%'}, ST1:{t:'15%',l:'50%'}, RW:{t:'20%',l:'80%'} },
-            '3-5-2': { GK:{t:'85%',l:'50%'}, CB1:{t:'70%',l:'30%'}, CB2:{t:'70%',l:'50%'}, CB3:{t:'70%',l:'70%'}, LM:{t:'45%',l:'15%'}, CDM1:{t:'55%',l:'40%'}, CDM2:{t:'55%',l:'60%'}, RM:{t:'45%',l:'85%'}, CAM:{t:'35%',l:'50%'}, ST1:{t:'15%',l:'35%'}, ST2:{t:'15%',l:'65%'} }
-        };
+        const content = document.getElementById('content');
+        const mainBtn = document.getElementById('mainBtn');
+        const pilotBtn = document.getElementById('pilotBtn');
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        let state = { user: {id:null}, manager: { look:{h:0, hc:0, s:0, sc:0}, stats:{dist:0, contracts:0, wins:0, fans:0, bestOvr:0, platFound:0}, unlocks:{hair:[0,1,2], skin:[0,1,2,3], hairCol:[0,1,2,3], suit:[0,1,2]}, achieved:[] }, squad: [], active: [null, null], storage: Array(9).fill(null), lineup: {}, club: { name:"MY CLUB", coins:100, fans:0, level:1, home:null, kit:{pat:0, col1:'red', col2:'white'}, badge:{shp:0, col1:'blue', col2:'gold'}, inv: { dyes:{}, patterns:[0,1], badges:[0], agents:0 } }, league: { div:10, pts:0, w:0, d:0, l:0 }, formation:'4-4-2', world: { lastReset:0, items:[] } };
-        let map, mgrMarker, rangeCircle, homeMarker, watchId, isWalking=false, lastPos=null, spawnAcc=0, mapMarkers=[], audioCtx;
-
-        function init() { loadGame(); repairSaveData(); if (state.user && state.user.id) { document.getElementById('intro-layer').style.display = 'none'; startGame(); } else { document.getElementById('intro-layer').style.display = 'flex'; } }
-        function repairSaveData() { try { if(!state.manager.look) state.manager.look={h:0,hc:0,s:0,sc:0}; if(!state.club.kit.col1) state.club.kit={pat:0,col1:'red',col2:'white'}; if(!state.club.inv.dyes) state.club.inv={dyes:{'red':5},patterns:[0],badges:[0],agents:0}; if(Object.keys(state.club.inv.dyes).length===0) state.club.inv.dyes={'red':5}; if(!state.league) state.league={div:10,pts:0,w:0,d:0,l:0}; if(!state.formation) state.formation='4-4-2'; } catch(e) { state.club.inv={dyes:{'red':5},patterns:[0],badges:[0],agents:0}; } saveGame(); }
-
-        // --- FACE GEN ---
-        function getFaceInner(opts) {
-            const h = DATA.FACES.HAIR[opts.h%4] || DATA.FACES.HAIR[0];
-            const e = DATA.FACES.EYES[opts.e%2] || DATA.FACES.EYES[0];
-            const m = DATA.FACES.MOUTH[opts.m%2] || DATA.FACES.MOUTH[0];
-            return `<rect x="10" y="8" width="12" height="14" fill="${opts.skin}"/><g fill="#000">${e}</g>${m}<g fill="${opts.hc}">${h}</g>`;
-        }
-        function getManagerSVGString() { let m = state.manager.look || {h:0,hc:0,s:0,sc:0}; return `<svg viewBox="0 0 32 32">${getFaceInner({skin:MGR_OPTS.SKIN[m.s%4], hc:MGR_OPTS.HAIR_COL[m.hc%4], h:m.h, e:0, m:0})}<rect x="10" y="16" width="12" height="12" fill="${MGR_OPTS.SUIT[m.sc%4]}"/><rect x="14" y="16" width="4" height="4" fill="#fff"/><rect x="10" y="28" width="4" height="4" fill="#000"/><rect x="18" y="28" width="4" height="4" fill="#000"/></svg>`; }
-        function getPlayerSVGString(p) { const f=p.face||{skin:'#ffccaa',h:0,e:0,m:0,hc:'#000'}; return `<svg viewBox="0 0 32 32">${getFaceInner({skin:f.skin,hc:f.hc,h:f.h,e:f.e,m:f.m})}<rect x="8" y="22" width="16" height="10" fill="${DYES[state.club.kit.col1]}"/><rect x="8" y="22" width="16" height="10" fill="url(#kitPat)" opacity="0.5"/></svg>`; }
-
-        // --- GAMEPLAY ---
-        function generatePlayer(tier) {
-            const pos = DATA.POS[Math.floor(Math.random()*4)];
-            const fName = DATA.FIRST[Math.floor(Math.random()*DATA.FIRST.length)];
-            const lName = DATA.LAST[Math.floor(Math.random()*DATA.LAST.length)];
-            let min = 50; if(tier==='SILVER') min=70; if(tier==='GOLD') min=85; if(tier==='PLATINUM') min=90;
-            const r = () => Math.floor(Math.random()*(99-min)+min);
-            const stats = { pac: r(), sho: r(), pas: r(), dri: r(), def: r(), phy: r() };
-            let ovr = Math.floor((stats.pac + stats.sho + stats.pas + stats.dri + stats.def + stats.phy)/6);
-            const face = { skin: MGR_OPTS.SKIN[Math.floor(Math.random()*4)], h: Math.floor(Math.random()*4), e: Math.floor(Math.random()*2), m: Math.floor(Math.random()*2), hc: '#000' };
-            return { id: Date.now(), name: `${fName} ${lName}`, pos: pos, ovr: ovr, energy: 100, trait: "Rookie", stats: stats, face: face };
+        function playPing() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
         }
 
-        // --- NEW: TACTICS & LEAGUE ---
-        function changeFormation() {
-            const forms = Object.keys(FORMATIONS);
-            const curr = forms.indexOf(state.formation);
-            state.formation = forms[(curr + 1) % forms.length];
-            document.getElementById('formation-display').innerText = state.formation;
-            autoPick(); // Auto rearrange
+        function togglePilot() {
+            pilotMode = !pilotMode;
+            if(pilotMode) {
+                pilotBtn.classList.add('active');
+                pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (60s)`;
+                playPing(); 
+                runScan(true); 
+                pilotInterval = setInterval(() => runScan(true), 60000); 
+            } else {
+                pilotBtn.classList.remove('active');
+                pilotBtn.innerHTML = `<div class="pilot-dot"></div> Auto-Pilot`;
+                clearInterval(pilotInterval);
+            }
         }
 
-        function playMatch() {
-            const count = Object.values(state.lineup).filter(x => x !== null).length;
-            if (count < 11) { showModal("INCOMPLETE SQUAD", "You need 11 players."); return; }
-            
-            // Calculate OVR
-            let myOvr = 0;
-            Object.values(state.lineup).forEach(pid => { if(pid) myOvr += state.squad.find(p=>p.id===pid).ovr; });
-            myOvr = Math.round(myOvr / 11);
-            
-            // Opponent OVR based on Div
-            const oppOvr = 50 + ((10 - state.league.div) * 5);
-            
-            // Simulation
-            let myScore = 0; let oppScore = 0;
-            const events = [];
-            for(let i=0; i<5; i++) {
-                const r = Math.random() * (myOvr + oppOvr);
-                if(r < myOvr) { 
-                    if(Math.random() > 0.6) { myScore++; events.push(`<span class='log-goal'>${i*18}' GOAL! Your Team scores!</span>`); }
-                    else events.push(`${i*18}' Chance for you... missed.`);
+        async function runScan(isAuto = false) {
+            if(!isAuto) {
+                mainBtn.innerText = "Scanning Global Feeds..."; mainBtn.disabled = true;
+                content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data...</p>";
+            } else {
+                mainBtn.innerText = "🤖 Auto-Scanning...";
+            }
+            try {
+                const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", {
+                    headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" }
+                });
+                const data = await res.json();
+                if(!data.response || data.results === 0) {
+                    if(!isAuto) content.innerHTML = "<p style='text-align:center; margin-top:50px'>No live games.</p>";
+                    allMatches = [];
                 } else {
-                    if(Math.random() > 0.6) { oppScore++; events.push(`<span class='log-miss'>${i*18}' GOAL! Opponent scores!</span>`); }
-                    else events.push(`${i*18}' Opponent shoots... SAVE!`);
+                    allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
+                    allMatches.sort((a, b) => b.fixture.status.elapsed - a.fixture.status.elapsed);
+                    applyFilter(isAuto);
                 }
+            } catch(e) { if(!isAuto) content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#da3633'>Error.</p>"; }
+            mainBtn.innerText = "🎯 SCAN MARKETS"; mainBtn.disabled = false;
+        }
+
+        function applyFilter(isAuto = false) {
+            const mode = document.getElementById('filterSelect').value;
+            content.innerHTML = "";
+            let highValueFound = false;
+            if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
+
+            const filtered = allMatches.filter(m => {
+                const league = (m.league.name || "").toLowerCase();
+                const blocked = ["friendly", "friendlies", "club friendlies", "u19", "u20", "u21", "u23", "youth", "reserve", "reserves"];
+                if(blocked.some(word => league.includes(word))) return false; 
+                const lid = m.league.id;
+                const country = m.league.country;
+                if (mode === 'elite') return ELITE_IDS.includes(lid); 
+                else if (mode === 'europe') return EU_COUNTRIES.includes(country) || ELITE_IDS.includes(lid); 
+                else return true;
+            });
+
+            if(filtered.length === 0) {
+                content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found.</p>`;
+            } else {
+                filtered.forEach(m => {
+                    const t = m.fixture.status.elapsed;
+                    const s = m.goals;
+                    if ((Math.abs(s.home - s.away) === 1 && t > 75) || (s.home === s.away && t > 75)) highValueFound = true;
+                    createCard(m);
+                });
+            }
+            if(isAuto && highValueFound) playPing();
+        }
+
+        function createCard(m) {
+            const div = document.createElement('div');
+            div.className = 'match-card';
+            
+            const h = m.teams.home;
+            const a = m.teams.away;
+            const s = m.goals;
+            const t = m.fixture.status.elapsed;
+            const lid = m.league.id;
+            
+            let hGoals = "", aGoals = "";
+            let hRed = false, aRed = false;
+
+            if (m.events) {
+                hGoals = m.events.filter(e => e.type === 'Goal' && e.team.id === h.id).map(e => e.time.elapsed + "'").join(', ');
+                aGoals = m.events.filter(e => e.type === 'Goal' && e.team.id === a.id).map(e => e.time.elapsed + "'").join(', ');
+                
+                // RED CARD DETECTION
+                hRed = m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === h.id);
+                aRed = m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === a.id);
+            }
+
+            // RED CARD HTML
+            const hRedBadge = hRed ? "<div class='red-card-badge'>🟥 RED CARD</div>" : "";
+            const aRedBadge = aRed ? "<div class='red-card-badge'>🟥 RED CARD</div>" : "";
+
+            let upsetHtml = "";
+            if (ELITE_IDS.includes(lid) && s.home < s.away && (s.away - s.home === 1)) {
+                upsetHtml = `<div class="upset-badge">🔥 UPSET ALERT: ${h.name} Chasing!</div>`;
+            }
+
+            let predText = "Monitoring...";
+            let confVal = 0;
+            let confClass = "conf-low";
+
+            if (s.home === s.away) {
+                predText = "⚠️ Draw / Tight";
+                confVal = (t > 75) ? 75 : 70;
+                // If opponent has red card, boost confidence for a winner
+                if(hRed || aRed) { predText = "⚔️ 10 Men vs 11"; confVal = 85; }
+            } 
+            else if (Math.abs(s.home - s.away) === 1) {
+                predText = "⚽ Late Goal Likely";
+                confVal = (t > 75) ? 90 : 82;
+            } 
+            else {
+                predText = "🔒 Result Likely Safe";
+                confVal = 94;
             }
             
-            // Process Result
-            let resText = "DRAW";
-            if(myScore > oppScore) { resText="WIN"; state.league.pts+=3; state.league.w++; state.manager.stats.wins++; playSound('fanfare'); }
-            else if(myScore < oppScore) { resText="LOSS"; state.league.l++; }
-            else { state.league.pts+=1; state.league.d++; }
+            if(upsetHtml !== "") { predText = "🔥 Favorite Chasing"; confVal = 95; }
             
-            // Promotion Check (Simple: 15 pts to promote)
-            if(state.league.pts >= 15) {
-                state.league.div--; state.league.pts=0; state.league.w=0; state.league.d=0; state.league.l=0;
-                events.push("<b style='color:gold'>PROMOTION! WELCOME TO DIV " + state.league.div + "</b>");
-            }
+            if(confVal >= 80) confClass = "conf-high"; else if(confVal >= 60) confClass = "conf-med";
 
-            const html = `<div class="score-board">${myScore} - ${oppScore}</div><div class="live-match-log">${events.join('<br>')}</div>`;
-            showModal("MATCH RESULT: " + resText, html);
-            saveGame(); updateUI();
+            div.innerHTML = `
+                <div class="league-name">${m.league.country} • ${m.league.name}</div>
+                <div class="score-row">
+                    <div class="team-col" style="align-items:flex-end; text-align:right;">
+                        <span class="team-name">${h.name}</span>
+                        <span class="goal-times">${hGoals}</span>
+                        ${hRedBadge}
+                    </div>
+                    <span class="score-box">${s.home}-${s.away}</span>
+                    <div class="team-col" style="align-items:flex-start; text-align:left;">
+                        <span class="team-name">${a.name}</span>
+                        <span class="goal-times">${aGoals}</span>
+                        ${aRedBadge}
+                    </div>
+                </div>
+                <div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">${t}' Played</div>
+                ${upsetHtml}
+                <div class="pred-row">
+                    <span class="pred-text" id="pred-text-${m.fixture.id}">${predText}</span>
+                    <span class="conf-badge ${confClass}" id="pred-badge-${m.fixture.id}">${confVal}%</span>
+                </div>
+                <div class="btn-row">
+                    <button class="player-btn" onclick="checkPlayers(this, ${m.fixture.id})">🕵️ Check Players</button>
+                    <button class="analyze-btn" onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name}', '${a.name}')">⚡ Analyze & Odds</button>
+                </div>
+                <div id="p-${m.fixture.id}"></div>
+                <div id="stats-${m.fixture.id}" class="analysis-box"></div>
+            `;
+            content.appendChild(div);
         }
 
-        function sellPlayer(id) {
-            const pIdx = state.squad.findIndex(x=>x.id===id);
-            if(pIdx > -1) {
-                const p = state.squad[pIdx];
-                const val = p.ovr * 10;
-                if(confirm(`Sell ${p.name} for ${val} Coins?`)) {
-                    state.squad.splice(pIdx, 1);
-                    state.club.coins += val;
-                    // Remove from lineup if active
-                    Object.keys(state.lineup).forEach(k => { if(state.lineup[k]===id) state.lineup[k]=null; });
-                    saveGame(); updateUI(); document.getElementById('modal-overlay').style.display='none'; playSound('coin');
+        async function deepAnalyze(btn, id, hName, aName) {
+            btn.innerText = "Scanning...";
+            const statBox = document.getElementById(`stats-${id}`);
+            const predText = document.getElementById(`pred-text-${id}`);
+            const predBadge = document.getElementById(`pred-badge-${id}`);
+            statBox.style.display = 'block';
+            statBox.innerHTML = "<div style='color:#888; text-align:center;'>Fetching Data...</div>";
+
+            try {
+                // PARALLEL FETCH: STATS + ODDS
+                const [statRes, oddsRes] = await Promise.all([
+                    fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
+                    fetch(`https://v3.football.api-sports.io/odds/live?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } })
+                ]);
+                
+                const statData = await statRes.json();
+                const oddsData = await oddsRes.json();
+
+                if(!statData.response || statData.response.length === 0) {
+                    statBox.innerHTML = "<div style='color:#da3633; text-align:center;'>No Live Stats.</div>";
+                    btn.innerText = "⚡ Analyze";
+                    return;
                 }
-            }
+
+                // 1. PROCESS STATS
+                const hStats = statData.response[0].statistics;
+                const aStats = statData.response[1].statistics;
+                const getStat = (arr, type) => { const i = arr.find(s => s.type === type); return i ? (i.value || 0) : 0; };
+
+                const hSoT = getStat(hStats, "Shots on Goal");
+                const aSoT = getStat(aStats, "Shots on Goal");
+                const hTotal = getStat(hStats, "Total Shots");
+                const aTotal = getStat(aStats, "Total Shots");
+                const hCorn = getStat(hStats, "Corner Kicks");
+                const aCorn = getStat(aStats, "Corner Kicks");
+
+                const hPressure = (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
+                const aPressure = (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
+                const totalPress = hPressure + aPressure || 1; 
+                const hPercent = Math.round((hPressure / totalPress) * 100);
+                const aPercent = 100 - hPercent;
+
+                // 2. PROCESS ODDS
+                let oddsHTML = "<div style='text-align:center; color:#666; font-size:0.8rem; margin-top:5px;'>Odds Locked / Unavailable</div>";
+                if(oddsData.response && oddsData.response.length > 0 && oddsData.response[0].odds.length > 0) {
+                    const vals = oddsData.response[0].odds[0].values; // Match Winner
+                    const homeOdd = vals.find(v => v.value === "Home")?.odd || "-";
+                    const drawOdd = vals.find(v => v.value === "Draw")?.odd || "-";
+                    const awayOdd = vals.find(v => v.value === "Away")?.odd || "-";
+                    oddsHTML = `<div style="display:flex; justify-content:space-between; margin-top:8px; background:#111; padding:5px; border-radius:4px; font-family:monospace;">
+                        <span style="color:#2ea043">1: ${homeOdd}</span>
+                        <span style="color:#888">X: ${drawOdd}</span>
+                        <span style="color:#a371f7">2: ${awayOdd}</span>
+                    </div>`;
+                }
+
+                // 3. LOGIC & RENDER
+                let verdict = "";
+                let vColor = "#888";
+                const diff = Math.abs(hPressure - aPressure);
+
+                if (totalPress < 20) { verdict = "💤 LOW ENERGY"; vColor = "#8b949e"; }
+                else if (diff > 30) { 
+                    const leader = hPressure > aPressure ? hName : aName;
+                    verdict = `🔥 SIEGE: ${leader}`; vColor = "#2ea043"; 
+                } 
+                else if (totalPress > 50 && diff < 15) { verdict = "⚔️ OPEN GAME"; vColor = "#a371f7"; } 
+                else { verdict = "⚖️ BALANCED"; vColor = "#d29922"; }
+
+                statBox.innerHTML = `
+                    <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}</div>
+                    
+                    <div class="gauge-labels">
+                        <span>${hName} (${hPercent}%)</span>
+                        <span>${aName} (${aPercent}%)</span>
+                    </div>
+                    <div class="gauge-container">
+                        <div class="gauge-home" style="width:${hPercent}%"></div>
+                        <div class="gauge-away" style="width:${aPercent}%"></div>
+                    </div>
+
+                    <div class="stat-bar">
+                        <span>Shots on Target</span>
+                        <span class="stat-val">${hSoT} - ${aSoT}</span>
+                    </div>
+                    <div class="stat-bar">
+                        <span>Corners</span>
+                        <span class="stat-val">${hCorn} - ${aCorn}</span>
+                    </div>
+                    ${oddsHTML}
+                `;
+                
+                // Update Badge
+                predText.innerText = verdict; 
+                predText.style.color = vColor;
+                
+            } catch(e) { statBox.innerHTML = "<div style='color:#da3633;'>Error analyzing.</div>"; }
+            btn.innerText = "⚡ Analyze & Odds";
         }
 
-        function trainPlayer(id) {
-            const p = state.squad.find(x=>x.id===id);
-            if(p) {
-                const cost = p.ovr * 10;
-                if(state.club.coins >= cost) {
-                    state.club.coins -= cost;
-                    p.ovr++;
-                    // boost random stat
-                    const s = Object.keys(p.stats);
-                    p.stats[s[Math.floor(Math.random()*s.length)]]++;
-                    saveGame(); showPlayerCard(p); updateUI(); playSound('coin');
-                } else alert("Need " + cost + " coins");
-            }
+        async function checkPlayers(btn, id) {
+            btn.innerText = "Checking...";
+            try {
+                const res = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, {
+                    headers: { "x-rapidapi-key": API_KEY }
+                });
+                const data = await res.json();
+                const area = document.getElementById(`p-${id}`);
+                
+                let html = "";
+                if(data.response && data.response.length > 0) {
+                    data.response.forEach(t => t.players.forEach(p => {
+                        const s = p.statistics[0];
+                        if(s.shots.on >= 2 && s.goals.total === 0) {
+                            html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#2ea043">
+                                        <span>🎯 ${p.player.name} To Score</span>
+                                        <span style="font-weight:bold">${s.shots.on} SoT</span>
+                                     </div>`;
+                        }
+                        if(s.fouls.committed >= 3 && !s.cards.yellow) {
+                            // WHITE TEXT for Card Risk
+                            html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#ffffff">
+                                        <span>🟨 ${p.player.name} Card Risk</span>
+                                        <span style="font-weight:bold">${s.fouls.committed} Fouls</span>
+                                     </div>`;
+                        }
+                    }));
+                }
+                area.innerHTML = html || "<div style='font-size:0.8rem; color:#666; text-align:center; margin-top:5px'>No high value signals.</div>";
+            } catch(e) { }
+            btn.style.display = 'none';
         }
 
-        // --- UTILS ---
-        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
-        function playSound(type) { if(!audioCtx) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); const now = audioCtx.currentTime; if(type === 'click') { osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(now); osc.stop(now + 0.1); } else if (type === 'coin') { osc.frequency.setValueAtTime(1000, now); osc.frequency.setValueAtTime(1500, now + 0.1); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3); osc.start(now); osc.stop(now + 0.3); } else if (type === 'fanfare') { playTone(523.25, 0); playTone(659.25, 0.1); playTone(783.99, 0.2); playTone(1046.50, 0.3, 0.4); } }
-        function playTone(freq, start, duration=0.1) { const o = audioCtx.createOscillator(); const g = audioCtx.createGain(); o.connect(g); g.connect(audioCtx.destination); o.frequency.value = freq; g.gain.value = 0.1; o.start(audioCtx.currentTime + start); o.stop(audioCtx.currentTime + start + duration); }
-        function pulse(ms=50) { if(navigator.vibrate) navigator.vibrate(ms); }
-        function showLogin() { document.getElementById('title-box').style.display='none'; document.getElementById('login-box').style.display='block'; playSound('click'); }
-        function backToTitle() { document.getElementById('login-box').style.display='none'; document.getElementById('title-box').style.display='block'; playSound('click'); }
-        function createAccount() { const n = document.getElementById('inp-name').value.trim(); const e = document.getElementById('inp-email').value.trim(); if(n.length < 3 || e.length < 5) { alert("Invalid details"); return; } state.user = { id: 'MGR-'+Math.random().toString(36).substr(2,6).toUpperCase(), name: n.toUpperCase(), email: e }; saveGame(); startGame(); }
-        function startGame() { document.getElementById('intro-layer').style.display = 'none'; document.getElementById('view-map').classList.add('active'); navigator.geolocation.getCurrentPosition(pos => { const { latitude: lat, longitude: lng } = pos.coords; map = L.map('map', { zoomControl: false }).setView([lat, lng], 17); L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map); mgrMarker = L.marker([lat, lng], {icon: getManagerIcon()}).addTo(map); rangeCircle = L.circle([lat, lng], { color:'#4cc9f0', fillColor:'#4cc9f0', fillOpacity:0.1, radius:CONFIG.INTERACTION_RADIUS }).addTo(map); if(state.club.home) renderHome(); if(state.world.items.length === 0) spawnItems(lat, lng, 20); checkSpawns(lat, lng); }, () => alert("GPS Required")); renderStadium(); updateUI(); updateClubInv(); updateProfileUI(); }
-        function getManagerIcon() { return L.divIcon({ className:'pixel-icon icon-bounce', html:getManagerSVGString(), iconSize:[64,64], iconAnchor:[32,60] }); }
-        function updateProfileUI() { if(state.user && state.user.id) { document.getElementById('mgr-name-display').innerText = state.user.name; document.getElementById('mgr-id-display').innerText = state.user.id; document.getElementById('manager-preview').innerHTML = getManagerSVGString(); document.getElementById('stat-dist').innerText = (state.manager.stats.dist/1000).toFixed(1); document.getElementById('stat-contracts').innerText = state.manager.stats.contracts; document.getElementById('stat-wins').innerText = state.manager.stats.wins; document.getElementById('stat-fans').innerText = state.manager.stats.fans; } }
-        function toggleClubInventory() { const el = document.getElementById('club-inventory-container'); const btn = document.getElementById('inv-toggle-btn'); if (el.style.display === 'block') { el.style.display = 'none'; btn.innerText = 'OPEN INVENTORY ▼'; } else { el.style.display = 'block'; btn.innerText = 'CLOSE INVENTORY ▲'; updateClubInv(); } playSound('click'); }
-        function openContractModal() { let html = `<h3>CONTRACT STORAGE</h3><div class="grid-3">` + state.storage.map((c,i) => `<div class="slot" onclick="activate(${i}); document.getElementById('modal-overlay').style.display='none'">${c?'💼 '+c.tier:'EMPTY'}</div>`).join('') + `</div>`; showModal("YOUR BAG", html); }
-        function changeMgrLook(t, d) { const m=state.manager.look; const unlocked=state.manager.unlocks[t]||[0]; let currentIdx = unlocked.indexOf(m[getPropertyKey(t)]); if(currentIdx === -1) currentIdx = 0; let newIdx = (currentIdx + d + unlocked.length) % unlocked.length; m[getPropertyKey(t)] = unlocked[newIdx]; saveGame(); updateProfileUI(); if(mgrMarker) mgrMarker.setIcon(getManagerIcon()); playSound('click'); }
-        function getPropertyKey(type) { if(type==='hair') return 'h'; if(type==='hairCol') return 'hc'; if(type==='skin') return 's'; if(type==='suit') return 'sc'; }
-        function checkSpawns(lat,lng){if(Date.now()-state.world.lastReset>3600000){state.world.items=[];state.world.lastReset=Date.now();spawnItems(lat,lng,20);}renderMarkers();}
-        function spawnItems(lat,lng,count){for(let i=0;i<count;i++)state.world.items.push({id:Date.now()+i,type:Math.random()>0.5?'FAN':'BOX',lat:lat+(Math.random()-0.5)*0.015,lng:lng+(Math.random()-0.5)*0.015,col:false});saveGame();}
-        function renderMarkers(){mapMarkers.forEach(m=>map.removeLayer(m));mapMarkers=[];state.world.items.forEach(i=>{if(i.col)return;const svg=i.type==='BOX'?SVGS.BRIEFCASE:SVGS.FANZONE;const icon=L.divIcon({className:`pixel-icon`,html:svg,iconSize:[48,48],iconAnchor:[24,24]});const m=L.marker([i.lat,i.lng],{icon:icon}).addTo(map);m.on('click',()=>interact(i));mapMarkers.push(m);});}
-        function interact(i){const dist=mgrMarker.getLatLng().distanceTo([i.lat,i.lng]);if(dist<=CONFIG.INTERACTION_RADIUS){if(i.type==='BOX'){const idx=state.storage.findIndex(s=>s===null);if(idx!==-1){const r=Math.random(); let tier='BRONZE'; if(r>0.5) tier='SILVER'; if(r>0.8) tier='GOLD'; if(r>0.95) tier='PLATINUM'; state.storage[idx]={id:Date.now(),tier:tier,required:CONFIG.DISTANCES[tier],progress:0};i.col=true;showModal("GOT IT",`${tier} Contract stored.`); playSound('coin'); pulse(50);}else showModal("FULL","Inventory full");}else{const c=50;const f=20;state.club.coins+=c;state.club.fans+=f;state.manager.stats.fans++;let msg=`+${c} Coins, +${f} Fans<br>`;const r=Math.random();if(r<0.05){state.club.inv.agents++;msg+=`<span style="color:var(--purple)">LEGENDARY AGENT!</span>`;}else if(r<0.6){const k=Object.keys(DYES);const d=k[Math.floor(Math.random()*k.length)];state.club.inv.dyes[d]=(state.club.inv.dyes[d]||0)+1;msg+=`Found ${d.toUpperCase()} Dye`;}i.col=true;showModal("LOOT",msg); playSound('coin'); pulse(100);}saveGame();renderMarkers();updateUI();updateClubInv();updateProfileUI();}else showModal("TOO FAR","Get closer");}
-        function toggleGPS(){const btn=document.getElementById('gps-btn');if(!isWalking){isWalking=true;btn.innerText="🛑";watchId=navigator.geolocation.watchPosition(onLoc,null,{enableHighAccuracy:true});}else{isWalking=false;btn.innerText="🚶";navigator.geolocation.clearWatch(watchId);}}
-        function onLoc(pos){const ll=new L.LatLng(pos.coords.latitude,pos.coords.longitude);mgrMarker.setLatLng(ll);rangeCircle.setLatLng(ll);map.panTo(ll);if(lastPos&&lastPos.distanceTo(ll)>2){const d=lastPos.distanceTo(ll);state.manager.stats.dist+=d;state.active.forEach(c=>{if(c&&c.progress<c.required)c.progress+=d;});spawnAcc+=d;if(spawnAcc>CONFIG.SPAWN_DIST_TRIGGER){spawnAcc=0;spawnItems(ll.lat,ll.lng,5);renderMarkers();}saveGame();updateUI();updateProfileUI(); checkAchievements();}lastPos=ll;}
-        function activate(i){const t=state.active.findIndex(s=>s===null);if(t!==-1&&state.storage[i]){state.active[t]=state.storage[i];state.storage[i]=null;saveGame();updateUI(); playSound('click');}}
-        function finish(i){if(!state.active[i]||state.active[i].progress<state.active[i].required)return;const p=generatePlayer(state.active[i].tier);state.squad.push(p);state.active[i]=null;state.manager.stats.contracts++; if(p.ovr>state.manager.stats.bestOvr) state.manager.stats.bestOvr=p.ovr; fireConfetti(); playSound('fanfare'); pulse(200); showPlayerCard(p);saveGame();updateUI();updateProfileUI(); checkAchievements();}
-        function buyItem(t){if(t==='agent'){if(state.club.coins>=500){state.club.coins-=500;state.club.inv.agents++;showModal("PURCHASED","Agent added."); playSound('coin');}else showModal("NO FUNDS","Need 500");}else if(t==='scout'){if(state.club.coins>=200){const idx=state.storage.findIndex(s=>s===null);if(idx!==-1){state.club.coins-=200;state.storage[idx]={id:Date.now(),tier:Math.random()>0.8?'GOLD':'SILVER',required:2500,progress:0};showModal("FOUND","Contract stored."); playSound('coin');}else showModal("FULL","No space");}else showModal("NO FUNDS","Need 200 Coins");}saveGame();updateUI();updateClubInv();}
-        function useAgent(i){if(state.club.inv.agents>0){state.club.inv.agents--;state.active[i].progress+=1000;saveGame();updateUI();updateClubInv(); playSound('coin');}}
-        function renderStadium(){document.getElementById('stadium-render').innerHTML=SVGS.STADIUM[state.club.level-1]||SVGS.STADIUM[0];}
-        function buildStadium(){const ll=mgrMarker.getLatLng();state.club.home={lat:ll.lat,lng:ll.lng};renderHome();saveGame(); playSound('fanfare');}
-        function renderHome(){if(homeMarker)map.removeLayer(homeMarker);const i=L.divIcon({className:'pixel-icon',html:SVGS.STADIUM[state.club.level-1],iconSize:[80,40],iconAnchor:[40,20]});homeMarker=L.marker([state.club.home.lat,state.club.home.lng],{icon:i}).addTo(map);}
-        function restSquad(){state.squad.forEach(p=>p.energy=100);showModal("RESTED","Energy restored.");saveGame(); playSound('coin');}
-        function renameClub(){const n=prompt("Name");if(n){state.club.name=n;saveGame();updateUI();}}
-        function hardReset(){if(confirm("Wipe all data?")){localStorage.removeItem(SAVE_KEY);location.reload();}}
-        function exportSave(){const d=JSON.stringify(state);const b=new Blob([d],{type:'application/json'});const u=URL.createObjectURL(b);const l=document.createElement('a');l.href=u;l.download='pitchwalker.json';l.click();}
-        function importSave(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=function(e){try{const s=JSON.parse(e.target.result);if(s.user){state=s;saveGame();location.reload();}}catch(err){alert("Error");}};r.readAsText(f);}
-        function openPlayerSelect(pos){let h=`<div style="max-height:300px;overflow-y:auto;text-align:left;"><div style="padding:10px;border-bottom:1px solid #333;" onclick="selectPlayer('${pos}',null)">[EMPTY]</div>`;state.squad.sort((a,b)=>b.ovr-a.ovr).forEach(p=>{h+=`<div style="padding:10px;border-bottom:1px solid #333;color:${p.id===state.lineup[pos]?'var(--gold)':'#fff'}" onclick="showPlayerCard(state.squad.find(x=>x.id===${p.id}))">👁️</div><div style="display:inline-block;width:80%;padding:10px;" onclick="selectPlayer('${pos}',${p.id})"><b>${p.ovr}</b> ${p.name}</div>`;});showModal(`SELECT ${pos}`,h+"</div>");}
-        function showPlayerCard(p){const r=p.ovr>=95?'mythical':(p.ovr>=85?'legendary':(p.ovr>=75?'epic':(p.ovr>=60?'rare':'common'))); const html=`<div class="full-player-card card-${r}"><div class="fpc-header"><div class="fpc-ovr">${p.ovr}</div><div class="fpc-pos">${p.pos}</div></div><div class="fpc-face">${getPlayerSVGString(p)}</div><div class="fpc-name">${p.name}</div><div class="fpc-trait">${p.trait}</div><div class="stat-grid"><div class="stat-row"><span class="stat-lbl">PAC</span><span class="stat-val">${p.stats.pac}</span></div><div class="stat-row"><span class="stat-lbl">DRI</span><span class="stat-val">${p.stats.dri}</span></div><div class="stat-row"><span class="stat-lbl">SHO</span><span class="stat-val">${p.stats.sho}</span></div><div class="stat-row"><span class="stat-lbl">DEF</span><span class="stat-val">${p.stats.def}</span></div><div class="stat-row"><span class="stat-lbl">PAS</span><span class="stat-val">${p.stats.pas}</span></div><div class="stat-row"><span class="stat-lbl">PHY</span><span class="stat-val">${p.stats.phy}</span></div></div><div style='margin-top:10px;display:flex;gap:5px;'><button class='btn btn-red' style='font-size:14px' onclick='sellPlayer(${p.id})'>SELL (+${p.ovr*10})</button><button class='btn' style='font-size:14px' onclick='trainPlayer(${p.id})'>TRAIN (-${p.ovr*10})</button></div></div>`;showModal("PLAYER CARD",html);}
-        function getPlayerSVGString(p){const f=p.face||{skin:'#ffccaa',h:0,e:0,m:0,hc:'#000'}; return `<svg viewBox="0 0 32 32">${getFaceInner({skin:f.skin,hc:f.hc,h:f.h,e:f.e,m:f.m})}<rect x="8" y="22" width="16" height="10" fill="${DYES[state.club.kit.col1]}"/><rect x="8" y="22" width="16" height="10" fill="url(#kitPat)" opacity="0.5"/></svg>`;}
-        function selectPlayer(pos,id){state.lineup[pos]=id;saveGame();updateUI();document.getElementById('modal-overlay').style.display='none'; playSound('click');}
-        
-        function updateUI(){
-            document.getElementById('active-grid').innerHTML=state.active.map((c,i)=>{if(!c)return`<div class="slot" style="opacity:0.5;border-style:dashed">EMPTY</div>`;let boostBtn='';if(state.club.inv.agents>0&&c.progress<c.required){boostBtn=`<button class="btn btn-green" style="font-size:12px;padding:2px;margin-top:5px;height:auto;" onclick="event.stopPropagation(); useAgent(${i})">⚡ AGENT (-1km)</button>`;}return`<div class="slot ${c.progress>=c.required?'ready':''}" onclick="finish(${i})">${c.tier} ${(c.required/1000).toFixed(1)}km<div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,(c.progress/c.required)*100)}%"></div></div>${boostBtn}</div>`;}).join('');document.getElementById('coin-count').innerText=state.club.coins;document.getElementById('fan-count').innerText=state.club.fans;document.getElementById('club-name-display').innerText=state.club.name;
-            document.getElementById('league-pts').innerText = state.league.pts + " PTS";
-            document.getElementById('league-rec').innerText = `${state.league.w}-${state.league.d}-${state.league.l}`;
-            document.getElementById('div-name').innerText = "DIVISION " + state.league.div;
-            document.getElementById('formation-display').innerText = state.formation;
-
-            const pitch=document.getElementById('pitch');Array.from(pitch.querySelectorAll('.pitch-player')).forEach(e=>e.remove());
-            const coords = FORMATIONS[state.formation];
-            Object.keys(state.lineup).forEach(pos=>{
-                if(!coords[pos]) return;
-                const pid=state.lineup[pos];const p=state.squad.find(x=>x.id===pid);const el=document.createElement('div');el.className='pitch-player';
-                el.style.top=coords[pos].t; el.style.left=coords[pos].l;
-                if(p){el.innerHTML=`<div class="p-card"><div class="player-face-sm">${getPlayerSVGString(p)}</div><div class="p-name">${p.name.split(' ').pop()}</div></div>`;el.onclick=()=>showPlayerCard(p);}
-                else{el.innerHTML=`<div class="p-card" style="opacity:0.5;border-style:dashed;">+</div>`;el.onclick=()=>openPlayerSelect(pos);}
-                pitch.appendChild(el);
-            });
-            // Squad List
-            document.getElementById('squad-list-container').innerHTML = state.squad.length ? state.squad.map(p => {
-                const r = p.ovr>=95?'mythical':(p.ovr>=85?'legendary':(p.ovr>=75?'epic':(p.ovr>=60?'rare':'common')));
-                return `<div class="squad-list-item list-${r}" onclick="showPlayerCard(state.squad.find(x=>x.id===${p.id}))"><div class="squad-list-face">${getPlayerSVGString(p)}</div><div class="squad-list-info"><div>${p.name}</div><div style="font-size:12px; color:#aaa;">${p.pos}</div></div><div class="squad-list-ovr">${p.ovr}</div></div>`;
-            }).join('') : '<div style="color:#666; font-style:italic;">No players signed yet.</div>';
+        if ('serviceWorker' in navigator) {
+            const blob = new Blob([`self.addEventListener('fetch', () => {});`], {type: 'application/javascript'});
+            navigator.serviceWorker.register(URL.createObjectURL(blob));
         }
-        function switchView(id,btn){document.querySelectorAll('.view-container').forEach(e=>e.classList.remove('active'));document.getElementById('view-'+id).classList.add('active');document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));btn.classList.add('active');if(id==='map')setTimeout(()=>map.invalidateSize(),100);if(id==='club'||id==='mgr'){updateClubInv();updateProfileUI();}}
-        function showModal(t,c){document.getElementById('modal-content').innerHTML=`<h2>${t}</h2><div>${c}</div><button class='btn' onclick='document.getElementById("modal-overlay").style.display="none"'>OK</button>`;document.getElementById('modal-overlay').style.display='flex';}
-        function saveGame(){localStorage.setItem(SAVE_KEY,JSON.stringify(state));}
-        function loadGame(){const s=localStorage.getItem(SAVE_KEY);if(s)state=JSON.parse(s);}
-        function autoPick(){
-            let s=[...state.squad].sort((a,b)=>b.ovr-a.ovr);
-            const mapping = FORMATIONS[state.formation];
-            Object.keys(state.lineup).forEach(k=>state.lineup[k]=null);
-            Object.keys(mapping).forEach(pos => {
-                let type = 'MID'; if(pos.includes('GK')) type='GK'; if(pos.includes('CB')||pos.includes('LB')||pos.includes('RB')) type='DEF'; if(pos.includes('ST')||pos.includes('LW')||pos.includes('RW')) type='FWD';
-                let p = s.find(x=>x.pos===type);
-                if(p) { state.lineup[pos]=p.id; s=s.filter(z=>z.id!==p.id); }
-            });
-            saveGame(); updateUI(); playSound('click');
-        }
-        function openMatchMode(){const count=Object.values(state.lineup).filter(x=>x!==null).length;if(count<11){showModal("CANNOT PLAY","Incomplete Squad");return;}state.manager.stats.wins++;showModal("MATCH RESULT","You won 3-1!");saveGame();updateProfileUI(); playSound('fanfare');}
-        function checkAchievements() { ACHIEVEMENTS.forEach(ach => { if(!state.manager.achieved.includes(ach.id)) { if(state.manager.stats[ach.stat] >= ach.target) { state.manager.achieved.push(ach.id); if(ach.rewardType) { if(!state.manager.unlocks[ach.rewardType].includes(ach.rewardIdx)) { state.manager.unlocks[ach.rewardType].push(ach.rewardIdx); } } else if(ach.id==='plat_find') state.club.inv.agents+=10; else if(ach.id==='dream_team') state.club.coins+=1000; showModal("🏆 UNLOCKED!", `<b>${ach.title}</b><br>Reward: ${ach.item}`); playSound('fanfare'); fireConfetti(); } } }); saveGame(); }
-        function toggleAchievements() { const el = document.getElementById('achievements-box'); if(el.style.display==='block') el.style.display='none'; else { el.style.display='block'; document.getElementById('ach-list').innerHTML = ACHIEVEMENTS.map(a => { const done = state.manager.achieved.includes(a.id); return `<div class="ach-row ${done?'unlocked':''}"> <div class="ach-info"><div class="ach-title">${a.title}</div><div class="ach-desc">${a.desc} - Reward: ${a.item}</div></div> <div class="ach-check">${done?'✅':'🔒'}</div> </div>`; }).join(''); } }
-        function fireConfetti(){for(let i=0;i<30;i++){const c=document.createElement('div');c.className='confetti';c.style.left=Math.random()*100+'vw';c.style.backgroundColor=`hsl(${Math.random()*360},100%,50%)`;c.style.animationDuration=(Math.random()*1+1)+'s';document.body.appendChild(c);setTimeout(()=>c.remove(),2000);}}
-
-        window.onload = init;
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; });
+        installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; } });
     </script>
 </body>
 </html>
