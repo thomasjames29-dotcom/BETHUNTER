@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="target_PNG26.png">
 
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --gold: #d29922; --red: #da3633; --text: #c9d1d9; }
+        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --gold: #d29922; --red: #da3633; --purple: #a371f7; --text: #c9d1d9; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 16px; padding-bottom: 120px; }
         
         /* HEADER */
@@ -62,8 +62,23 @@
             display: flex; align-items: center; justify-content: center; gap: 6px;
         }
 
+        /* BUTTONS */
+        .btn-row { display: flex; gap: 10px; margin-top: 10px; }
+        .player-btn { flex: 1; background: #21262d; border: 1px solid #30363d; color: #ccc; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer;}
+        
+        /* NEW DEEP ANALYZE BUTTON */
+        .analyze-btn { flex: 1; background: rgba(163, 113, 247, 0.15); border: 1px solid var(--purple); color: var(--purple); padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+
+        /* ANALYSIS RESULT AREA */
+        .analysis-box {
+            background: #1c1c1c; border: 1px solid var(--purple); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem;
+            display: none; /* Hidden by default */
+        }
+        .stat-bar { display: flex; justify-content: space-between; margin-bottom: 4px; color: #bbb; font-size: 0.8rem; }
+        .stat-val { font-weight: bold; color: white; }
+
         .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
-        .player-btn { width: 100%; background: #21262d; border: 1px solid #30363d; color: #ccc; padding: 10px; margin-top: 10px; border-radius: 8px; font-weight: 600; }
+
     </style>
 </head>
 <body>
@@ -87,7 +102,7 @@
         <div style="text-align:center; padding-top:50px; color:#888;">
             <p style="font-size:2rem; margin-bottom:10px;">🔭</p>
             <p>Ready to Hunt (60'-85').</p>
-            <p style="font-size:0.8rem; color:#555">Active Filters: No Friendlies/Youth</p>
+            <p style="font-size:0.8rem; color:#555">Filters: No Junk. Sorted by Urgency.</p>
         </div>
     </div>
 
@@ -95,11 +110,7 @@
 
     <script>
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
-        
-        // --- ELITE IDS (Major Leagues) ---
         const ELITE_IDS = [39, 40, 41, 42, 179, 140, 78, 135, 61, 2, 3, 45, 48, 143, 529, 556, 81];
-        
-        // --- THE FULL EUROPE LIST ---
         const EU_COUNTRIES = [
             "Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", 
             "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", 
@@ -167,11 +178,7 @@
                     allMatches = [];
                 } else {
                     allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
-                    
-                    // --- SORTING LOGIC: DESCENDING TIME ---
-                    // This puts 85' games at top, 60' games at bottom
                     allMatches.sort((a, b) => b.fixture.status.elapsed - a.fixture.status.elapsed);
-                    
                     applyFilter(isAuto);
                 }
             } catch(e) { if(!isAuto) content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#da3633'>Error.</p>"; }
@@ -187,22 +194,15 @@
             if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
 
             const filtered = allMatches.filter(m => {
-                // --- JUNK FILTER ---
                 const league = (m.league.name || "").toLowerCase();
                 const blocked = ["friendly", "friendlies", "club friendlies", "u19", "u20", "u21", "u23", "youth", "reserve", "reserves"];
                 
-                if(blocked.some(word => league.includes(word))) {
-                    return false; 
-                }
+                if(blocked.some(word => league.includes(word))) return false; 
 
                 const lid = m.league.id;
                 const country = m.league.country;
-                
                 if (mode === 'elite') return ELITE_IDS.includes(lid); 
-                else if (mode === 'europe') {
-                    // Check against the FULL LIST of European countries
-                    return EU_COUNTRIES.includes(country) || ELITE_IDS.includes(lid);
-                }
+                else if (mode === 'europe') return EU_COUNTRIES.includes(country) || ELITE_IDS.includes(lid); 
                 else return true;
             });
 
@@ -212,6 +212,7 @@
                 filtered.forEach(m => {
                     const t = m.fixture.status.elapsed;
                     const s = m.goals;
+                    // Auto-Ping Logic
                     if ((Math.abs(s.home - s.away) === 1 && t > 75) || (s.home === s.away && t > 75)) {
                         highValueFound = true;
                     }
@@ -248,8 +249,8 @@
             let confClass = "conf-low";
 
             if (s.home === s.away) {
-                predText = "⚠️ Draw / Tight Game";
-                confVal = (t > 75) ? 88 : 80; 
+                predText = "⚠️ Draw / Tight";
+                confVal = (t > 75) ? 75 : 70; // Lower base confidence for draws until analyzed
             } 
             else if (Math.abs(s.home - s.away) === 1) {
                 predText = "⚽ Late Goal Likely";
@@ -261,7 +262,7 @@
             }
             
             if(upsetHtml !== "") {
-                predText = "🔥 Late Goal (Favorite Chasing)";
+                predText = "🔥 Favorite Chasing";
                 confVal = 95;
             }
 
@@ -284,13 +285,120 @@
                 <div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">${t}' Played</div>
                 ${upsetHtml}
                 <div class="pred-row">
-                    <span class="pred-text">${predText}</span>
-                    <span class="conf-badge ${confClass}">${confVal}%</span>
+                    <span class="pred-text" id="pred-text-${m.fixture.id}">${predText}</span>
+                    <span class="conf-badge ${confClass}" id="pred-badge-${m.fixture.id}">${confVal}%</span>
                 </div>
-                <button class="player-btn" onclick="checkPlayers(this, ${m.fixture.id})">🕵️ Check Players</button>
+                
+                <div class="btn-row">
+                    <button class="player-btn" onclick="checkPlayers(this, ${m.fixture.id})">🕵️ Check Players</button>
+                    <button class="analyze-btn" onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name}', '${a.name}')">⚡ Analyze Stats</button>
+                </div>
+
                 <div id="p-${m.fixture.id}"></div>
+                <div id="stats-${m.fixture.id}" class="analysis-box"></div>
             `;
             content.appendChild(div);
+        }
+
+        async function deepAnalyze(btn, id, hName, aName) {
+            btn.innerText = "Calculating...";
+            const statBox = document.getElementById(`stats-${id}`);
+            const predText = document.getElementById(`pred-text-${id}`);
+            const predBadge = document.getElementById(`pred-badge-${id}`);
+            statBox.style.display = 'block';
+            statBox.innerHTML = "<div style='color:#888; text-align:center;'>Fetching Match Data...</div>";
+
+            try {
+                const res = await fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, {
+                    headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" }
+                });
+                const data = await res.json();
+
+                if(!data.response || data.response.length === 0) {
+                    statBox.innerHTML = "<div style='color:#da3633; text-align:center;'>No Live Stats Available</div>";
+                    btn.innerText = "⚡ Analyze Stats";
+                    return;
+                }
+
+                // Extract Stats (Safely handle missing data)
+                const hStats = data.response[0].statistics;
+                const aStats = data.response[1].statistics;
+
+                const getStat = (arr, type) => {
+                    const item = arr.find(s => s.type === type);
+                    return item ? (item.value || 0) : 0;
+                };
+
+                const hSoT = getStat(hStats, "Shots on Goal");
+                const aSoT = getStat(aStats, "Shots on Goal");
+                const hTotal = getStat(hStats, "Total Shots");
+                const aTotal = getStat(aStats, "Total Shots");
+                const hCorn = getStat(hStats, "Corner Kicks");
+                const aCorn = getStat(aStats, "Corner Kicks");
+
+                // --- PRESSURE ALGORITHM ---
+                // Weights: SoT=5, Corner=2, TotalShot=1
+                const hPressure = (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
+                const aPressure = (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
+
+                let verdict = "";
+                let vColor = "#888"; // Grey default
+                let newConf = 0;
+
+                const totalPress = hPressure + aPressure;
+                const diff = Math.abs(hPressure - aPressure);
+
+                if (totalPress < 20) {
+                    verdict = "💤 LOW ENERGY / DEADLOCK";
+                    newConf = 90; // High confidence that nothing will happen
+                    vColor = "#8b949e";
+                } else if (diff > 30) {
+                    const leader = hPressure > aPressure ? hName : aName;
+                    verdict = `🔥 SIEGE: ${leader} Pushing!`;
+                    newConf = 92; // High confidence goal coming
+                    vColor = "#2ea043"; // Green
+                } else if (totalPress > 50 && diff < 15) {
+                    verdict = "⚔️ OPEN GAME (Both Attacking)";
+                    newConf = 85; // Goal likely from either
+                    vColor = "#a371f7"; // Purple
+                } else {
+                    verdict = "⚖️ BALANCED / TACTICAL";
+                    newConf = 60; // Unsure
+                    vColor = "#d29922"; // Gold
+                }
+
+                // Render Visuals
+                statBox.innerHTML = `
+                    <div style="text-align:center; margin-bottom:10px; font-weight:bold; color:${vColor}; font-size:1rem; border-bottom:1px solid #333; padding-bottom:5px;">
+                        ${verdict}
+                    </div>
+                    <div class="stat-bar">
+                        <span>${hName} (SoT)</span>
+                        <span class="stat-val">${hSoT} - ${aSoT}</span>
+                        <span>(SoT) ${aName}</span>
+                    </div>
+                    <div class="stat-bar">
+                        <span>Corners</span>
+                        <span class="stat-val">${hCorn} - ${aCorn}</span>
+                        <span>Corners</span>
+                    </div>
+                    <div class="stat-bar">
+                        <span>Pressure Score</span>
+                        <span class="stat-val">${hPressure} - ${aPressure}</span>
+                        <span>Score</span>
+                    </div>
+                `;
+                
+                // Update Prediction Badge Live
+                predText.innerText = verdict;
+                predText.style.color = vColor;
+                predBadge.innerText = newConf + "%";
+                if(newConf > 80) predBadge.className = "conf-badge conf-high";
+                else if(newConf > 60) predBadge.className = "conf-badge conf-med";
+                else predBadge.className = "conf-badge conf-low";
+
+            } catch(e) { statBox.innerHTML = "<div style='color:#da3633;'>Error analyzing.</div>"; }
+            btn.innerText = "⚡ Analyze Stats";
         }
 
         async function checkPlayers(btn, id) {
