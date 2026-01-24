@@ -95,8 +95,20 @@
 
     <script>
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
+        
+        // --- ELITE IDS (Major Leagues) ---
         const ELITE_IDS = [39, 40, 41, 42, 179, 140, 78, 135, 61, 2, 3, 45, 48, 143, 529, 556, 81];
-        const EU_COUNTRIES = ["England", "Scotland", "Wales", "Ireland", "France", "Germany", "Italy", "Spain", "Portugal", "Netherlands", "Belgium", "Austria", "Switzerland", "Denmark", "Sweden", "Norway", "Finland", "Poland", "Turkey", "Greece", "Croatia", "Czech-Republic", "Russia", "Ukraine"];
+        
+        // --- THE FULL EUROPE LIST ---
+        const EU_COUNTRIES = [
+            "Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", 
+            "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", 
+            "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", 
+            "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", 
+            "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", 
+            "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", 
+            "Spain", "Sweden", "Switzerland", "Turkey", "Ukraine", "Wales"
+        ];
 
         let allMatches = [];
         let pilotMode = false;
@@ -155,6 +167,11 @@
                     allMatches = [];
                 } else {
                     allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
+                    
+                    // --- SORTING LOGIC: DESCENDING TIME ---
+                    // This puts 85' games at top, 60' games at bottom
+                    allMatches.sort((a, b) => b.fixture.status.elapsed - a.fixture.status.elapsed);
+                    
                     applyFilter(isAuto);
                 }
             } catch(e) { if(!isAuto) content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#da3633'>Error.</p>"; }
@@ -170,10 +187,8 @@
             if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
 
             const filtered = allMatches.filter(m => {
+                // --- JUNK FILTER ---
                 const league = (m.league.name || "").toLowerCase();
-                
-                // --- THE UPDATED BLOCK LIST ---
-                // Added "friendlies" and "club friendlies"
                 const blocked = ["friendly", "friendlies", "club friendlies", "u19", "u20", "u21", "u23", "youth", "reserve", "reserves"];
                 
                 if(blocked.some(word => league.includes(word))) {
@@ -182,8 +197,12 @@
 
                 const lid = m.league.id;
                 const country = m.league.country;
+                
                 if (mode === 'elite') return ELITE_IDS.includes(lid); 
-                else if (mode === 'europe') return EU_COUNTRIES.includes(country) || ELITE_IDS.includes(lid); 
+                else if (mode === 'europe') {
+                    // Check against the FULL LIST of European countries
+                    return EU_COUNTRIES.includes(country) || ELITE_IDS.includes(lid);
+                }
                 else return true;
             });
 
