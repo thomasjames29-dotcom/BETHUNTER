@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="target_PNG26.png">
 
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --gold: #d29922; --text: #c9d1d9; }
+        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --gold: #d29922; --red: #da3633; --text: #c9d1d9; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 16px; padding-bottom: 120px; }
         
         /* HEADER */
@@ -19,39 +19,31 @@
         .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         h1 { margin: 0; font-size: 1.4rem; color: var(--green); display: flex; align-items: center; gap: 10px; }
         
-        /* FILTER DROPDOWN */
+        /* AUTO-PILOT TOGGLE */
+        .pilot-btn {
+            background: #21262d; border: 1px solid #30363d; color: #888;
+            padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;
+            display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.3s;
+        }
+        .pilot-btn.active { background: rgba(46, 160, 67, 0.2); border-color: var(--green); color: var(--green); }
+        .pilot-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; }
+        .pilot-btn.active .pilot-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
         select {
-            width: 100%;
-            padding: 12px;
-            background: #21262d;
-            color: white;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: bold;
-            outline: none;
-            appearance: none; 
+            width: 100%; padding: 12px; background: #21262d; color: white;
+            border: 1px solid #30363d; border-radius: 8px; font-size: 1rem; font-weight: bold;
+            outline: none; appearance: none;
             background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
-            background-repeat: no-repeat;
-            background-position: right 15px top 50%;
-            background-size: 12px auto;
+            background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto;
         }
 
-        #installBtn { display: none; background: #1f6feb; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; font-size: 0.8rem; }
-
         /* CARDS */
-        .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; }
         .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
-        
-        /* SCORE ROW UPGRADE */
         .score-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 10px 0; }
-        
         .team-col { width: 40%; display: flex; flex-direction: column; }
         .team-name { font-size: 1rem; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        
-        /* GOAL TIMES */
         .goal-times { font-size: 0.75rem; color: var(--gold); margin-top: 4px; min-height: 14px; font-family: monospace; }
-        
         .score-box { background: #21262d; padding: 8px 14px; border-radius: 8px; border: 1px solid #30363d; font-family: monospace; font-size: 1.2rem; font-weight: bold; }
         
         /* CONFIDENCE BADGES */
@@ -60,7 +52,15 @@
         .conf-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; color: #000; }
         .conf-high { background-color: var(--green); } 
         .conf-med { background-color: var(--gold); }   
-        .conf-low { background-color: #8b949e; }      
+        .conf-low { background-color: #8b949e; }
+        
+        /* GIANT KILLER BADGE */
+        .upset-badge {
+            background: rgba(218, 54, 51, 0.15); border: 1px solid var(--red); color: var(--red);
+            font-size: 0.75rem; font-weight: bold; text-align: center;
+            padding: 6px; border-radius: 6px; margin-top: 8px; letter-spacing: 0.5px;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
 
         .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
         .player-btn { width: 100%; background: #21262d; border: 1px solid #30363d; color: #ccc; padding: 10px; margin-top: 10px; border-radius: 8px; font-weight: 600; }
@@ -71,7 +71,10 @@
     <header>
         <div class="top-row">
             <h1><img src="target_PNG26.png" style="width:28px;"> Hunter</h1>
-            <button id="installBtn">⬇ Install</button>
+            
+            <button id="pilotBtn" class="pilot-btn" onclick="togglePilot()">
+                <div class="pilot-dot"></div> Auto-Pilot
+            </button>
         </div>
         
         <select id="filterSelect" onchange="applyFilter()">
@@ -96,12 +99,54 @@
         const EU_COUNTRIES = ["England", "Scotland", "Wales", "Ireland", "France", "Germany", "Italy", "Spain", "Portugal", "Netherlands", "Belgium", "Austria", "Switzerland", "Denmark", "Sweden", "Norway", "Finland", "Poland", "Turkey", "Greece", "Croatia", "Czech-Republic", "Russia", "Ukraine"];
 
         let allMatches = [];
+        let pilotMode = false;
+        let pilotInterval;
+        
         const content = document.getElementById('content');
         const mainBtn = document.getElementById('mainBtn');
+        const pilotBtn = document.getElementById('pilotBtn');
 
-        async function runScan() {
-            mainBtn.innerText = "Scanning Global Feeds..."; mainBtn.disabled = true;
-            content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data...</p>";
+        // --- AUDIO ENGINE (Sonar Ping) ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playPing() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        }
+
+        // --- AUTO PILOT LOGIC ---
+        function togglePilot() {
+            pilotMode = !pilotMode;
+            if(pilotMode) {
+                pilotBtn.classList.add('active');
+                pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (60s)`;
+                playPing(); // Test sound
+                runScan(true); // Immediate scan
+                pilotInterval = setInterval(() => runScan(true), 60000); // Loop 60s
+            } else {
+                pilotBtn.classList.remove('active');
+                pilotBtn.innerHTML = `<div class="pilot-dot"></div> Auto-Pilot`;
+                clearInterval(pilotInterval);
+            }
+        }
+
+        async function runScan(isAuto = false) {
+            if(!isAuto) {
+                mainBtn.innerText = "Scanning Global Feeds..."; 
+                mainBtn.disabled = true;
+                content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data...</p>";
+            } else {
+                // Flash button in auto mode
+                mainBtn.innerText = "🤖 Auto-Scanning...";
+            }
             
             try {
                 const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", {
@@ -110,20 +155,23 @@
                 const data = await res.json();
                 
                 if(!data.response || data.results === 0) {
-                    content.innerHTML = "<p style='text-align:center; margin-top:50px'>No live games.</p>";
+                    if(!isAuto) content.innerHTML = "<p style='text-align:center; margin-top:50px'>No live games.</p>";
                     allMatches = [];
                 } else {
                     allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
-                    applyFilter();
+                    applyFilter(isAuto);
                 }
-            } catch(e) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#da3633'>Error.</p>"; }
-            mainBtn.innerText = "🎯 SCAN MARKETS"; mainBtn.disabled = false;
+            } catch(e) { if(!isAuto) content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#da3633'>Error.</p>"; }
+            
+            mainBtn.innerText = "🎯 SCAN MARKETS"; 
+            mainBtn.disabled = false;
         }
 
-        function applyFilter() {
+        function applyFilter(isAuto = false) {
             const mode = document.getElementById('filterSelect').value;
             content.innerHTML = "";
-            
+            let highValueFound = false;
+
             if(allMatches.length === 0) { 
                 content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; 
                 return; 
@@ -137,8 +185,22 @@
                 else return true;
             });
 
-            if(filtered.length === 0) content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found in 60-85' window.</p>`;
-            else filtered.forEach(m => createCard(m));
+            if(filtered.length === 0) {
+                content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found in 60-85' window.</p>`;
+            } else {
+                filtered.forEach(m => {
+                    // Check for high value to trigger sound
+                    const t = m.fixture.status.elapsed;
+                    const s = m.goals;
+                    if ((Math.abs(s.home - s.away) === 1 && t > 75) || (s.home === s.away && t > 75)) {
+                        highValueFound = true;
+                    }
+                    createCard(m);
+                });
+            }
+
+            // Play sound if auto-pilot found something good
+            if(isAuto && highValueFound) playPing();
         }
 
         function createCard(m) {
@@ -149,22 +211,21 @@
             const a = m.teams.away;
             const s = m.goals;
             const t = m.fixture.status.elapsed;
+            const lid = m.league.id;
             
-            // --- GOAL TIMESTAMPS LOGIC ---
-            // We parse the events array if it exists
-            let hGoals = "";
-            let aGoals = "";
-            
+            // Goal Times
+            let hGoals = "", aGoals = "";
             if (m.events) {
-                hGoals = m.events
-                    .filter(e => e.type === 'Goal' && e.team.id === h.id)
-                    .map(e => e.time.elapsed + "'")
-                    .join(', ');
-                
-                aGoals = m.events
-                    .filter(e => e.type === 'Goal' && e.team.id === a.id)
-                    .map(e => e.time.elapsed + "'")
-                    .join(', ');
+                hGoals = m.events.filter(e => e.type === 'Goal' && e.team.id === h.id).map(e => e.time.elapsed + "'").join(', ');
+                aGoals = m.events.filter(e => e.type === 'Goal' && e.team.id === a.id).map(e => e.time.elapsed + "'").join(', ');
+            }
+
+            // --- GIANT KILLER LOGIC ---
+            // If it's an Elite League AND Home Team is losing by 1 goal
+            // This usually implies the Favorite is losing at home = COMEBACK ALERT
+            let upsetHtml = "";
+            if (ELITE_IDS.includes(lid) && s.home < s.away && (s.away - s.home === 1)) {
+                upsetHtml = `<div class="upset-badge">🔥 UPSET ALERT: ${h.name} Chasing!</div>`;
             }
 
             // --- CONFIDENCE ENGINE ---
@@ -184,6 +245,12 @@
                 predText = "🔒 Result Likely Safe";
                 confVal = 94;
             }
+            
+            // If Upset Alert is active, boost confidence of Late Goal
+            if(upsetHtml !== "") {
+                predText = "🔥 Late Goal (Favorite Chasing)";
+                confVal = 95;
+            }
 
             if(confVal >= 80) confClass = "conf-high";
             else if(confVal >= 60) confClass = "conf-med";
@@ -196,9 +263,7 @@
                         <span class="team-name">${h.name}</span>
                         <span class="goal-times">${hGoals}</span>
                     </div>
-                    
                     <span class="score-box">${s.home}-${s.away}</span>
-                    
                     <div class="team-col" style="align-items:flex-start; text-align:left;">
                         <span class="team-name">${a.name}</span>
                         <span class="goal-times">${aGoals}</span>
@@ -207,6 +272,8 @@
                 
                 <div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">${t}' Played</div>
                 
+                ${upsetHtml}
+
                 <div class="pred-row">
                     <span class="pred-text">${predText}</span>
                     <span class="conf-badge ${confClass}">${confVal}%</span>
@@ -253,7 +320,6 @@
             btn.style.display = 'none';
         }
 
-        // PWA LOGIC
         if ('serviceWorker' in navigator) {
             const blob = new Blob([`self.addEventListener('fetch', () => {});`], {type: 'application/javascript'});
             navigator.serviceWorker.register(URL.createObjectURL(blob));
