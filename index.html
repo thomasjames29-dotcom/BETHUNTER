@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0d1117">
-    <title>60' Hunter Pro</title>
+    <title>60' Hunter Pro AI</title>
 
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="target_PNG26.png">
     <link rel="apple-touch-icon" href="target_PNG26.png">
 
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --gold: #d29922; --red: #da3633; --purple: #a371f7; --text: #c9d1d9; --bar-bg: #30363d; }
+        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --gold: #d29922; --red: #da3633; --purple: #a371f7; --blue: #1f6feb; --text: #c9d1d9; --bar-bg: #30363d; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 16px; padding-bottom: 120px; }
         
         /* HEADER */
@@ -55,6 +55,7 @@
         .btn-row { display: flex; gap: 10px; margin-top: 10px; }
         .player-btn { flex: 1; background: #21262d; border: 1px solid #30363d; color: #ccc; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer;}
         .analyze-btn { flex: 1; background: rgba(163, 113, 247, 0.15); border: 1px solid var(--purple); color: var(--purple); padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .copy-btn { width:100%; background: #333; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 6px; font-size: 0.8rem; margin-top: 8px; cursor: pointer; }
 
         /* ANALYSIS BOX */
         .analysis-box { background: #1c1c1c; border: 1px solid var(--purple); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; display: none; }
@@ -66,6 +67,15 @@
         .gauge-home { background: var(--green); height: 100%; transition: width 0.5s; }
         .gauge-away { background: var(--purple); height: 100%; transition: width 0.5s; }
         .gauge-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #888; margin-top:-2px; margin-bottom: 10px; }
+
+        /* TIP BOX */
+        .tip-box { background: rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 8px; margin: 10px 0; border-left: 3px solid var(--gold); }
+        .tip-header { font-size: 0.75rem; color: #888; text-transform: uppercase; margin-bottom: 4px; font-weight: bold; }
+        .tip-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .tip-name { color: #fff; font-weight: bold; font-size: 0.9rem; }
+
+        /* ODDS HIGHLIGHT */
+        .val-good { color: var(--green); text-shadow: 0 0 5px rgba(46, 160, 67, 0.5); }
 
         .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
     </style>
@@ -91,7 +101,7 @@
         <div style="text-align:center; padding-top:50px; color:#888;">
             <p style="font-size:2rem; margin-bottom:10px;">🔭</p>
             <p>Ready to Hunt (60'-85').</p>
-            <p style="font-size:0.8rem; color:#555">Active: Red Card Radar • Live Odds • Pressure Gauge</p>
+            <p style="font-size:0.8rem; color:#555">Active: xG • Bet Suggestions • Odds</p>
         </div>
     </div>
 
@@ -100,8 +110,6 @@
     <script>
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
         
-        // --- ELITE IDS ---
-        // Removed 41 (League 1) and 42 (League 2)
         const ELITE_IDS = [39, 40, 179, 140, 78, 135, 61, 2, 3, 45, 48, 143, 529, 556, 81];
         
         const EU_COUNTRIES = [
@@ -222,13 +230,10 @@
             if (m.events) {
                 hGoals = m.events.filter(e => e.type === 'Goal' && e.team.id === h.id).map(e => e.time.elapsed + "'").join(', ');
                 aGoals = m.events.filter(e => e.type === 'Goal' && e.team.id === a.id).map(e => e.time.elapsed + "'").join(', ');
-                
-                // RED CARD DETECTION
                 hRed = m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === h.id);
                 aRed = m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === a.id);
             }
 
-            // RED CARD HTML
             const hRedBadge = hRed ? "<div class='red-card-badge'>🟥 RED CARD</div>" : "";
             const aRedBadge = aRed ? "<div class='red-card-badge'>🟥 RED CARD</div>" : "";
 
@@ -244,7 +249,6 @@
             if (s.home === s.away) {
                 predText = "⚠️ Draw / Tight";
                 confVal = (t > 75) ? 75 : 70;
-                // If opponent has red card, boost confidence for a winner
                 if(hRed || aRed) { predText = "⚔️ 10 Men vs 11"; confVal = 85; }
             } 
             else if (Math.abs(s.home - s.away) === 1) {
@@ -257,7 +261,6 @@
             }
             
             if(upsetHtml !== "") { predText = "🔥 Favorite Chasing"; confVal = 95; }
-            
             if(confVal >= 80) confClass = "conf-high"; else if(confVal >= 60) confClass = "conf-med";
 
             div.innerHTML = `
@@ -283,7 +286,7 @@
                 </div>
                 <div class="btn-row">
                     <button class="player-btn" onclick="checkPlayers(this, ${m.fixture.id})">🕵️ Check Players</button>
-                    <button class="analyze-btn" onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name}', '${a.name}')">⚡ Analyze & Odds</button>
+                    <button class="analyze-btn" onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name}', '${a.name}', ${s.home}, ${s.away}, ${hRed}, ${aRed})">⚡ Analyze & Odds</button>
                 </div>
                 <div id="p-${m.fixture.id}"></div>
                 <div id="stats-${m.fixture.id}" class="analysis-box"></div>
@@ -291,7 +294,7 @@
             content.appendChild(div);
         }
 
-        async function deepAnalyze(btn, id, hName, aName) {
+        async function deepAnalyze(btn, id, hName, aName, hGoals, aGoals, hRed, aRed) {
             btn.innerText = "Scanning...";
             const statBox = document.getElementById(`stats-${id}`);
             const predText = document.getElementById(`pred-text-${id}`);
@@ -300,7 +303,6 @@
             statBox.innerHTML = "<div style='color:#888; text-align:center;'>Fetching Data...</div>";
 
             try {
-                // PARALLEL FETCH: STATS + ODDS
                 const [statRes, oddsRes] = await Promise.all([
                     fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
                     fetch(`https://v3.football.api-sports.io/odds/live?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } })
@@ -315,10 +317,14 @@
                     return;
                 }
 
-                // 1. PROCESS STATS
+                // STATS PROCESSING
                 const hStats = statData.response[0].statistics;
                 const aStats = statData.response[1].statistics;
-                const getStat = (arr, type) => { const i = arr.find(s => s.type === type); return i ? (i.value || 0) : 0; };
+                const getStat = (arr, type) => { 
+                    const i = arr.find(s => s.type === type || s.type === type.replace(" ", "")); 
+                    if(i && i.value) return parseFloat(i.value);
+                    return 0; 
+                };
 
                 const hSoT = getStat(hStats, "Shots on Goal");
                 const aSoT = getStat(aStats, "Shots on Goal");
@@ -326,6 +332,8 @@
                 const aTotal = getStat(aStats, "Total Shots");
                 const hCorn = getStat(hStats, "Corner Kicks");
                 const aCorn = getStat(aStats, "Corner Kicks");
+                const hxG = getStat(hStats, "expected_goals");
+                const axG = getStat(aStats, "expected_goals");
 
                 const hPressure = (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
                 const aPressure = (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
@@ -333,90 +341,126 @@
                 const hPercent = Math.round((hPressure / totalPress) * 100);
                 const aPercent = 100 - hPercent;
 
-                // 2. PROCESS ODDS
-                let oddsHTML = "<div style='text-align:center; color:#666; font-size:0.8rem; margin-top:5px;'>Odds Locked / Unavailable</div>";
-                if(oddsData.response && oddsData.response.length > 0 && oddsData.response[0].odds.length > 0) {
-                    const vals = oddsData.response[0].odds[0].values; // Match Winner
-                    const homeOdd = vals.find(v => v.value === "Home")?.odd || "-";
-                    const drawOdd = vals.find(v => v.value === "Draw")?.odd || "-";
-                    const awayOdd = vals.find(v => v.value === "Away")?.odd || "-";
-                    oddsHTML = `<div style="display:flex; justify-content:space-between; margin-top:8px; background:#111; padding:5px; border-radius:4px; font-family:monospace;">
-                        <span style="color:#2ea043">1: ${homeOdd}</span>
-                        <span style="color:#888">X: ${drawOdd}</span>
-                        <span style="color:#a371f7">2: ${awayOdd}</span>
-                    </div>`;
-                }
-
-                // 3. LOGIC & RENDER
-                let verdict = "";
-                let vColor = "#888";
+                // VERDICT ENGINE
+                let verdict = "", vColor = "#888", newConf = 75;
                 const diff = Math.abs(hPressure - aPressure);
 
-                if (totalPress < 20) { verdict = "💤 LOW ENERGY"; vColor = "#8b949e"; }
-                else if (diff > 30) { 
-                    const leader = hPressure > aPressure ? hName : aName;
-                    verdict = `🔥 SIEGE: ${leader}`; vColor = "#2ea043"; 
-                } 
-                else if (totalPress > 50 && diff < 15) { verdict = "⚔️ OPEN GAME"; vColor = "#a371f7"; } 
-                else { verdict = "⚖️ BALANCED"; vColor = "#d29922"; }
+                if(hxG > 0 || axG > 0) {
+                    if(hxG > (hGoals + 0.6)) { verdict = `📉 ${hName} xG ANOMALY`; vColor = "#a371f7"; newConf = 92; }
+                    else if(axG > (aGoals + 0.6)) { verdict = `📉 ${aName} xG ANOMALY`; vColor = "#a371f7"; newConf = 92; }
+                    else if(totalPress < 20) { verdict = "💤 LOW ENERGY"; vColor = "#8b949e"; newConf = 90; }
+                    else if(diff > 30) { 
+                        const leader = hPressure > aPressure ? hName : aName;
+                        verdict = `🔥 SIEGE: ${leader}`; vColor = "#2ea043"; newConf = 92;
+                    } 
+                    else { verdict = "⚖️ BALANCED"; vColor = "#d29922"; newConf = 65; }
+                } else {
+                    if (totalPress < 20) { verdict = "💤 LOW ENERGY"; vColor = "#8b949e"; newConf = 90; }
+                    else if (diff > 30) { 
+                        const leader = hPressure > aPressure ? hName : aName;
+                        verdict = `🔥 SIEGE: ${leader}`; vColor = "#2ea043"; newConf = 92;
+                    } 
+                    else { verdict = "⚖️ BALANCED"; vColor = "#d29922"; newConf = 65; }
+                }
+
+                // AI BET SUGGESTIONS
+                let tips = [];
+                // 1. Momentum Winner
+                if (hPressure > aPressure + 40) tips.push({type: `⚡ ${hName} To Score Next`, conf: 92});
+                else if (aPressure > hPressure + 40) tips.push({type: `⚡ ${aName} To Score Next`, conf: 92});
+                else if (hPressure > aPressure + 20) tips.push({type: `✅ ${hName} Draw No Bet`, conf: 78});
+                else if (aPressure > hPressure + 20) tips.push({type: `✅ ${aName} Draw No Bet`, conf: 78});
+                
+                // 2. Goals
+                if ((hSoT + aSoT) > 8 && (hGoals + aGoals) === 0) tips.push({type: "⚽ Over 0.5 Goals", conf: 88});
+                if (hxG > hGoals + 0.5) tips.push({type: `📈 ${hName} Goal Overdue (xG)`, conf: 90});
+                
+                // 3. Red Card specific
+                if (aRed && hPressure > aPressure) tips.push({type: `🔥 ${hName} to Win`, conf: 95});
+                
+                // 4. Deadlock
+                if(totalPress < 15) tips.push({type: "💤 Under 0.5 Goals (Live)", conf: 85});
+
+                let tipsHTML = "";
+                if(tips.length > 0) {
+                    tipsHTML = `<div class="tip-box"><div class="tip-header">🎯 AI Bet Suggestions</div>`;
+                    tips.forEach(t => {
+                        let cClass = t.conf > 85 ? "#2ea043" : "#d29922";
+                        tipsHTML += `<div class="tip-item"><span class="tip-name">${t.type}</span><span style="color:${cClass}; font-weight:bold;">${t.conf}%</span></div>`;
+                    });
+                    tipsHTML += `</div>`;
+                }
+
+                // ODDS PROCESSING
+                let oddsHTML = "<div style='text-align:center; color:#666; font-size:0.8rem; margin-top:5px;'>Odds Locked</div>";
+                if(oddsData.response && oddsData.response.length > 0 && oddsData.response[0].odds.length > 0) {
+                    const vals = oddsData.response[0].odds[0].values;
+                    const homeOdd = vals.find(v => v.value === "Home")?.odd;
+                    const drawOdd = vals.find(v => v.value === "Draw")?.odd;
+                    const awayOdd = vals.find(v => v.value === "Away")?.odd;
+                    
+                    const impliedOdds = 1 / (newConf / 100);
+                    const formatOdd = (odd) => {
+                         if(!odd) return "-";
+                         if(newConf > 80 && odd > impliedOdds) return `<span class="val-good">${odd} (Value!)</span>`;
+                         return odd;
+                    };
+
+                    oddsHTML = `<div style="display:flex; justify-content:space-between; margin-top:8px; background:#111; padding:5px; border-radius:4px; font-family:monospace;">
+                        <span style="color:#2ea043">1: ${formatOdd(homeOdd)}</span>
+                        <span style="color:#888">X: ${drawOdd}</span>
+                        <span style="color:#a371f7">2: ${formatOdd(awayOdd)}</span>
+                    </div>`;
+                }
+                
+                let xgHTML = "";
+                if(hxG > 0 || axG > 0) {
+                    xgHTML = `<div class="stat-bar" style="color:#a371f7"><span>Expected Goals (xG)</span><span class="stat-val">${hxG || 0} - ${axG || 0}</span></div>`;
+                }
 
                 statBox.innerHTML = `
                     <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}</div>
-                    
-                    <div class="gauge-labels">
-                        <span>${hName} (${hPercent}%)</span>
-                        <span>${aName} (${aPercent}%)</span>
-                    </div>
+                    <div class="gauge-labels"><span>${hName} (${hPercent}%)</span><span>${aName} (${aPercent}%)</span></div>
                     <div class="gauge-container">
                         <div class="gauge-home" style="width:${hPercent}%"></div>
                         <div class="gauge-away" style="width:${aPercent}%"></div>
                     </div>
-
-                    <div class="stat-bar">
-                        <span>Shots on Target</span>
-                        <span class="stat-val">${hSoT} - ${aSoT}</span>
-                    </div>
-                    <div class="stat-bar">
-                        <span>Corners</span>
-                        <span class="stat-val">${hCorn} - ${aCorn}</span>
-                    </div>
+                    ${xgHTML}
+                    <div class="stat-bar"><span>Shots on Target</span><span class="stat-val">${hSoT} - ${aSoT}</span></div>
+                    <div class="stat-bar"><span>Corners</span><span class="stat-val">${hCorn} - ${aCorn}</span></div>
+                    ${tipsHTML}
                     ${oddsHTML}
+                    <button class="copy-btn" onclick="copyTip('${hName}', '${aName}', '${verdict}', ${newConf})">📋 Copy Report</button>
                 `;
                 
-                // Update Badge
                 predText.innerText = verdict; 
                 predText.style.color = vColor;
+                predBadge.innerText = newConf + "%";
+                if(newConf > 80) predBadge.className = "conf-badge conf-high";
+                else if(newConf > 60) predBadge.className = "conf-badge conf-med";
+                else predBadge.className = "conf-badge conf-low";
                 
             } catch(e) { statBox.innerHTML = "<div style='color:#da3633;'>Error analyzing.</div>"; }
             btn.innerText = "⚡ Analyze & Odds";
         }
 
+        function copyTip(h, a, verdict, conf) {
+            const text = `🎯 Hunter Pro Tip\n⚽ ${h} vs ${a}\n📊 Verdict: ${verdict}\n🔥 Confidence: ${conf}%\nSent from 60' Hunter`;
+            navigator.clipboard.writeText(text).then(() => alert("Tip Copied!"));
+        }
+
         async function checkPlayers(btn, id) {
             btn.innerText = "Checking...";
             try {
-                const res = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, {
-                    headers: { "x-rapidapi-key": API_KEY }
-                });
+                const res = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } });
                 const data = await res.json();
                 const area = document.getElementById(`p-${id}`);
-                
                 let html = "";
                 if(data.response && data.response.length > 0) {
                     data.response.forEach(t => t.players.forEach(p => {
                         const s = p.statistics[0];
-                        if(s.shots.on >= 2 && s.goals.total === 0) {
-                            html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#2ea043">
-                                        <span>🎯 ${p.player.name} To Score</span>
-                                        <span style="font-weight:bold">${s.shots.on} SoT</span>
-                                     </div>`;
-                        }
-                        if(s.fouls.committed >= 3 && !s.cards.yellow) {
-                            // WHITE TEXT for Card Risk
-                            html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#ffffff">
-                                        <span>🟨 ${p.player.name} Card Risk</span>
-                                        <span style="font-weight:bold">${s.fouls.committed} Fouls</span>
-                                     </div>`;
-                        }
+                        if(s.shots.on >= 2 && s.goals.total === 0) html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#2ea043"><span>🎯 ${p.player.name} To Score</span><span style="font-weight:bold">${s.shots.on} SoT</span></div>`;
+                        if(s.fouls.committed >= 3 && !s.cards.yellow) html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#ffffff"><span>🟨 ${p.player.name} Card Risk</span><span style="font-weight:bold">${s.fouls.committed} Fouls</span></div>`;
                     }));
                 }
                 area.innerHTML = html || "<div style='font-size:0.8rem; color:#666; text-align:center; margin-top:5px'>No high value signals.</div>";
