@@ -88,6 +88,7 @@
         <div style="text-align:center; padding-top:50px; color:#888;">
             <p style="font-size:2rem; margin-bottom:10px;">🔭</p>
             <p>Ready to Hunt (60'-85').</p>
+            <p style="font-size:0.8rem; color:#555">Friendlies Ignored.</p>
         </div>
     </div>
 
@@ -106,7 +107,7 @@
         const mainBtn = document.getElementById('mainBtn');
         const pilotBtn = document.getElementById('pilotBtn');
 
-        // --- AUDIO ENGINE (Sonar Ping) ---
+        // AUDIO ENGINE
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playPing() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -122,15 +123,15 @@
             osc.stop(audioCtx.currentTime + 0.4);
         }
 
-        // --- AUTO PILOT LOGIC ---
+        // AUTO PILOT
         function togglePilot() {
             pilotMode = !pilotMode;
             if(pilotMode) {
                 pilotBtn.classList.add('active');
                 pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (60s)`;
-                playPing(); // Test sound
-                runScan(true); // Immediate scan
-                pilotInterval = setInterval(() => runScan(true), 60000); // Loop 60s
+                playPing(); 
+                runScan(true); 
+                pilotInterval = setInterval(() => runScan(true), 60000); 
             } else {
                 pilotBtn.classList.remove('active');
                 pilotBtn.innerHTML = `<div class="pilot-dot"></div> Auto-Pilot`;
@@ -140,11 +141,9 @@
 
         async function runScan(isAuto = false) {
             if(!isAuto) {
-                mainBtn.innerText = "Scanning Global Feeds..."; 
-                mainBtn.disabled = true;
+                mainBtn.innerText = "Scanning Global Feeds..."; mainBtn.disabled = true;
                 content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data...</p>";
             } else {
-                // Flash button in auto mode
                 mainBtn.innerText = "🤖 Auto-Scanning...";
             }
             
@@ -163,8 +162,7 @@
                 }
             } catch(e) { if(!isAuto) content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#da3633'>Error.</p>"; }
             
-            mainBtn.innerText = "🎯 SCAN MARKETS"; 
-            mainBtn.disabled = false;
+            mainBtn.innerText = "🎯 SCAN MARKETS"; mainBtn.disabled = false;
         }
 
         function applyFilter(isAuto = false) {
@@ -172,12 +170,12 @@
             content.innerHTML = "";
             let highValueFound = false;
 
-            if(allMatches.length === 0) { 
-                content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; 
-                return; 
-            }
+            if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
 
             const filtered = allMatches.filter(m => {
+                // --- GLOBAL EXCLUSION: IGNORE FRIENDLIES ---
+                if(m.league.name.includes("Friendly")) return false;
+
                 const lid = m.league.id;
                 const country = m.league.country;
                 if (mode === 'elite') return ELITE_IDS.includes(lid); 
@@ -186,7 +184,7 @@
             });
 
             if(filtered.length === 0) {
-                content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found in 60-85' window.</p>`;
+                content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found.</p>`;
             } else {
                 filtered.forEach(m => {
                     // Check for high value to trigger sound
@@ -199,7 +197,6 @@
                 });
             }
 
-            // Play sound if auto-pilot found something good
             if(isAuto && highValueFound) playPing();
         }
 
@@ -220,9 +217,7 @@
                 aGoals = m.events.filter(e => e.type === 'Goal' && e.team.id === a.id).map(e => e.time.elapsed + "'").join(', ');
             }
 
-            // --- GIANT KILLER LOGIC ---
-            // If it's an Elite League AND Home Team is losing by 1 goal
-            // This usually implies the Favorite is losing at home = COMEBACK ALERT
+            // --- GIANT KILLER ---
             let upsetHtml = "";
             if (ELITE_IDS.includes(lid) && s.home < s.away && (s.away - s.home === 1)) {
                 upsetHtml = `<div class="upset-badge">🔥 UPSET ALERT: ${h.name} Chasing!</div>`;
@@ -246,7 +241,6 @@
                 confVal = 94;
             }
             
-            // If Upset Alert is active, boost confidence of Late Goal
             if(upsetHtml !== "") {
                 predText = "🔥 Late Goal (Favorite Chasing)";
                 confVal = 95;
