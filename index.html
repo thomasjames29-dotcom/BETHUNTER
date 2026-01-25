@@ -517,4 +517,22 @@
                     data.response.forEach(t => t.players.forEach(p => {
                         const s = p.statistics[0];
                         if(s.shots.on >= 2 && s.goals.total === 0) html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#2ea043"><span>🎯 ${p.player.name} To Score</span><span style="font-weight:bold">${s.shots.on} SoT</span></div>`;
-                        if(s.fouls.committed >= 3 && !s.cards.yellow) html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.
+                        if(s.fouls.committed >= 3 && !s.cards.yellow) html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#ffffff"><span>🟨 ${p.player.name} Card Risk</span><span style="font-weight:bold">${s.fouls.committed} Fouls</span></div>`;
+                    }));
+                }
+                area.innerHTML = html || "<div style='font-size:0.8rem; color:#666; text-align:center; margin-top:5px'>No high value signals.</div>";
+            } catch(e) { }
+            btn.style.display = 'none';
+        }
+
+        if ('serviceWorker' in navigator) {
+            const blob = new Blob([`self.addEventListener('fetch', () => {});`], {type: 'application/javascript'});
+            navigator.serviceWorker.register(URL.createObjectURL(blob));
+        }
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; });
+        installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; } });
+    </script>
+</body>
+</html>
