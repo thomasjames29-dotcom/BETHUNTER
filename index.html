@@ -101,7 +101,7 @@
         </div>
 
         <select id="filterSelect" onchange="applyFilter()">
-            <option value="elite">🇬🇧 UK & Top Tier</option>
+            <option value="elite">🇬🇧 UK & Elite (Full Stats)</option>
             <option value="europe">🇪🇺 Rest of Europe</option>
             <option value="world">🌎 World Scan</option>
         </select>
@@ -125,9 +125,14 @@
     <script>
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
         
-        // --- ELITE IDS UPDATED ---
-        // 40=Championship, 179=SPL
-        const ELITE_IDS = [39, 40, 41, 42, 179, 180, 140, 78, 135, 61, 2, 3, 45, 48, 143, 529, 556, 81];
+        // --- ELITE IDS UPDATED (Added Eredivisie 88, Portugal 94, Belgium 144) ---
+        const ELITE_IDS = [
+            39, 40, 45, 48,       // UK: PL, Champ, FA Cup, Carabao
+            179, 180,             // Scotland: SPL, Cup
+            140, 78, 135, 61,     // Big 4: LaLiga, Bundesliga, Serie A, Ligue 1
+            88, 94, 144,          // High Tech Leagues: Eredivisie, Portugal, Belgium
+            2, 3, 529, 556, 81, 143 // UEFA / Major Cups
+        ];
         
         const EU_COUNTRIES = ["Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Turkey", "Ukraine", "Wales"];
 
@@ -161,14 +166,12 @@
             const schedDiv = document.getElementById('schedContent');
             schedDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>Loading Elite Fixtures...</p>";
             
-            // LOCAL DATE FIX: ensures it fetches "Today" relative to you, not UTC
-            const localDate = new Date().toLocaleDateString('en-CA'); // Returns YYYY-MM-DD in local time
+            const localDate = new Date().toLocaleDateString('en-CA'); 
             
             try {
                 const res = await fetch(`https://v3.football.api-sports.io/fixtures?date=${localDate}`, { headers: { "x-rapidapi-key": API_KEY } });
                 const data = await res.json();
                 
-                // FILTER FOR ELITE IDS (Including 40 & 179)
                 const eliteGames = data.response.filter(m => ELITE_IDS.includes(m.league.id));
                 eliteGames.sort((a, b) => a.fixture.timestamp - b.fixture.timestamp);
 
