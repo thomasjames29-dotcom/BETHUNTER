@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0d1117">
-    <title>60' Hunter Pro</title>
+    <title>60' Hunter Pro Max</title>
 
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="target_PNG26.png">
     <link rel="apple-touch-icon" href="target_PNG26.png">
 
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --gold: #d29922; --red: #da3633; --purple: #a371f7; --text: #c9d1d9; --bet365: #00703c; }
+        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --gold: #d29922; --red: #da3633; --purple: #a371f7; --blue: #1f6feb; --text: #c9d1d9; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 16px; padding-bottom: 120px; }
         
         /* HEADER */
@@ -19,24 +19,20 @@
         .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         h1 { margin: 0; font-size: 1.4rem; color: var(--green); display: flex; align-items: center; gap: 10px; }
         
-        /* AUTO-PILOT TOGGLE */
-        .pilot-btn {
-            background: #21262d; border: 1px solid #30363d; color: #888;
-            padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold;
-            display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.3s;
-        }
+        /* AUTO-PILOT */
+        .pilot-btn { background: #21262d; border: 1px solid #30363d; color: #888; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.3s; }
         .pilot-btn.active { background: rgba(46, 160, 67, 0.2); border-color: var(--green); color: var(--green); }
         .pilot-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; }
         .pilot-btn.active .pilot-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
 
         select { width: 100%; padding: 12px; background: #21262d; color: white; border: 1px solid #30363d; border-radius: 8px; font-size: 1rem; font-weight: bold; outline: none; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
 
-        /* NAV TABS */
+        /* TABS */
         .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
         .nav-tab { flex: 1; text-align: center; padding: 10px; background: #21262d; border-radius: 8px; border: 1px solid #30363d; color: #888; font-weight: bold; cursor: pointer; }
         .nav-tab.active { background: #2ea043; color: white; border-color: #2ea043; }
 
-        /* CARDS */
+        /* MATCH CARD */
         .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; }
         .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
         .score-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 10px 0; }
@@ -45,7 +41,7 @@
         .goal-times { font-size: 0.75rem; color: var(--gold); margin-top: 4px; min-height: 14px; font-family: monospace; }
         .score-box { background: #21262d; padding: 8px 14px; border-radius: 8px; border: 1px solid #30363d; font-family: monospace; font-size: 1.2rem; font-weight: bold; }
         
-        /* SCHED ITEM */
+        /* SCHEDULE */
         .sched-card { background: #161b22; border-bottom: 1px solid #30363d; padding: 12px; display: flex; justify-content: space-between; align-items: center; }
         .sched-time { font-family: monospace; color: var(--gold); font-weight: bold; width: 50px; font-size: 1rem; }
         .sched-teams { flex: 1; font-size: 0.9rem; }
@@ -76,11 +72,14 @@
         .gauge-home { background: var(--green); height: 100%; transition: width 0.5s; }
         .gauge-away { background: var(--purple); height: 100%; transition: width 0.5s; }
         .gauge-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #888; margin-top:-2px; margin-bottom: 10px; }
+        
         .tip-box { background: rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 8px; margin: 10px 0; border-left: 3px solid var(--gold); }
         .tip-header { font-size: 0.75rem; color: #888; text-transform: uppercase; margin-bottom: 4px; font-weight: bold; }
         .tip-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .tip-name { color: #fff; font-weight: bold; font-size: 0.9rem; }
+        
         .val-good { color: var(--green); text-shadow: 0 0 5px rgba(46, 160, 67, 0.5); }
+        .rank-badge { font-size: 0.75rem; color: var(--gold); margin-left: 4px; font-weight: normal; }
 
         .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
     </style>
@@ -89,7 +88,7 @@
 
     <header>
         <div class="top-row">
-            <h1><img src="target_PNG26.png" style="width:28px;"> Hunter Pro</h1>
+            <h1><img src="target_PNG26.png" style="width:28px;"> Hunter Pro Max</h1>
             <button id="pilotBtn" class="pilot-btn" onclick="togglePilot()">
                 <div class="pilot-dot"></div> Auto-Pilot
             </button>
@@ -112,7 +111,7 @@
             <div style="text-align:center; padding-top:50px; color:#888;">
                 <p style="font-size:2rem; margin-bottom:10px;">🔭</p>
                 <p>Ready to Hunt (60'-85').</p>
-                <p style="font-size:0.8rem; color:#555">Active: xG • Bet365 • Red Cards</p>
+                <p style="font-size:0.8rem; color:#555">Active: xG • Bet365 • Standings</p>
             </div>
         </div>
         <button class="scan-btn" onclick="runScan()" id="mainBtn">🎯 SCAN MARKETS</button>
@@ -125,15 +124,7 @@
     <script>
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
         
-        // --- ELITE IDS UPDATED (Added Eredivisie 88, Portugal 94, Belgium 144) ---
-        const ELITE_IDS = [
-            39, 40, 45, 48,       // UK: PL, Champ, FA Cup, Carabao
-            179, 180,             // Scotland: SPL, Cup
-            140, 78, 135, 61,     // Big 4: LaLiga, Bundesliga, Serie A, Ligue 1
-            88, 94, 144,          // High Tech Leagues: Eredivisie, Portugal, Belgium
-            2, 3, 529, 556, 81, 143 // UEFA / Major Cups
-        ];
-        
+        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143];
         const EU_COUNTRIES = ["Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Turkey", "Ukraine", "Wales"];
 
         let allMatches = [];
@@ -165,13 +156,10 @@
         async function loadSchedule() {
             const schedDiv = document.getElementById('schedContent');
             schedDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>Loading Elite Fixtures...</p>";
-            
             const localDate = new Date().toLocaleDateString('en-CA'); 
-            
             try {
                 const res = await fetch(`https://v3.football.api-sports.io/fixtures?date=${localDate}`, { headers: { "x-rapidapi-key": API_KEY } });
                 const data = await res.json();
-                
                 const eliteGames = data.response.filter(m => ELITE_IDS.includes(m.league.id));
                 eliteGames.sort((a, b) => a.fixture.timestamp - b.fixture.timestamp);
 
@@ -288,6 +276,7 @@
             const s = m.goals;
             const t = m.fixture.status.elapsed;
             const lid = m.league.id;
+            const sid = m.league.season; // Season Year
             
             let hGoals = "", aGoals = "";
             let hRed = false, aRed = false;
@@ -311,9 +300,12 @@
             let confVal = 0;
             let confClass = "conf-low";
 
+            // Basic Context Logic (Pre-Analyze)
             if (s.home === s.away) {
-                predText = "⚠️ Draw / Tight";
-                confVal = (t > 75) ? 75 : 70;
+                if (s.home > 1) { predText = "⚔️ High Score Draw"; confVal = 78; }
+                else if (s.home === 0) { predText = "🛡️ 0-0 Stalemate"; confVal = 70; }
+                else { predText = "⚠️ Tight Match"; confVal = 75; }
+                
                 if(hRed || aRed) { predText = "⚔️ 10 Men vs 11"; confVal = 85; }
             } 
             else if (Math.abs(s.home - s.away) === 1) {
@@ -351,7 +343,7 @@
                 </div>
                 <div class="btn-row">
                     <a href="https://www.bet365.com/#/IP/B1" target="_blank" class="bet365-btn">Bet365</a>
-                    <button class="analyze-btn" onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name}', '${a.name}', ${s.home}, ${s.away}, ${hRed}, ${aRed})">⚡ Analyze</button>
+                    <button class="analyze-btn" onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name}', '${a.name}', ${s.home}, ${s.away}, ${hRed}, ${aRed}, ${lid}, ${sid})">⚡ Analyze</button>
                 </div>
                 <div class="btn-row">
                     <button class="player-btn" onclick="checkPlayers(this, ${m.fixture.id})">🕵️ Check Players</button>
@@ -362,7 +354,7 @@
             content.appendChild(div);
         }
 
-        async function deepAnalyze(btn, id, hName, aName, hGoals, aGoals, hRed, aRed) {
+        async function deepAnalyze(btn, id, hName, aName, hGoals, aGoals, hRed, aRed, leagueId, season) {
             btn.innerText = "Scanning...";
             const statBox = document.getElementById(`stats-${id}`);
             const predText = document.getElementById(`pred-text-${id}`);
@@ -371,23 +363,34 @@
             statBox.innerHTML = "<div style='color:#888; text-align:center;'>Fetching Data...</div>";
 
             try {
-                const [statRes, oddsRes] = await Promise.all([
+                // PARALLEL FETCH: STATS + ODDS + STANDINGS
+                const [statRes, oddsRes, standRes] = await Promise.all([
                     fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
-                    fetch(`https://v3.football.api-sports.io/odds/live?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } })
+                    fetch(`https://v3.football.api-sports.io/odds/live?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
+                    fetch(`https://v3.football.api-sports.io/standings?league=${leagueId}&season=${season}`, { headers: { "x-rapidapi-key": API_KEY } })
                 ]);
                 
                 const statData = await statRes.json();
                 const oddsData = await oddsRes.json();
+                const standData = await standRes.json();
 
-                if(!statData.response || statData.response.length === 0) {
-                    statBox.innerHTML = "<div style='color:#da3633; text-align:center;'>No Live Stats.</div>";
-                    btn.innerText = "⚡ Analyze";
-                    return;
+                // 1. STANDINGS PARSING
+                let hRank = "", aRank = "";
+                if(standData.response && standData.response.length > 0) {
+                    const table = standData.response[0].league.standings[0];
+                    const hTeam = table.find(t => t.team.name === hName);
+                    const aTeam = table.find(t => t.team.name === aName);
+                    if(hTeam) hRank = `<span class="rank-badge">[${hTeam.rank}]</span>`;
+                    if(aTeam) aRank = `<span class="rank-badge">[${aTeam.rank}]</span>`;
                 }
 
-                // STATS
-                const hStats = statData.response[0].statistics;
-                const aStats = statData.response[1].statistics;
+                // 2. STATS PROCESSING (SMART FALLBACK)
+                let hStats = [], aStats = [];
+                if(statData.response && statData.response.length === 2) {
+                    hStats = statData.response[0].statistics;
+                    aStats = statData.response[1].statistics;
+                }
+
                 const getStat = (arr, type) => { 
                     const i = arr.find(s => s.type === type || s.type === type.replace(" ", "")); 
                     if(i && i.value) return parseFloat(i.value);
@@ -400,59 +403,57 @@
                 const aTotal = getStat(aStats, "Total Shots");
                 const hCorn = getStat(hStats, "Corner Kicks");
                 const aCorn = getStat(aStats, "Corner Kicks");
+                const hPoss = getStat(hStats, "Ball Possession");
+                const aPoss = getStat(aStats, "Ball Possession");
                 const hxG = getStat(hStats, "expected_goals");
                 const axG = getStat(aStats, "expected_goals");
 
-                const hPressure = (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
-                const aPressure = (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
-                const totalPress = hPressure + aPressure || 1; 
-                const hPercent = Math.round((hPressure / totalPress) * 100);
-                const aPercent = 100 - hPercent;
+                // CALCULATE "CHAOS SCORE" (The fallback metric)
+                // If Stats Missing, defaults to 0
+                const hChaos = (hSoT * 3) + (hCorn * 1) + (hTotal * 0.5) + (hPoss > 0 ? (hPoss - 50)/5 : 0);
+                const aChaos = (aSoT * 3) + (aCorn * 1) + (aTotal * 0.5) + (aPoss > 0 ? (aPoss - 50)/5 : 0);
+                const totalChaos = hChaos + aChaos;
+                const chaosDiff = Math.abs(hChaos - aChaos);
 
-                let verdict = "", vColor = "#888", newConf = 75;
-                const diff = Math.abs(hPressure - aPressure);
+                // GAUGE CALCULATION
+                let hPercent = 50, aPercent = 50;
+                if(totalChaos > 0) {
+                    hPercent = Math.round((hChaos / totalChaos) * 100);
+                    aPercent = 100 - hPercent;
+                }
 
-                // xG LOGIC
+                // VERDICT ENGINE
+                let verdict = "⚖️ BALANCED", vColor = "#d29922", newConf = 75;
+
                 if(hxG > 0 || axG > 0) {
+                    // ELITE DATA LOGIC
                     if(hxG > (hGoals + 0.6)) { verdict = `📉 ${hName} xG ANOMALY`; vColor = "#a371f7"; newConf = 92; }
                     else if(axG > (aGoals + 0.6)) { verdict = `📉 ${aName} xG ANOMALY`; vColor = "#a371f7"; newConf = 92; }
-                    else if(totalPress < 20) { verdict = "💤 LOW ENERGY"; vColor = "#8b949e"; newConf = 90; }
-                    else if(diff > 30) { 
-                        const leader = hPressure > aPressure ? hName : aName;
+                    else if(totalChaos < 10) { verdict = "🛡️ DEFENSIVE LOCK"; vColor = "#8b949e"; newConf = 88; }
+                    else if(chaosDiff > 15) { 
+                        const leader = hChaos > aChaos ? hName : aName;
                         verdict = `🔥 SIEGE: ${leader}`; vColor = "#2ea043"; newConf = 92;
                     } 
-                    else { verdict = "⚖️ BALANCED"; vColor = "#d29922"; newConf = 65; }
+                    else if(totalChaos > 25) { verdict = "⚔️ END-TO-END (High Pace)"; vColor = "#a371f7"; newConf = 85; }
                 } else {
-                    if (totalPress < 20) { verdict = "💤 LOW ENERGY"; vColor = "#8b949e"; newConf = 90; }
-                    else if (diff > 30) { 
-                        const leader = hPressure > aPressure ? hName : aName;
-                        verdict = `🔥 SIEGE: ${leader}`; vColor = "#2ea043"; newConf = 92;
-                    } 
-                    else { verdict = "⚖️ BALANCED"; vColor = "#d29922"; newConf = 65; }
+                    // LOW DATA LOGIC
+                    if(totalChaos < 5) { verdict = "⏳ STALEMATE (No Chances)"; vColor = "#8b949e"; newConf = 85; }
+                    else if(chaosDiff > 12) { 
+                        const leader = hChaos > aChaos ? hName : aName;
+                        verdict = `🔥 DOMINATING: ${leader}`; vColor = "#2ea043"; newConf = 90;
+                    }
+                    else if(totalChaos > 20) { verdict = "⚔️ OPEN GAME"; vColor = "#a371f7"; newConf = 80; }
                 }
 
                 // AI TIPS
                 let tips = [];
-                if (hPressure > aPressure + 40) tips.push({type: `⚡ ${hName} To Score Next`, conf: 92});
-                else if (aPressure > hPressure + 40) tips.push({type: `⚡ ${aName} To Score Next`, conf: 92});
-                else if (hPressure > aPressure + 20) tips.push({type: `✅ ${hName} Draw No Bet`, conf: 78});
-                else if (aPressure > hPressure + 20) tips.push({type: `✅ ${aName} Draw No Bet`, conf: 78});
+                if (hChaos > aChaos + 20) tips.push({type: `⚡ ${hName} To Score Next`, conf: 92});
+                else if (aChaos > hChaos + 20) tips.push({type: `⚡ ${aName} To Score Next`, conf: 92});
+                
                 if ((hSoT + aSoT) > 8 && (hGoals + aGoals) === 0) tips.push({type: "⚽ Over 0.5 Goals", conf: 88});
-                if (hxG > hGoals + 0.5) tips.push({type: `📈 ${hName} Goal Overdue (xG)`, conf: 90});
-                if (aRed && hPressure > aPressure) tips.push({type: `🔥 ${hName} to Win`, conf: 95});
-                if(totalPress < 15) tips.push({type: "💤 Under 0.5 Goals (Live)", conf: 85});
-
-                let tipsHTML = "";
-                if(tips.length > 0) {
-                    tipsHTML = `<div class="tip-box"><div class="tip-header">🎯 AI Bet Suggestions</div>`;
-                    tips.forEach(t => {
-                        let cClass = t.conf > 85 ? "#2ea043" : "#d29922";
-                        tipsHTML += `<div class="tip-item"><span class="tip-name">${t.type}</span><span style="color:${cClass}; font-weight:bold;">${t.conf}%</span></div>`;
-                    });
-                    tipsHTML += `</div>`;
-                }
-
-                // ODDS
+                if(totalChaos < 5 && (hGoals + aGoals) === 0) tips.push({type: "💤 Under 0.5 Goals", conf: 85});
+                
+                // ODDS PROCESSING
                 let oddsHTML = "<div style='text-align:center; color:#666; font-size:0.8rem; margin-top:5px;'>Odds Locked</div>";
                 if(oddsData.response && oddsData.response.length > 0 && oddsData.response[0].odds.length > 0) {
                     const vals = oddsData.response[0].odds[0].values;
@@ -475,13 +476,30 @@
                 let xgHTML = "";
                 if(hxG > 0 || axG > 0) xgHTML = `<div class="stat-bar" style="color:#a371f7"><span>Expected Goals (xG)</span><span class="stat-val">${hxG || 0} - ${axG || 0}</span></div>`;
 
+                // TIPS HTML
+                let tipsHTML = "";
+                if(tips.length > 0) {
+                    tipsHTML = `<div class="tip-box"><div class="tip-header">🎯 AI Suggestions</div>`;
+                    tips.forEach(t => {
+                        let cClass = t.conf > 85 ? "#2ea043" : "#d29922";
+                        tipsHTML += `<div class="tip-item"><span class="tip-name">${t.type}</span><span style="color:${cClass}; font-weight:bold;">${t.conf}%</span></div>`;
+                    });
+                    tipsHTML += `</div>`;
+                }
+
                 statBox.innerHTML = `
                     <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}</div>
-                    <div class="gauge-labels"><span>${hName} (${hPercent}%)</span><span>${aName} (${aPercent}%)</span></div>
+                    
+                    <div class="gauge-labels">
+                        <span>${hName} ${hRank} (${hPercent}%)</span>
+                        <span>${aName} ${aRank} (${aPercent}%)</span>
+                    </div>
                     <div class="gauge-container"><div class="gauge-home" style="width:${hPercent}%"></div><div class="gauge-away" style="width:${aPercent}%"></div></div>
+                    
                     ${xgHTML}
-                    <div class="stat-bar"><span>Shots on Target</span><span class="stat-val">${hSoT} - ${aSoT}</span></div>
+                    <div class="stat-bar"><span>Shots (Total)</span><span class="stat-val">${hTotal} (${hSoT}) - ${aTotal} (${aSoT})</span></div>
                     <div class="stat-bar"><span>Corners</span><span class="stat-val">${hCorn} - ${aCorn}</span></div>
+                    
                     ${tipsHTML}
                     ${oddsHTML}
                     <button class="copy-btn" onclick="copyTip('${hName}', '${aName}', '${verdict}', ${newConf})">📋 Copy Report</button>
@@ -492,7 +510,7 @@
                 predBadge.innerText = newConf + "%";
                 if(newConf > 80) predBadge.className = "conf-badge conf-high"; else if(newConf > 60) predBadge.className = "conf-badge conf-med"; else predBadge.className = "conf-badge conf-low";
                 
-            } catch(e) { statBox.innerHTML = "<div style='color:#da3633;'>Error analyzing.</div>"; }
+            } catch(e) { statBox.innerHTML = "<div style='color:#da3633;'>Error analyzing.</div>"; console.log(e); }
             btn.innerText = "⚡ Analyze";
         }
 
