@@ -32,7 +32,7 @@
         .nav-tab { flex: 1; text-align: center; padding: 10px; background: #21262d; border-radius: 8px; border: 1px solid #30363d; color: #888; font-weight: bold; cursor: pointer; }
         .nav-tab.active { background: #2ea043; color: white; border-color: #2ea043; }
 
-        /* MATCH CARD */
+        /* CARDS */
         .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; }
         .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
         .score-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 10px 0; }
@@ -41,7 +41,7 @@
         .goal-times { font-size: 0.75rem; color: var(--gold); margin-top: 4px; min-height: 14px; font-family: monospace; }
         .score-box { background: #21262d; padding: 8px 14px; border-radius: 8px; border: 1px solid #30363d; font-family: monospace; font-size: 1.2rem; font-weight: bold; }
         
-        /* SCHEDULE */
+        /* SCHED ITEM */
         .sched-card { background: #161b22; border-bottom: 1px solid #30363d; padding: 12px; display: flex; justify-content: space-between; align-items: center; }
         .sched-time { font-family: monospace; color: var(--gold); font-weight: bold; width: 50px; font-size: 1rem; }
         .sched-teams { flex: 1; font-size: 0.9rem; }
@@ -80,6 +80,7 @@
         
         .val-good { color: var(--green); text-shadow: 0 0 5px rgba(46, 160, 67, 0.5); }
         .rank-badge { font-size: 0.75rem; color: var(--gold); margin-left: 4px; font-weight: normal; }
+        .est-badge { font-size: 0.7rem; background: #333; padding: 2px 4px; border-radius: 3px; color: #888; margin-left: 5px; }
 
         .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
     </style>
@@ -276,7 +277,7 @@
             const s = m.goals;
             const t = m.fixture.status.elapsed;
             const lid = m.league.id;
-            const sid = m.league.season; // Season Year
+            const sid = m.league.season;
             
             let hGoals = "", aGoals = "";
             let hRed = false, aRed = false;
@@ -300,12 +301,10 @@
             let confVal = 0;
             let confClass = "conf-low";
 
-            // Basic Context Logic (Pre-Analyze)
             if (s.home === s.away) {
                 if (s.home > 1) { predText = "⚔️ High Score Draw"; confVal = 78; }
                 else if (s.home === 0) { predText = "🛡️ 0-0 Stalemate"; confVal = 70; }
                 else { predText = "⚠️ Tight Match"; confVal = 75; }
-                
                 if(hRed || aRed) { predText = "⚔️ 10 Men vs 11"; confVal = 85; }
             } 
             else if (Math.abs(s.home - s.away) === 1) {
@@ -363,7 +362,6 @@
             statBox.innerHTML = "<div style='color:#888; text-align:center;'>Fetching Data...</div>";
 
             try {
-                // PARALLEL FETCH: STATS + ODDS + STANDINGS
                 const [statRes, oddsRes, standRes] = await Promise.all([
                     fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
                     fetch(`https://v3.football.api-sports.io/odds/live?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
@@ -374,7 +372,6 @@
                 const oddsData = await oddsRes.json();
                 const standData = await standRes.json();
 
-                // 1. STANDINGS PARSING
                 let hRank = "", aRank = "";
                 if(standData.response && standData.response.length > 0) {
                     const table = standData.response[0].league.standings[0];
@@ -384,11 +381,15 @@
                     if(aTeam) aRank = `<span class="rank-badge">[${aTeam.rank}]</span>`;
                 }
 
-                // 2. STATS PROCESSING (SMART FALLBACK)
+                // --- INFERENCE LOGIC START ---
                 let hStats = [], aStats = [];
+                let isEstimated = false;
+
                 if(statData.response && statData.response.length === 2) {
                     hStats = statData.response[0].statistics;
                     aStats = statData.response[1].statistics;
+                } else {
+                    isEstimated = true;
                 }
 
                 const getStat = (arr, type) => { 
@@ -397,63 +398,56 @@
                     return 0; 
                 };
 
-                const hSoT = getStat(hStats, "Shots on Goal");
-                const aSoT = getStat(aStats, "Shots on Goal");
-                const hTotal = getStat(hStats, "Total Shots");
-                const aTotal = getStat(aStats, "Total Shots");
-                const hCorn = getStat(hStats, "Corner Kicks");
-                const aCorn = getStat(aStats, "Corner Kicks");
-                const hPoss = getStat(hStats, "Ball Possession");
-                const aPoss = getStat(aStats, "Ball Possession");
+                let hSoT = getStat(hStats, "Shots on Goal");
+                let aSoT = getStat(aStats, "Shots on Goal");
+                let hTotal = getStat(hStats, "Total Shots");
+                let aTotal = getStat(aStats, "Total Shots");
+                let hCorn = getStat(hStats, "Corner Kicks");
+                let aCorn = getStat(aStats, "Corner Kicks");
+                
+                // IF OFFICIAL STATS ARE ZERO BUT GOALS EXIST -> INFER THEM
+                if (isEstimated || (hTotal === 0 && hGoals > 0)) { hSoT = Math.max(hSoT, hGoals); hTotal = Math.max(hTotal, hGoals); isEstimated = true; }
+                if (isEstimated || (aTotal === 0 && aGoals > 0)) { aSoT = Math.max(aSoT, aGoals); aTotal = Math.max(aTotal, aGoals); isEstimated = true; }
+
                 const hxG = getStat(hStats, "expected_goals");
                 const axG = getStat(aStats, "expected_goals");
 
-                // CALCULATE "CHAOS SCORE" (The fallback metric)
-                // If Stats Missing, defaults to 0
-                const hChaos = (hSoT * 3) + (hCorn * 1) + (hTotal * 0.5) + (hPoss > 0 ? (hPoss - 50)/5 : 0);
-                const aChaos = (aSoT * 3) + (aCorn * 1) + (aTotal * 0.5) + (aPoss > 0 ? (aPoss - 50)/5 : 0);
-                const totalChaos = hChaos + aChaos;
-                const chaosDiff = Math.abs(hChaos - aChaos);
+                const hPressure = (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
+                const aPressure = (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
+                const totalPress = hPressure + aPressure || 1; 
+                const hPercent = Math.round((hPressure / totalPress) * 100);
+                const aPercent = 100 - hPercent;
 
-                // GAUGE CALCULATION
-                let hPercent = 50, aPercent = 50;
-                if(totalChaos > 0) {
-                    hPercent = Math.round((hChaos / totalChaos) * 100);
-                    aPercent = 100 - hPercent;
-                }
-
-                // VERDICT ENGINE
                 let verdict = "⚖️ BALANCED", vColor = "#d29922", newConf = 75;
+                const diff = Math.abs(hPressure - aPressure);
 
                 if(hxG > 0 || axG > 0) {
-                    // ELITE DATA LOGIC
                     if(hxG > (hGoals + 0.6)) { verdict = `📉 ${hName} xG ANOMALY`; vColor = "#a371f7"; newConf = 92; }
                     else if(axG > (aGoals + 0.6)) { verdict = `📉 ${aName} xG ANOMALY`; vColor = "#a371f7"; newConf = 92; }
-                    else if(totalChaos < 10) { verdict = "🛡️ DEFENSIVE LOCK"; vColor = "#8b949e"; newConf = 88; }
-                    else if(chaosDiff > 15) { 
-                        const leader = hChaos > aChaos ? hName : aName;
+                    else if(totalPress < 20) { verdict = "💤 LOW ENERGY"; vColor = "#8b949e"; newConf = 88; }
+                    else if(diff > 30) { 
+                        const leader = hPressure > aPressure ? hName : aName;
                         verdict = `🔥 SIEGE: ${leader}`; vColor = "#2ea043"; newConf = 92;
                     } 
-                    else if(totalChaos > 25) { verdict = "⚔️ END-TO-END (High Pace)"; vColor = "#a371f7"; newConf = 85; }
+                    else { verdict = "⚔️ END-TO-END"; vColor = "#a371f7"; newConf = 85; }
                 } else {
-                    // LOW DATA LOGIC
-                    if(totalChaos < 5) { verdict = "⏳ STALEMATE (No Chances)"; vColor = "#8b949e"; newConf = 85; }
-                    else if(chaosDiff > 12) { 
-                        const leader = hChaos > aChaos ? hName : aName;
+                    // FALLBACK LOGIC
+                    if(totalPress < 5) { verdict = "⏳ STALEMATE (No Chances)"; vColor = "#8b949e"; newConf = 85; }
+                    else if(diff > 12) { 
+                        const leader = hPressure > aPressure ? hName : aName;
                         verdict = `🔥 DOMINATING: ${leader}`; vColor = "#2ea043"; newConf = 90;
                     }
-                    else if(totalChaos > 20) { verdict = "⚔️ OPEN GAME"; vColor = "#a371f7"; newConf = 80; }
+                    else if(totalPress > 20) { verdict = "⚔️ OPEN GAME"; vColor = "#a371f7"; newConf = 80; }
                 }
 
                 // AI TIPS
                 let tips = [];
-                if (hChaos > aChaos + 20) tips.push({type: `⚡ ${hName} To Score Next`, conf: 92});
-                else if (aChaos > hChaos + 20) tips.push({type: `⚡ ${aName} To Score Next`, conf: 92});
-                
+                if (hPressure > aPressure + 20) tips.push({type: `⚡ ${hName} To Score Next`, conf: 92});
+                else if (aPressure > hPressure + 20) tips.push({type: `⚡ ${aName} To Score Next`, conf: 92});
                 if ((hSoT + aSoT) > 8 && (hGoals + aGoals) === 0) tips.push({type: "⚽ Over 0.5 Goals", conf: 88});
-                if(totalChaos < 5 && (hGoals + aGoals) === 0) tips.push({type: "💤 Under 0.5 Goals", conf: 85});
+                if(totalPress < 5 && (hGoals + aGoals) === 0) tips.push({type: "💤 Under 0.5 Goals", conf: 85});
                 
-                // ODDS PROCESSING
+                // ODDS
                 let oddsHTML = "<div style='text-align:center; color:#666; font-size:0.8rem; margin-top:5px;'>Odds Locked</div>";
                 if(oddsData.response && oddsData.response.length > 0 && oddsData.response[0].odds.length > 0) {
                     const vals = oddsData.response[0].odds[0].values;
@@ -476,7 +470,6 @@
                 let xgHTML = "";
                 if(hxG > 0 || axG > 0) xgHTML = `<div class="stat-bar" style="color:#a371f7"><span>Expected Goals (xG)</span><span class="stat-val">${hxG || 0} - ${axG || 0}</span></div>`;
 
-                // TIPS HTML
                 let tipsHTML = "";
                 if(tips.length > 0) {
                     tipsHTML = `<div class="tip-box"><div class="tip-header">🎯 AI Suggestions</div>`;
@@ -487,8 +480,10 @@
                     tipsHTML += `</div>`;
                 }
 
+                const estBadge = isEstimated ? `<span class="est-badge">(Est)</span>` : "";
+
                 statBox.innerHTML = `
-                    <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}</div>
+                    <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict} ${estBadge}</div>
                     
                     <div class="gauge-labels">
                         <span>${hName} ${hRank} (${hPercent}%)</span>
