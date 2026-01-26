@@ -19,6 +19,9 @@
         .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         h1 { margin: 0; font-size: 1.4rem; color: var(--green); display: flex; align-items: center; gap: 10px; }
         
+        /* API BADGE */
+        .api-badge { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-family: monospace; font-weight: bold; }
+
         /* AUTO-PILOT */
         .pilot-btn { background: #21262d; border: 1px solid #30363d; color: #888; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.3s; }
         .pilot-btn.active { background: rgba(46, 160, 67, 0.2); border-color: var(--green); color: var(--green); }
@@ -90,12 +93,16 @@
     <header>
         <div class="top-row">
             <h1><img src="target_PNG26.png" style="width:28px;"> Hunter Pro Max</h1>
+            <div id="apiCounter" class="api-badge">API: 0</div>
+        </div>
+        
+        <div style="display:flex; justify-content:space-between; align-items:center;">
             <button id="pilotBtn" class="pilot-btn" onclick="togglePilot()">
                 <div class="pilot-dot"></div> Auto-Pilot
             </button>
         </div>
         
-        <div class="nav-tabs">
+        <div class="nav-tabs" style="margin-top:15px;">
             <div id="tabLive" class="nav-tab active" onclick="switchTab('live')">🔴 Live Hunt</div>
             <div id="tabSched" class="nav-tab" onclick="switchTab('sched')">📅 Elite Schedule</div>
         </div>
@@ -137,6 +144,24 @@
         const pilotBtn = document.getElementById('pilotBtn');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+        // --- API TRACKER LOGIC ---
+        function trackAPI(count) {
+            const today = new Date().toISOString().split('T')[0];
+            let storeDate = localStorage.getItem('apiDate');
+            let current = parseInt(localStorage.getItem('apiCount') || "0");
+
+            if (storeDate !== today) {
+                current = 0;
+                localStorage.setItem('apiDate', today);
+            }
+
+            current += count;
+            localStorage.setItem('apiCount', current);
+            document.getElementById('apiCounter').innerText = `API: ${current}`;
+        }
+        // Init tracker
+        trackAPI(0);
+
         function switchTab(tab) {
             if(tab === 'live') {
                 document.getElementById('liveView').style.display = 'block';
@@ -155,6 +180,7 @@
         }
 
         async function loadSchedule() {
+            trackAPI(1); // COUNT API
             const schedDiv = document.getElementById('schedContent');
             schedDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>Loading Elite Fixtures...</p>";
             const localDate = new Date().toLocaleDateString('en-CA'); 
@@ -215,6 +241,7 @@
         }
 
         async function runScan(isAuto = false) {
+            trackAPI(1); // COUNT API
             if(!isAuto) {
                 mainBtn.innerText = "Scanning Global Feeds..."; mainBtn.disabled = true;
                 content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data...</p>";
@@ -352,18 +379,19 @@
             `;
             content.appendChild(div);
 
-            // GLOBAL AUTO-ANALYSIS: If Pilot Mode is ON, it deep scans EVERY game found
+            // GLOBAL AUTO-ANALYSIS
             if(pilotMode) {
                 const aBtn = document.getElementById(`an-btn-${m.fixture.id}`);
                 const pBtn = document.getElementById(`pl-btn-${m.fixture.id}`);
                 if(aBtn) { aBtn.innerText = "Auto-Scan..."; deepAnalyze(aBtn, m.fixture.id, h.name, a.name, s.home, s.away, hRed, aRed, lid, sid); }
-                if(pBtn && document.getElementById('filterSelect').value === 'elite') { // Only auto-check players for Elite to save SOME requests
+                if(pBtn && document.getElementById('filterSelect').value === 'elite') { // Only check players automatically on Elite to conserve slightly
                     pBtn.innerText = "Auto-Check..."; checkPlayers(pBtn, m.fixture.id); 
                 }
             }
         }
 
         async function deepAnalyze(btn, id, hName, aName, hGoals, aGoals, hRed, aRed, leagueId, season) {
+            trackAPI(3); // COUNT API (Stats, Odds, Standings)
             btn.innerText = "Scanning...";
             const statBox = document.getElementById(`stats-${id}`);
             const predText = document.getElementById(`pred-text-${id}`);
@@ -518,6 +546,7 @@
         }
 
         async function checkPlayers(btn, id) {
+            trackAPI(1); // COUNT API
             btn.innerText = "Checking...";
             try {
                 const res = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } });
