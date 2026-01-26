@@ -342,15 +342,25 @@
                 </div>
                 <div class="btn-row">
                     <a href="https://www.bet365.com/#/IP/B1" target="_blank" class="bet365-btn">Bet365</a>
-                    <button class="analyze-btn" onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name}', '${a.name}', ${s.home}, ${s.away}, ${hRed}, ${aRed}, ${lid}, ${sid})">⚡ Analyze</button>
+                    <button class="analyze-btn" id="an-btn-${m.fixture.id}" onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name}', '${a.name}', ${s.home}, ${s.away}, ${hRed}, ${aRed}, ${lid}, ${sid})">⚡ Analyze</button>
                 </div>
                 <div class="btn-row">
-                    <button class="player-btn" onclick="checkPlayers(this, ${m.fixture.id})">🕵️ Check Players</button>
+                    <button class="player-btn" id="pl-btn-${m.fixture.id}" onclick="checkPlayers(this, ${m.fixture.id})">🕵️ Check Players</button>
                 </div>
                 <div id="p-${m.fixture.id}"></div>
                 <div id="stats-${m.fixture.id}" class="analysis-box"></div>
             `;
             content.appendChild(div);
+
+            // GLOBAL AUTO-ANALYSIS: If Pilot Mode is ON, it deep scans EVERY game found
+            if(pilotMode) {
+                const aBtn = document.getElementById(`an-btn-${m.fixture.id}`);
+                const pBtn = document.getElementById(`pl-btn-${m.fixture.id}`);
+                if(aBtn) { aBtn.innerText = "Auto-Scan..."; deepAnalyze(aBtn, m.fixture.id, h.name, a.name, s.home, s.away, hRed, aRed, lid, sid); }
+                if(pBtn && document.getElementById('filterSelect').value === 'elite') { // Only auto-check players for Elite to save SOME requests
+                    pBtn.innerText = "Auto-Check..."; checkPlayers(pBtn, m.fixture.id); 
+                }
+            }
         }
 
         async function deepAnalyze(btn, id, hName, aName, hGoals, aGoals, hRed, aRed, leagueId, season) {
@@ -381,16 +391,13 @@
                     if(aTeam) aRank = `<span class="rank-badge">[${aTeam.rank}]</span>`;
                 }
 
-                // --- INFERENCE LOGIC START ---
                 let hStats = [], aStats = [];
                 let isEstimated = false;
 
                 if(statData.response && statData.response.length === 2) {
                     hStats = statData.response[0].statistics;
                     aStats = statData.response[1].statistics;
-                } else {
-                    isEstimated = true;
-                }
+                } else { isEstimated = true; }
 
                 const getStat = (arr, type) => { 
                     const i = arr.find(s => s.type === type || s.type === type.replace(" ", "")); 
@@ -405,7 +412,6 @@
                 let hCorn = getStat(hStats, "Corner Kicks");
                 let aCorn = getStat(aStats, "Corner Kicks");
                 
-                // IF OFFICIAL STATS ARE ZERO BUT GOALS EXIST -> INFER THEM
                 if (isEstimated || (hTotal === 0 && hGoals > 0)) { hSoT = Math.max(hSoT, hGoals); hTotal = Math.max(hTotal, hGoals); isEstimated = true; }
                 if (isEstimated || (aTotal === 0 && aGoals > 0)) { aSoT = Math.max(aSoT, aGoals); aTotal = Math.max(aTotal, aGoals); isEstimated = true; }
 
@@ -431,7 +437,6 @@
                     } 
                     else { verdict = "⚔️ END-TO-END"; vColor = "#a371f7"; newConf = 85; }
                 } else {
-                    // FALLBACK LOGIC
                     if(totalPress < 5) { verdict = "⏳ STALEMATE (No Chances)"; vColor = "#8b949e"; newConf = 85; }
                     else if(diff > 12) { 
                         const leader = hPressure > aPressure ? hName : aName;
@@ -440,14 +445,12 @@
                     else if(totalPress > 20) { verdict = "⚔️ OPEN GAME"; vColor = "#a371f7"; newConf = 80; }
                 }
 
-                // AI TIPS
                 let tips = [];
                 if (hPressure > aPressure + 20) tips.push({type: `⚡ ${hName} To Score Next`, conf: 92});
                 else if (aPressure > hPressure + 20) tips.push({type: `⚡ ${aName} To Score Next`, conf: 92});
                 if ((hSoT + aSoT) > 8 && (hGoals + aGoals) === 0) tips.push({type: "⚽ Over 0.5 Goals", conf: 88});
                 if(totalPress < 5 && (hGoals + aGoals) === 0) tips.push({type: "💤 Under 0.5 Goals", conf: 85});
                 
-                // ODDS
                 let oddsHTML = "<div style='text-align:center; color:#666; font-size:0.8rem; margin-top:5px;'>Odds Locked</div>";
                 if(oddsData.response && oddsData.response.length > 0 && oddsData.response[0].odds.length > 0) {
                     const vals = oddsData.response[0].odds[0].values;
