@@ -123,13 +123,25 @@
 
         .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
         
-        /* HELP MODAL */
+        /* PAYWALL & MODALS */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; overflow-y: auto; }
         .modal-content { background: #161b22; margin: 10% auto; padding: 20px; width: 85%; border-radius: 12px; border: 1px solid #30363d; max-width: 500px; padding-bottom: 100px; }
         .modal h2 { color: var(--green); border-bottom: 1px solid #30363d; padding-bottom: 10px; margin-top: 0; }
         .modal h3 { color: var(--gold); margin-top: 20px; margin-bottom: 5px; }
         .modal p { color: #ccc; font-size: 0.9rem; line-height: 1.5; margin-top: 0; }
         .close-modal { background: #333; color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 20px; font-size: 1rem; cursor: pointer; }
+
+        .paywall-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .paywall-box { background: #161b22; border: 2px solid var(--gold); padding: 30px; border-radius: 16px; max-width: 85%; animation: popIn 0.3s ease; }
+        .paywall-title { color: var(--gold); font-size: 1.5rem; margin-bottom: 10px; }
+        .paywall-desc { color: #ccc; margin-bottom: 20px; font-size: 0.9rem; line-height: 1.5; }
+        .upgrade-btn { background: var(--gold); color: #000; border: none; padding: 12px 24px; font-weight: bold; font-size: 1rem; border-radius: 8px; cursor: pointer; width: 100%; margin-bottom: 10px; }
+        .restore-btn { background: transparent; color: #666; border: none; font-size: 0.8rem; cursor: pointer; text-decoration: underline; }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* HEADER UPGRADE BADGE */
+        .premium-badge { background: var(--gold); color: #000; font-weight: bold; font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; cursor: pointer; margin-right: 10px; }
+        .free-badge { background: #333; color: #ccc; font-weight: bold; font-size: 0.7rem; padding: 4px 8px; border-radius: 6px; cursor: pointer; margin-right: 10px; border: 1px solid #555; }
 
         /* COMMON */
         .pred-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; margin-top: 10px; }
@@ -146,6 +158,7 @@
         <div class="top-row">
             <h1><img src="target_PNG26.png" style="width:28px;"> Hunter Pro Max</h1>
             <div class="header-right">
+                <div id="userStatus" class="free-badge" onclick="showPaywall()">FREE PLAN</div>
                 <div id="apiCounter" class="api-badge">API: 0</div>
                 <button class="help-btn" onclick="openHelp()">?</button>
             </div>
@@ -228,6 +241,22 @@
         </div>
     </div>
 
+    <div id="paywallModal" class="paywall-overlay">
+        <div class="paywall-box">
+            <div class="paywall-title">👑 Upgrade to Pro</div>
+            <div class="paywall-desc">
+                Unlock the full power of the Hunter:
+                <br><br>
+                🚀 <b>Deep Analysis (xG & Pressure)</b><br>
+                🕵️ <b>Player Threat Ratings</b><br>
+                🤖 <b>Auto-Pilot & Alerts</b><br>
+                🎯 <b>Sniper Strategy Chips</b>
+            </div>
+            <button class="upgrade-btn" onclick="mockUpgrade()">👉 Get Pro Access (£19/mo)</button>
+            <button class="restore-btn" onclick="closePaywall()">Maybe Later</button>
+        </div>
+    </div>
+
     <script>
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
         
@@ -240,6 +269,7 @@
         let alertedGames = new Set();
         let currentStrategy = 'all';
         let momentumHistory = {}; 
+        let isPremium = localStorage.getItem('isPremium') === 'true'; 
         
         const content = document.getElementById('content');
         const mainBtn = document.getElementById('mainBtn');
@@ -249,6 +279,32 @@
         // --- HELP MODAL ---
         function openHelp() { document.getElementById('helpModal').style.display = 'block'; }
         function closeHelp(e) { if(e.target.id === 'helpModal') document.getElementById('helpModal').style.display = 'none'; }
+
+        // --- PAYWALL ---
+        function updateStatusUI() {
+            const badge = document.getElementById('userStatus');
+            if(isPremium) {
+                badge.className = 'premium-badge';
+                badge.innerText = '👑 PRO MEMBER';
+                badge.onclick = null; 
+            } else {
+                badge.className = 'free-badge';
+                badge.innerText = 'FREE PLAN';
+                badge.onclick = showPaywall;
+            }
+        }
+        updateStatusUI();
+
+        function showPaywall() { document.getElementById('paywallModal').style.display = 'flex'; }
+        function closePaywall() { document.getElementById('paywallModal').style.display = 'none'; }
+        
+        function mockUpgrade() {
+            alert("Redirecting to Stripe Checkout..."); 
+            isPremium = true;
+            localStorage.setItem('isPremium', 'true');
+            updateStatusUI();
+            closePaywall();
+        }
 
         // --- TRACKER LOGIC ---
         function getHistory() { return JSON.parse(localStorage.getItem('betHistory') || "[]"); }
@@ -389,6 +445,7 @@
         }
 
         function setStrategy(strat, el) {
+            if(strat !== 'all' && !isPremium) { showPaywall(); return; } // LOCK
             currentStrategy = strat;
             document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
             el.classList.add('active');
@@ -433,6 +490,7 @@
         }
 
         function togglePilot() {
+            if(!isPremium) { showPaywall(); return; } // LOCK
             pilotMode = !pilotMode;
             if(pilotMode) {
                 if (Notification.permission !== "granted") { Notification.requestPermission(); }
@@ -483,7 +541,6 @@
             if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
 
             const filtered = allMatches.filter(m => {
-                // 1. League Filter
                 const league = (m.league.name || "").toLowerCase();
                 const blocked = ["friendly", "friendlies", "club friendlies", "u19", "u20", "u21", "u23", "youth", "reserve", "reserves"];
                 if(blocked.some(word => league.includes(word))) return false; 
@@ -496,7 +553,6 @@
                 
                 if (!leagueMatch) return false;
 
-                // 2. Strategy Filter (Sniper Mode)
                 if (currentStrategy === 'all') return true;
                 if (currentStrategy === 'losing') return (m.goals.home < m.goals.away); 
                 if (currentStrategy === 'red') {
@@ -620,11 +676,14 @@
                 const aBtn = document.getElementById(`an-btn-${m.fixture.id}`);
                 const pBtn = document.getElementById(`pl-btn-${m.fixture.id}`);
                 if(aBtn) { aBtn.innerText = "Auto-Scan..."; deepAnalyze(aBtn, m.fixture.id, h.name, a.name, s.home, s.away, hRed, aRed, lid, sid); }
-                if(pBtn && document.getElementById('filterSelect').value === 'elite') { pBtn.innerText = "Auto-Check..."; checkPlayers(pBtn, m.fixture.id); }
+                // Only auto-open players if premium user
+                // if(pBtn && document.getElementById('filterSelect').value === 'elite' && isPremium) { pBtn.innerText = "Auto-Check..."; checkPlayers(pBtn, m.fixture.id); }
             }
         }
 
         async function deepAnalyze(btn, id, hName, aName, hGoals, aGoals, hRed, aRed, leagueId, season) {
+            if(!isPremium) { showPaywall(); return; } // LOCK
+            
             trackAPI(3);
             btn.innerText = "Scanning...";
             const statBox = document.getElementById(`stats-${id}`);
@@ -692,7 +751,6 @@
                     return; 
                 }
 
-                // MOMENTUM TREND
                 const prev = momentumHistory[id] || 50;
                 let trendBadge = "";
                 if(hPercent > prev + 5) trendBadge = " 📈 RISING";
@@ -792,10 +850,20 @@
         }
 
         async function checkPlayers(btn, id) {
+            if(!isPremium) { showPaywall(); return; } // LOCK
+            
             trackAPI(1);
-            btn.innerText = "Checking...";
             const area = document.getElementById(`p-${id}`);
+            
+            // TOGGLE LOGIC
+            if(area.style.display === 'block') {
+                area.style.display = 'none';
+                btn.innerText = "🕵️ Check Players";
+                return;
+            }
+            
             area.style.display = 'block';
+            btn.innerText = "❌ Close Players";
             area.innerHTML = "<div style='color:#888; text-align:center;'>Scanning Players...</div>";
 
             try {
@@ -853,7 +921,6 @@
                 area.innerHTML = html;
 
             } catch(e) { area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error checking players.</div>"; }
-            btn.innerText = "🕵️ Check Players";
         }
 
         if ('serviceWorker' in navigator) {
