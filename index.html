@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0d1117">
-    <title>60' Hunter Pro Max</title>
+    <title>60' Hunter Ultimate</title>
 
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="target_PNG26.png">
@@ -20,34 +20,39 @@
         h1 { margin: 0; font-size: 1.4rem; color: var(--green); display: flex; align-items: center; gap: 10px; }
         .api-badge { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-family: monospace; font-weight: bold; }
 
+        /* PULSE ANIMATIONS */
+        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(46, 160, 67, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0); } }
+        @keyframes pulse-purple { 0% { box-shadow: 0 0 0 0 rgba(163, 113, 247, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(163, 113, 247, 0); } 100% { box-shadow: 0 0 0 0 rgba(163, 113, 247, 0); } }
+
         /* AUTO-PILOT */
         .pilot-btn { background: #21262d; border: 1px solid #30363d; color: #888; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.3s; }
         .pilot-btn.active { background: rgba(46, 160, 67, 0.2); border-color: var(--green); color: var(--green); }
         .pilot-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; }
         .pilot-btn.active .pilot-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
 
-        select { width: 100%; padding: 12px; background: #21262d; color: white; border: 1px solid #30363d; border-radius: 8px; font-size: 1rem; font-weight: bold; outline: none; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
-
         /* TABS */
         .nav-tabs { display: flex; gap: 10px; margin-top: 15px; }
         .nav-tab { flex: 1; text-align: center; padding: 10px; background: #21262d; border-radius: 8px; border: 1px solid #30363d; color: #888; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
         .nav-tab.active { background: #2ea043; color: white; border-color: #2ea043; }
+
+        select { width: 100%; padding: 12px; background: #21262d; color: white; border: 1px solid #30363d; border-radius: 8px; font-size: 1rem; font-weight: bold; outline: none; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
 
         /* CARDS */
         .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; transition: all 0.3s; }
         .match-card.placed { border: 1px solid var(--green); background: rgba(46, 160, 67, 0.05); }
         .match-card.ghost { opacity: 0.5; border-color: #30363d; filter: grayscale(0.8); }
         .match-card.ghost:hover { opacity: 1; filter: grayscale(0); }
+        
+        /* PULSE CLASSES */
+        .match-card.pulse-home { animation: pulse-green 2s infinite; border-color: var(--green); }
+        .match-card.pulse-away { animation: pulse-purple 2s infinite; border-color: var(--purple); }
+
         .placed-badge { position: absolute; top: 0; right: 0; background: var(--green); color: white; font-size: 0.7rem; font-weight: bold; padding: 4px 8px; border-bottom-left-radius: 8px; }
 
         .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
         .score-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 10px 0; }
         .team-col { width: 40%; display: flex; flex-direction: column; }
         .team-name { font-size: 1rem; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        
-        /* TEAM RANK BADGE ON MAIN CARD */
-        .team-rank-main { font-size: 0.75rem; color: var(--gold); margin-left: 4px; font-family: monospace; font-weight: normal; }
-
         .goal-times { font-size: 0.75rem; color: var(--gold); margin-top: 4px; min-height: 14px; font-family: monospace; }
         .score-box { background: #21262d; padding: 8px 14px; border-radius: 8px; border: 1px solid #30363d; font-family: monospace; font-size: 1.2rem; font-weight: bold; }
         
@@ -92,8 +97,15 @@
         .tip-name { color: #fff; font-weight: bold; font-size: 0.9rem; }
         
         .val-good { color: var(--green); text-shadow: 0 0 5px rgba(46, 160, 67, 0.5); }
+        .rank-badge { font-size: 0.75rem; color: var(--gold); margin-left: 4px; font-weight: normal; }
         .est-badge { font-size: 0.7rem; background: #333; padding: 2px 4px; border-radius: 3px; color: #888; margin-left: 5px; }
         .ignore-msg { color: var(--red); font-weight: bold; text-align: center; border: 1px solid var(--red); padding: 8px; border-radius: 6px; background: rgba(218, 54, 51, 0.1); margin-bottom: 10px; }
+        
+        /* FORM BADGE */
+        .form-badge { font-family: monospace; font-size: 0.7rem; letter-spacing: 1px; margin-left: 5px; }
+        .form-w { color: var(--green); }
+        .form-l { color: var(--red); }
+        .form-d { color: #888; }
 
         /* PLAYER RATINGS */
         .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #333; }
@@ -147,7 +159,7 @@
             <div style="text-align:center; padding-top:50px; color:#888;">
                 <p style="font-size:2rem; margin-bottom:10px;">🔭</p>
                 <p>Ready to Hunt (60'-85').</p>
-                <p style="font-size:0.8rem; color:#555">Active: xG • Bet365 • Standings</p>
+                <p style="font-size:0.8rem; color:#555">Active: xG • Bet365 • Standings • Pulse</p>
             </div>
         </div>
         <button class="scan-btn" onclick="runScan()" id="mainBtn">🎯 SCAN MARKETS</button>
@@ -170,7 +182,7 @@
         let allMatches = [];
         let pilotMode = false;
         let pilotInterval;
-        let standingsCache = {}; // Cache to prevent repeat API calls for tables
+        let alertedGames = new Set(); // Prevent spam notifications
         
         const content = document.getElementById('content');
         const mainBtn = document.getElementById('mainBtn');
@@ -220,6 +232,7 @@
                 }
             });
 
+            // If not in live, check if finished
             const missingBets = openBets.filter(b => b.status === 'OPEN' && !liveMatches.find(m => m.fixture.id === b.id));
             if(missingBets.length > 0) {
                 const ids = missingBets.map(b => b.id).join('-');
@@ -388,6 +401,10 @@
         function togglePilot() {
             pilotMode = !pilotMode;
             if(pilotMode) {
+                // ASK PERMISSION FOR NOTIFICATIONS
+                if (Notification.permission !== "granted") {
+                    Notification.requestPermission();
+                }
                 pilotBtn.classList.add('active');
                 pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (60s)`;
                 playPing(); 
@@ -448,55 +465,15 @@
             if(filtered.length === 0) {
                 content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found.</p>`;
             } else {
-                // FETCH RANKS FOR THESE LEAGUES
-                const leagueIds = [...new Set(filtered.map(m => m.league.id))];
-                fetchRanksForLeagues(leagueIds).then(() => {
-                    filtered.forEach(m => {
-                        const t = m.fixture.status.elapsed;
-                        const s = m.goals;
-                        if ((Math.abs(s.home - s.away) === 1 && t > 75) || (s.home === s.away && t > 75)) highValueFound = true;
-                        const isPlaced = placedBets.includes(m.fixture.id);
-                        createCard(m, isPlaced);
-                    });
+                filtered.forEach(m => {
+                    const t = m.fixture.status.elapsed;
+                    const s = m.goals;
+                    if ((Math.abs(s.home - s.away) === 1 && t > 75) || (s.home === s.away && t > 75)) highValueFound = true;
+                    const isPlaced = placedBets.includes(m.fixture.id);
+                    createCard(m, isPlaced);
                 });
             }
             if(isAuto && highValueFound) playPing();
-        }
-
-        // --- NEW: FETCH & CACHE RANKS ---
-        async function fetchRanksForLeagues(leagueIds) {
-            const season = new Date().getFullYear(); // Approximate current season
-            // Filter out leagues we already have in cache
-            const toFetch = leagueIds.filter(lid => !standingsCache[lid]);
-            
-            if(toFetch.length === 0) return; // All cached
-
-            // We must fetch sequentially or parallel
-            const promises = toFetch.map(async lid => {
-                try {
-                    // Only fetch if Elite or major league to save API (optional optimization)
-                    if(!ELITE_IDS.includes(lid) && !EU_COUNTRIES.includes("England")) return; // Skip minor ranks to save API? Or remove this line to fetch all.
-                    
-                    trackAPI(1);
-                    const res = await fetch(`https://v3.football.api-sports.io/standings?league=${lid}&season=${season}`, { headers: { "x-rapidapi-key": API_KEY } });
-                    const data = await res.json();
-                    if(data.response && data.response.length > 0) {
-                        const standings = data.response[0].league.standings[0];
-                        standingsCache[lid] = {}; // Init cache for this league
-                        standings.forEach(t => {
-                            standingsCache[lid][t.team.id] = t.rank;
-                        });
-                    }
-                } catch(e) {}
-            });
-            await Promise.all(promises);
-        }
-
-        function getRank(leagueId, teamId) {
-            if(standingsCache[leagueId] && standingsCache[leagueId][teamId]) {
-                return `(${standingsCache[leagueId][teamId]})`;
-            }
-            return "";
         }
 
         function createCard(m, isPlaced) {
@@ -510,10 +487,6 @@
             const t = m.fixture.status.elapsed;
             const lid = m.league.id;
             const sid = m.league.season;
-            
-            // Get Ranks from Cache
-            const hRank = getRank(lid, h.id);
-            const aRank = getRank(lid, a.id);
             
             let hGoals = "", aGoals = "";
             let hRed = false, aRed = false;
@@ -561,13 +534,13 @@
                 <div class="league-name">${m.league.country} • ${m.league.name}</div>
                 <div class="score-row">
                     <div class="team-col" style="align-items:flex-end; text-align:right;">
-                        <span class="team-name">${h.name} <span class="team-rank-main">${hRank}</span></span>
+                        <span class="team-name">${h.name}</span>
                         <span class="goal-times">${hGoals}</span>
                         ${hRedBadge}
                     </div>
                     <span class="score-box">${s.home}-${s.away}</span>
                     <div class="team-col" style="align-items:flex-start; text-align:left;">
-                        <span class="team-name"><span class="team-rank-main">${aRank}</span> ${a.name}</span>
+                        <span class="team-name">${a.name}</span>
                         <span class="goal-times">${aGoals}</span>
                         ${aRedBadge}
                     </div>
@@ -604,24 +577,41 @@
             btn.innerText = "Scanning...";
             const statBox = document.getElementById(`stats-${id}`);
             const predText = document.getElementById(`pred-text-${id}`);
-            const predBadge = document.getElementById(`pred-badge-${id}`);
             statBox.style.display = 'block';
             statBox.innerHTML = "<div style='color:#888; text-align:center;'>Fetching Data...</div>";
 
             try {
-                const [statRes, oddsRes] = await Promise.all([
+                const [statRes, oddsRes, standRes] = await Promise.all([
                     fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
-                    fetch(`https://v3.football.api-sports.io/odds/live?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } })
+                    fetch(`https://v3.football.api-sports.io/odds/live?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
+                    fetch(`https://v3.football.api-sports.io/standings?league=${leagueId}&season=${season}`, { headers: { "x-rapidapi-key": API_KEY } })
                 ]);
                 
                 const statData = await statRes.json();
                 const oddsData = await oddsRes.json();
+                const standData = await standRes.json();
 
+                // GHOST CHECK
                 if(!statData.response || statData.response.length === 0) {
                     statBox.innerHTML = "<div class='ignore-msg'>⚠️ MATCH IGNORED: Insufficient Data</div>";
                     document.getElementById(`card-${id}`).classList.add('ghost');
                     btn.innerText = "⚡ Analyze";
                     return; 
+                }
+
+                // FORM & RANK
+                let hRank = "", aRank = "";
+                let hForm = "", aForm = "";
+                
+                if(standData.response && standData.response.length > 0) {
+                    const table = standData.response[0].league.standings[0];
+                    const hTeam = table.find(t => t.team.name === hName);
+                    const aTeam = table.find(t => t.team.name === aName);
+                    
+                    const formatForm = (f) => f.split('').map(c => `<span class="form-${c.toLowerCase()}">${c}</span>`).join('');
+
+                    if(hTeam) { hRank = `<span class="rank-badge">[${hTeam.rank}]</span>`; hForm = `<span class="form-badge">${formatForm(hTeam.form.slice(-5))}</span>`; }
+                    if(aTeam) { aRank = `<span class="rank-badge">[${aTeam.rank}]</span>`; aForm = `<span class="form-badge">${formatForm(aTeam.form.slice(-5))}</span>`; }
                 }
 
                 const hStats = statData.response[0].statistics;
@@ -648,12 +638,19 @@
                 const hPercent = Math.round((hPressure / totalPress) * 100);
                 const aPercent = 100 - hPercent;
 
+                // GHOST CHECK 2
                 if(totalPress <= 1) {
                     statBox.innerHTML = "<div class='ignore-msg'>⚠️ MATCH IGNORED: Insufficient Data</div>";
                     document.getElementById(`card-${id}`).classList.add('ghost');
                     btn.innerText = "⚡ Analyze";
                     return; 
                 }
+
+                // MOMENTUM PULSE
+                const card = document.getElementById(`card-${id}`);
+                card.classList.remove('pulse-home', 'pulse-away');
+                if(hPercent > 70) card.classList.add('pulse-home');
+                if(aPercent > 70) card.classList.add('pulse-away');
 
                 let verdict = "⚖️ BALANCED", vColor = "#d29922", newConf = 75;
                 const diff = Math.abs(hPressure - aPressure);
@@ -676,6 +673,15 @@
                     else if(totalPress > 20) { verdict = "⚔️ OPEN GAME"; vColor = "#a371f7"; newConf = 80; }
                 }
 
+                // ALERT NOTIFICATION
+                if(pilotMode && newConf >= 90 && !alertedGames.has(id)) {
+                    if (Notification.permission === "granted") {
+                        new Notification("Hunter Alert! " + verdict, { body: `${hName} vs ${aName}` });
+                    }
+                    playPing();
+                    alertedGames.add(id);
+                }
+
                 let tips = [];
                 if (hPressure > aPressure + 20) tips.push({type: `⚡ ${hName} To Score Next`, conf: 92});
                 else if (aPressure > hPressure + 20) tips.push({type: `⚡ ${aName} To Score Next`, conf: 92});
@@ -688,10 +694,9 @@
                     const homeOdd = vals.find(v => v.value === "Home")?.odd || "-";
                     const drawOdd = vals.find(v => v.value === "Draw")?.odd || "-";
                     const awayOdd = vals.find(v => v.value === "Away")?.odd || "-";
-                    const impliedOdds = 1 / (newConf / 100);
                     const formatOdd = (odd) => {
                          if(!odd) return "-";
-                         if(newConf > 80 && odd > impliedOdds) return `<span class="val-good">${odd} (Value!)</span>`;
+                         if(odd > 1.8) return `<span class="val-good">${odd} (Value!)</span>`;
                          return odd;
                     };
                     oddsHTML = `<div style="display:flex; justify-content:space-between; margin-top:8px; background:#111; padding:5px; border-radius:4px; font-family:monospace;">
@@ -718,8 +723,8 @@
                     <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}</div>
                     
                     <div class="gauge-labels">
-                        <span>${hName} (${hPercent}%)</span>
-                        <span>${aName} (${aPercent}%)</span>
+                        <span>${hName} ${hRank} ${hForm} (${hPercent}%)</span>
+                        <span>${aName} ${aRank} ${aForm} (${aPercent}%)</span>
                     </div>
                     <div class="gauge-container"><div class="gauge-home" style="width:${hPercent}%"></div><div class="gauge-away" style="width:${aPercent}%"></div></div>
                     ${xgHTML}
@@ -730,18 +735,11 @@
                     <button class="copy-btn" onclick="copyTip('${hName}', '${aName}', '${verdict}', ${newConf})">📋 Copy Report</button>
                 `;
                 
-                predText.innerText = verdict; 
-                predText.style.color = vColor;
-                predBadge.innerText = newConf + "%";
-                if(newConf > 80) predBadge.className = "conf-badge conf-high"; else if(newConf > 60) predBadge.className = "conf-badge conf-med"; else predBadge.className = "conf-badge conf-low";
+                const predText = document.getElementById(`pred-text-${id}`);
+                if(predText) { predText.innerText = verdict; predText.style.color = vColor; }
                 
-            } catch(e) { statBox.innerHTML = "<div style='color:#da3633;'>Error analyzing.</div>"; console.log(e); }
+            } catch(e) { statBox.innerHTML = "<div style='color:#da3633;'>Error analyzing.</div>"; }
             btn.innerText = "⚡ Analyze";
-        }
-
-        function copyTip(h, a, verdict, conf) {
-            const text = `🎯 Hunter Pro Tip\n⚽ ${h} vs ${a}\n📊 Verdict: ${verdict}\n🔥 Confidence: ${conf}%\nSent from 60' Hunter`;
-            navigator.clipboard.writeText(text).then(() => alert("Tip Copied!"));
         }
 
         async function checkPlayers(btn, id) {
@@ -782,7 +780,7 @@
                 if (players.length === 0) {
                     html = "<div style='text-align:center; color:#888;'>No significant player stats yet.</div>";
                 } else {
-                    players.slice(0, 5).forEach(p => {
+                    players.slice(0, 5).forEach(p => { 
                         let badgeClass = "rate-med";
                         let typeText = "Threat";
                         if (p.rawScore >= 8) { badgeClass = "rate-high"; typeText = "🔥 GOAL THREAT"; }
@@ -791,8 +789,14 @@
 
                         html += `
                             <div class="player-row">
-                                <div><div class="player-name">${p.name} <span style="font-size:0.7rem; color:#666">(${p.team})</span></div><div class="player-detail">${p.details}</div></div>
-                                <div style="text-align:right;"><div class="player-rating ${badgeClass}">${typeText}</div><div style="font-size:0.7rem; color:#888; margin-top:2px;">RATING: ${p.rating}</div></div>
+                                <div>
+                                    <div class="player-name">${p.name} <span style="font-size:0.7rem; color:#666">(${p.team})</span></div>
+                                    <div class="player-detail">${p.details}</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div class="player-rating ${badgeClass}">${typeText}</div>
+                                    <div style="font-size:0.7rem; color:#888; margin-top:2px;">RATING: ${p.rating}</div>
+                                </div>
                             </div>
                         `;
                     });
