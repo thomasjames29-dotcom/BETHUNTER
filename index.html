@@ -36,10 +36,13 @@
         .nav-tab.active { background: #2ea043; color: white; border-color: #2ea043; }
 
         /* CARDS */
-        .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; transition: border-color 0.3s; }
-        
-        /* PLACED BET STYLE */
+        .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; transition: all 0.3s; }
         .match-card.placed { border: 1px solid var(--green); background: rgba(46, 160, 67, 0.05); }
+        
+        /* GHOST MODE (Low Data) */
+        .match-card.ghost { opacity: 0.5; border-color: #30363d; filter: grayscale(0.8); }
+        .match-card.ghost:hover { opacity: 1; filter: grayscale(0); } /* Peek on hover */
+
         .placed-badge { position: absolute; top: 0; right: 0; background: var(--green); color: white; font-size: 0.7rem; font-weight: bold; padding: 4px 8px; border-bottom-left-radius: 8px; }
 
         .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
@@ -71,7 +74,6 @@
         .analyze-btn { flex: 1; background: rgba(163, 113, 247, 0.15); border: 1px solid var(--purple); color: var(--purple); padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer; }
         .bet365-btn { flex: 1; background: #00703c; border: 1px solid #005c31; color: white; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; text-decoration: none; text-align: center; display: block;}
         .copy-btn { width:100%; background: #333; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 6px; font-size: 0.8rem; margin-top: 8px; cursor: pointer; }
-        
         .mark-btn { flex: 0.4; background: #21262d; border: 1px solid #30363d; color: #888; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
         .mark-btn.active { background: var(--green); color: white; border-color: var(--green); }
 
@@ -92,6 +94,7 @@
         .val-good { color: var(--green); text-shadow: 0 0 5px rgba(46, 160, 67, 0.5); }
         .rank-badge { font-size: 0.75rem; color: var(--gold); margin-left: 4px; font-weight: normal; }
         .est-badge { font-size: 0.7rem; background: #333; padding: 2px 4px; border-radius: 3px; color: #888; margin-left: 5px; }
+        .ignore-msg { color: var(--red); font-weight: bold; text-align: center; border: 1px solid var(--red); padding: 8px; border-radius: 6px; background: rgba(218, 54, 51, 0.1); margin-bottom: 10px; }
 
         .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
     </style>
@@ -153,18 +156,12 @@
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         // --- BET MARKER STORAGE ---
-        function getPlacedBets() {
-            return JSON.parse(localStorage.getItem('placedBets') || "[]");
-        }
+        function getPlacedBets() { return JSON.parse(localStorage.getItem('placedBets') || "[]"); }
         function toggleBet(id) {
             let bets = getPlacedBets();
-            if(bets.includes(id)) {
-                bets = bets.filter(b => b !== id); // Remove
-            } else {
-                bets.push(id); // Add
-            }
+            if(bets.includes(id)) { bets = bets.filter(b => b !== id); } else { bets.push(id); }
             localStorage.setItem('placedBets', JSON.stringify(bets));
-            applyFilter(); // Refresh UI
+            applyFilter(); 
         }
 
         function trackAPI(count) {
@@ -286,7 +283,6 @@
             content.innerHTML = "";
             let highValueFound = false;
             
-            // Get Placed Bets
             const placedBets = getPlacedBets();
 
             if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
@@ -309,8 +305,6 @@
                     const t = m.fixture.status.elapsed;
                     const s = m.goals;
                     if ((Math.abs(s.home - s.away) === 1 && t > 75) || (s.home === s.away && t > 75)) highValueFound = true;
-                    
-                    // Is this game marked?
                     const isPlaced = placedBets.includes(m.fixture.id);
                     createCard(m, isPlaced);
                 });
@@ -321,6 +315,7 @@
         function createCard(m, isPlaced) {
             const div = document.createElement('div');
             div.className = `match-card ${isPlaced ? 'placed' : ''}`;
+            div.id = `card-${m.fixture.id}`; // Add ID for Ghost target
             
             const h = m.teams.home;
             const a = m.teams.away;
@@ -433,6 +428,15 @@
                 const oddsData = await oddsRes.json();
                 const standData = await standRes.json();
 
+                // --- GHOST MODE TRIGGER ---
+                // If API returns no stats, dim the card
+                if(!statData.response || statData.response.length === 0) {
+                    statBox.innerHTML = "<div class='ignore-msg'>⚠️ MATCH IGNORED: Insufficient Data</div>";
+                    document.getElementById(`card-${id}`).classList.add('ghost'); // Adds visual dimming
+                    btn.innerText = "⚡ Analyze";
+                    return; 
+                }
+
                 let hRank = "", aRank = "";
                 if(standData.response && standData.response.length > 0) {
                     const table = standData.response[0].league.standings[0];
@@ -442,14 +446,8 @@
                     if(aTeam) aRank = `<span class="rank-badge">[${aTeam.rank}]</span>`;
                 }
 
-                let hStats = [], aStats = [];
-                let isEstimated = false;
-
-                if(statData.response && statData.response.length === 2) {
-                    hStats = statData.response[0].statistics;
-                    aStats = statData.response[1].statistics;
-                } else { isEstimated = true; }
-
+                const hStats = statData.response[0].statistics;
+                const aStats = statData.response[1].statistics;
                 const getStat = (arr, type) => { 
                     const i = arr.find(s => s.type === type || s.type === type.replace(" ", "")); 
                     if(i && i.value) return parseFloat(i.value);
@@ -463,9 +461,6 @@
                 let hCorn = getStat(hStats, "Corner Kicks");
                 let aCorn = getStat(aStats, "Corner Kicks");
                 
-                if (isEstimated || (hTotal === 0 && hGoals > 0)) { hSoT = Math.max(hSoT, hGoals); hTotal = Math.max(hTotal, hGoals); isEstimated = true; }
-                if (isEstimated || (aTotal === 0 && aGoals > 0)) { aSoT = Math.max(aSoT, aGoals); aTotal = Math.max(aTotal, aGoals); isEstimated = true; }
-
                 const hxG = getStat(hStats, "expected_goals");
                 const axG = getStat(aStats, "expected_goals");
 
@@ -474,6 +469,14 @@
                 const totalPress = hPressure + aPressure || 1; 
                 const hPercent = Math.round((hPressure / totalPress) * 100);
                 const aPercent = 100 - hPercent;
+
+                // --- GHOST MODE TRIGGER (Empty Stats) ---
+                if(totalPress <= 1) {
+                    statBox.innerHTML = "<div class='ignore-msg'>⚠️ MATCH IGNORED: Insufficient Data</div>";
+                    document.getElementById(`card-${id}`).classList.add('ghost');
+                    btn.innerText = "⚡ Analyze";
+                    return; 
+                }
 
                 let verdict = "⚖️ BALANCED", vColor = "#d29922", newConf = 75;
                 const diff = Math.abs(hPressure - aPressure);
@@ -534,11 +537,8 @@
                     tipsHTML += `</div>`;
                 }
 
-                const estBadge = isEstimated ? `<span class="est-badge">(Est)</span>` : "";
-
                 statBox.innerHTML = `
-                    <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict} ${estBadge}</div>
-                    
+                    <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}</div>
                     <div class="gauge-labels">
                         <span>${hName} ${hRank} (${hPercent}%)</span>
                         <span>${aName} ${aRank} (${aPercent}%)</span>
