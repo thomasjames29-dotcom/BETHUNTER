@@ -26,12 +26,12 @@
         .pilot-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; }
         .pilot-btn.active .pilot-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
 
-        select { width: 100%; padding: 12px; background: #21262d; color: white; border: 1px solid #30363d; border-radius: 8px; font-size: 1rem; font-weight: bold; outline: none; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
-
         /* TABS */
         .nav-tabs { display: flex; gap: 10px; margin-top: 15px; }
         .nav-tab { flex: 1; text-align: center; padding: 10px; background: #21262d; border-radius: 8px; border: 1px solid #30363d; color: #888; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
         .nav-tab.active { background: #2ea043; color: white; border-color: #2ea043; }
+
+        select { width: 100%; padding: 12px; background: #21262d; color: white; border: 1px solid #30363d; border-radius: 8px; font-size: 1rem; font-weight: bold; outline: none; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
 
         /* CARDS */
         .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; transition: all 0.3s; }
@@ -62,16 +62,6 @@
         .hist-res-loss { color: var(--red); font-weight: bold; border: 1px solid var(--red); padding: 2px 6px; border-radius: 4px; }
         .hist-res-open { color: var(--gold); font-weight: bold; border: 1px solid var(--gold); padding: 2px 6px; border-radius: 4px; }
 
-        /* PLAYER THREAT CARD */
-        .player-threat-card { background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; border-left: 2px solid #333; }
-        .p-row-top { display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: bold; color: #ddd; }
-        .p-stat-detail { font-size: 0.75rem; color: #888; margin-top: 2px; }
-        .threat-bar-bg { height: 6px; background: #333; border-radius: 3px; margin-top: 6px; overflow: hidden; }
-        .threat-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
-        .threat-high { border-left-color: var(--green); } .threat-high .threat-bar-fill { background: var(--green); }
-        .threat-med { border-left-color: var(--gold); } .threat-med .threat-bar-fill { background: var(--gold); }
-        .threat-val { font-family: monospace; font-weight: bold; }
-
         /* BUTTONS */
         .btn-row { display: flex; gap: 10px; margin-top: 10px; }
         .player-btn { flex: 1; background: #21262d; border: 1px solid #30363d; color: #ccc; padding: 10px; border-radius: 8px; font-weight: 600; cursor: pointer;}
@@ -81,8 +71,10 @@
         .mark-btn { flex: 0.4; background: #21262d; border: 1px solid #30363d; color: #888; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
         .mark-btn.active { background: var(--green); color: white; border-color: var(--green); }
 
-        /* ANALYSIS */
+        /* ANALYSIS & PLAYER BOX */
         .analysis-box { background: #1c1c1c; border: 1px solid var(--purple); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; display: none; }
+        .player-box { background: #1c1c1c; border: 1px solid #30363d; padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; display: none; }
+        
         .stat-bar { display: flex; justify-content: space-between; margin-bottom: 4px; color: #bbb; font-size: 0.8rem; }
         .stat-val { font-weight: bold; color: white; }
         .gauge-container { height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin: 5px 0 15px 0; display: flex; }
@@ -100,7 +92,24 @@
         .est-badge { font-size: 0.7rem; background: #333; padding: 2px 4px; border-radius: 3px; color: #888; margin-left: 5px; }
         .ignore-msg { color: var(--red); font-weight: bold; text-align: center; border: 1px solid var(--red); padding: 8px; border-radius: 6px; background: rgba(218, 54, 51, 0.1); margin-bottom: 10px; }
 
+        /* PLAYER RATINGS */
+        .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #333; }
+        .player-name { font-weight: bold; color: white; font-size: 0.9rem; }
+        .player-rating { font-family: monospace; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
+        .rate-high { color: var(--green); border: 1px solid var(--green); background: rgba(46, 160, 67, 0.1); }
+        .rate-med { color: var(--gold); border: 1px solid var(--gold); background: rgba(210, 153, 34, 0.1); }
+        .rate-card { color: #fff; border: 1px solid var(--red); background: rgba(218, 54, 51, 0.15); }
+        .player-detail { font-size: 0.75rem; color: #888; margin-top: 2px; }
+
         .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
+        
+        /* COMMON */
+        .pred-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; margin-top: 10px; }
+        .pred-text { color: var(--green); font-weight: bold; font-size: 0.9rem; }
+        .conf-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; color: #000; }
+        .conf-high { background-color: var(--green); } .conf-med { background-color: var(--gold); } .conf-low { background-color: #8b949e; }
+        .upset-badge { background: rgba(218, 54, 51, 0.15); border: 1px solid var(--red); color: var(--red); font-size: 0.75rem; font-weight: bold; text-align: center; padding: 6px; border-radius: 6px; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .red-card-badge { background: rgba(218, 54, 51, 0.2); border: 1px solid var(--red); color: white; font-weight: bold; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; }
     </style>
 </head>
 <body>
@@ -135,7 +144,7 @@
             <div style="text-align:center; padding-top:50px; color:#888;">
                 <p style="font-size:2rem; margin-bottom:10px;">🔭</p>
                 <p>Ready to Hunt (60'-85').</p>
-                <p style="font-size:0.8rem; color:#555">Active: xG • Player Ratings • Bet365</p>
+                <p style="font-size:0.8rem; color:#555">Active: xG • Bet365 • Standings</p>
             </div>
         </div>
         <button class="scan-btn" onclick="runScan()" id="mainBtn">🎯 SCAN MARKETS</button>
@@ -164,33 +173,50 @@
         const pilotBtn = document.getElementById('pilotBtn');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+        // --- TRACKER LOGIC ---
         function getHistory() { return JSON.parse(localStorage.getItem('betHistory') || "[]"); }
         function saveHistory(bets) { localStorage.setItem('betHistory', JSON.stringify(bets)); }
+        function getPlacedBets() { return getHistory().map(b => b.id); }
+
         function toggleBet(id, homeGoals, awayGoals, teams) {
             let bets = getHistory();
             const existingIndex = bets.findIndex(b => b.id === id);
-            if(existingIndex >= 0) { bets.splice(existingIndex, 1); } else {
+            
+            if(existingIndex >= 0) {
+                bets.splice(existingIndex, 1);
+            } else {
                 const today = new Date().toLocaleDateString('en-CA');
-                bets.push({ id: id, date: today, teams: teams, goalsAtBet: homeGoals + awayGoals, status: 'OPEN' });
+                bets.push({
+                    id: id,
+                    date: today,
+                    teams: teams,
+                    goalsAtBet: homeGoals + awayGoals,
+                    status: 'OPEN'
+                });
             }
             saveHistory(bets);
-            applyFilter(); 
+            applyFilter(); // Refresh UI
         }
 
         async function checkBetOutcomes(liveMatches) {
             let bets = getHistory();
             let changed = false;
             let openBets = bets.filter(b => b.status === 'OPEN');
+            
             if(openBets.length === 0) return;
 
             openBets.forEach(bet => {
                 const liveMatch = liveMatches.find(m => m.fixture.id === bet.id);
                 if(liveMatch) {
                     const currentTotal = liveMatch.goals.home + liveMatch.goals.away;
-                    if(currentTotal > bet.goalsAtBet) { bet.status = 'WIN'; changed = true; }
+                    if(currentTotal > bet.goalsAtBet) {
+                        bet.status = 'WIN';
+                        changed = true;
+                    }
                 }
             });
 
+            // If not in live, check if finished
             const missingBets = openBets.filter(b => b.status === 'OPEN' && !liveMatches.find(m => m.fixture.id === b.id));
             if(missingBets.length > 0) {
                 const ids = missingBets.map(b => b.id).join('-');
@@ -198,40 +224,78 @@
                 try {
                     const res = await fetch(`https://v3.football.api-sports.io/fixtures?ids=${ids}`, { headers: { "x-rapidapi-key": API_KEY } });
                     const data = await res.json();
+                    
                     data.response.forEach(m => {
                         const bet = bets.find(b => b.id === m.fixture.id);
                         if(bet) {
                             const finalTotal = m.goals.home + m.goals.away;
                             const status = m.fixture.status.short;
-                            if (finalTotal > bet.goalsAtBet) { bet.status = 'WIN'; changed = true; }
-                            else if (['FT', 'AET', 'PEN'].includes(status)) { bet.status = 'LOSS'; changed = true; }
+                            
+                            if (finalTotal > bet.goalsAtBet) {
+                                bet.status = 'WIN';
+                                changed = true;
+                            } else if (['FT', 'AET', 'PEN'].includes(status)) {
+                                bet.status = 'LOSS';
+                                changed = true;
+                            }
                         }
                     });
                 } catch(e) {}
             }
-            if(changed) { saveHistory(bets); if(document.getElementById('tabHist').classList.contains('active')) renderHistory(); }
+
+            if(changed) {
+                saveHistory(bets);
+                if(document.getElementById('tabHist').classList.contains('active')) renderHistory();
+            }
         }
 
         function renderHistory() {
             const bets = getHistory();
             const histDiv = document.getElementById('histContent');
-            if(bets.length === 0) { histDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>No bets tracked yet.</p>"; return; }
+            
+            if(bets.length === 0) {
+                histDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>No bets tracked yet.</p>";
+                return;
+            }
+
             bets.sort((a, b) => new Date(b.date) - new Date(a.date));
-            const grouped = bets.reduce((acc, bet) => { if(!acc[bet.date]) acc[bet.date] = []; acc[bet.date].push(bet); return acc; }, {});
+            const grouped = bets.reduce((acc, bet) => {
+                if(!acc[bet.date]) acc[bet.date] = [];
+                acc[bet.date].push(bet);
+                return acc;
+            }, {});
 
             let html = "";
             for (const [date, dayBets] of Object.entries(grouped)) {
                 let dailyUnits = 0;
                 let cardsHtml = "";
+                
                 dayBets.forEach(b => {
-                    let resClass = "hist-res-open", resText = "OPEN";
+                    let resClass = "hist-res-open";
+                    let resText = "OPEN";
                     if(b.status === 'WIN') { resClass = "hist-res-win"; resText = "WIN (+1)"; dailyUnits++; }
                     if(b.status === 'LOSS') { resClass = "hist-res-loss"; resText = "LOSS (-1)"; dailyUnits--; }
-                    cardsHtml += `<div class="hist-card"><div style="flex:1">${b.teams}</div><div class="${resClass}">${resText}</div></div>`;
+                    
+                    cardsHtml += `
+                        <div class="hist-card">
+                            <div style="flex:1">${b.teams}</div>
+                            <div class="${resClass}">${resText}</div>
+                        </div>
+                    `;
                 });
+
                 let unitClass = dailyUnits > 0 ? "hist-unit-plus" : (dailyUnits < 0 ? "hist-unit-minus" : "hist-unit-even");
                 let unitSign = dailyUnits > 0 ? "+" : "";
-                html += `<div class="hist-day"><div class="hist-date-row"><span>📅 ${date}</span><span class="${unitClass}">${unitSign}${dailyUnits} Units</span></div>${cardsHtml}</div>`;
+
+                html += `
+                    <div class="hist-day">
+                        <div class="hist-date-row">
+                            <span>📅 ${date}</span>
+                            <span class="${unitClass}">${unitSign}${dailyUnits} Units</span>
+                        </div>
+                        ${cardsHtml}
+                    </div>
+                `;
             }
             histDiv.innerHTML = html;
         }
@@ -267,7 +331,7 @@
             } else {
                 document.getElementById('histView').style.display = 'block';
                 document.getElementById('tabHist').classList.add('active');
-                checkBetOutcomes(allMatches);
+                checkBetOutcomes(allMatches); 
                 renderHistory();
             }
         }
@@ -282,25 +346,49 @@
                 const data = await res.json();
                 const eliteGames = data.response.filter(m => ELITE_IDS.includes(m.league.id));
                 eliteGames.sort((a, b) => a.fixture.timestamp - b.fixture.timestamp);
-                if(eliteGames.length === 0) { schedDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>No Elite Games Scheduled Today.</p>"; return; }
+
+                if(eliteGames.length === 0) {
+                    schedDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>No Elite Games Scheduled Today.</p>";
+                    return;
+                }
+
                 let html = "";
                 eliteGames.forEach(m => {
                     const date = new Date(m.fixture.timestamp * 1000);
                     const time = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    html += `<div class="sched-card"><div style="text-align:center; margin-right:15px;"><div class="sched-time">${time}</div></div><div class="sched-teams"><div class="sched-league">${m.league.country} • ${m.league.name}</div><div>${m.teams.home.name} vs ${m.teams.away.name}</div></div></div>`;
+                    html += `<div class="sched-card">
+                            <div style="text-align:center; margin-right:15px;"><div class="sched-time">${time}</div></div>
+                            <div class="sched-teams">
+                                <div class="sched-league">${m.league.country} • ${m.league.name}</div>
+                                <div>${m.teams.home.name} vs ${m.teams.away.name}</div>
+                            </div>
+                        </div>`;
                 });
                 schedDiv.innerHTML = html;
             } catch(e) { schedDiv.innerHTML = "<p style='text-align:center; color:#da3633;'>Error loading schedule.</p>"; }
         }
 
-        function playPing() { if (audioCtx.state === 'suspended') audioCtx.resume(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.setValueAtTime(800, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1); gain.gain.setValueAtTime(0.5, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4); osc.start(); osc.stop(audioCtx.currentTime + 0.4); }
+        function playPing() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.4);
+        }
 
         function togglePilot() {
             pilotMode = !pilotMode;
             if(pilotMode) {
                 pilotBtn.classList.add('active');
                 pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (60s)`;
-                playPing(); runScan(true); 
+                playPing(); 
+                runScan(true); 
                 pilotInterval = setInterval(() => runScan(true), 60000); 
             } else {
                 pilotBtn.classList.remove('active');
@@ -311,10 +399,16 @@
 
         async function runScan(isAuto = false) {
             trackAPI(1);
-            if(!isAuto) { mainBtn.innerText = "Scanning Global Feeds..."; mainBtn.disabled = true; content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data...</p>"; }
-            else { mainBtn.innerText = "🤖 Auto-Scanning..."; }
+            if(!isAuto) {
+                mainBtn.innerText = "Scanning Global Feeds..."; mainBtn.disabled = true;
+                content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data...</p>";
+            } else {
+                mainBtn.innerText = "🤖 Auto-Scanning...";
+            }
             try {
-                const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", { headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" } });
+                const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", {
+                    headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" }
+                });
                 const data = await res.json();
                 if(!data.response || data.results === 0) {
                     if(!isAuto) content.innerHTML = "<p style='text-align:center; margin-top:50px'>No live games.</p>";
@@ -348,8 +442,9 @@
                 else return true;
             });
 
-            if(filtered.length === 0) { content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found.</p>`; }
-            else {
+            if(filtered.length === 0) {
+                content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found.</p>`;
+            } else {
                 filtered.forEach(m => {
                     const t = m.fixture.status.elapsed;
                     const s = m.goals;
@@ -365,9 +460,17 @@
             const div = document.createElement('div');
             div.className = `match-card ${isPlaced ? 'placed' : ''}`;
             div.id = `card-${m.fixture.id}`;
-            const h = m.teams.home; const a = m.teams.away; const s = m.goals; const t = m.fixture.status.elapsed; const lid = m.league.id; const sid = m.league.season;
             
-            let hGoals = "", aGoals = ""; let hRed = false, aRed = false;
+            const h = m.teams.home;
+            const a = m.teams.away;
+            const s = m.goals;
+            const t = m.fixture.status.elapsed;
+            const lid = m.league.id;
+            const sid = m.league.season;
+            
+            let hGoals = "", aGoals = "";
+            let hRed = false, aRed = false;
+
             if (m.events) {
                 hGoals = m.events.filter(e => e.type === 'Goal' && e.team.id === h.id).map(e => e.time.elapsed + "'").join(', ');
                 aGoals = m.events.filter(e => e.type === 'Goal' && e.team.id === a.id).map(e => e.time.elapsed + "'").join(', ');
@@ -380,17 +483,29 @@
             const placedBadge = isPlaced ? "<div class='placed-badge'>✅ BET PLACED</div>" : "";
 
             let upsetHtml = "";
-            if (ELITE_IDS.includes(lid) && s.home < s.away && (s.away - s.home === 1)) { upsetHtml = `<div class="upset-badge">🔥 UPSET ALERT: ${h.name} Chasing!</div>`; }
+            if (ELITE_IDS.includes(lid) && s.home < s.away && (s.away - s.home === 1)) {
+                upsetHtml = `<div class="upset-badge">🔥 UPSET ALERT: ${h.name} Chasing!</div>`;
+            }
 
-            let predText = "Monitoring..."; let confVal = 0; let confClass = "conf-low";
+            let predText = "Monitoring...";
+            let confVal = 0;
+            let confClass = "conf-low";
+
             if (s.home === s.away) {
                 if (s.home > 1) { predText = "⚔️ High Score Draw"; confVal = 78; }
                 else if (s.home === 0) { predText = "🛡️ 0-0 Stalemate"; confVal = 70; }
                 else { predText = "⚠️ Tight Match"; confVal = 75; }
                 if(hRed || aRed) { predText = "⚔️ 10 Men vs 11"; confVal = 85; }
             } 
-            else if (Math.abs(s.home - s.away) === 1) { predText = "⚽ Late Goal Likely"; confVal = (t > 75) ? 90 : 82; } 
-            else { predText = "🔒 Result Likely Safe"; confVal = 94; }
+            else if (Math.abs(s.home - s.away) === 1) {
+                predText = "⚽ Late Goal Likely";
+                confVal = (t > 75) ? 90 : 82;
+            } 
+            else {
+                predText = "🔒 Result Likely Safe";
+                confVal = 94;
+            }
+            
             if(upsetHtml !== "") { predText = "🔥 Favorite Chasing"; confVal = 95; }
             if(confVal >= 80) confClass = "conf-high"; else if(confVal >= 60) confClass = "conf-med";
 
@@ -424,7 +539,7 @@
                     <button class="analyze-btn" id="an-btn-${m.fixture.id}" onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name}', '${a.name}', ${s.home}, ${s.away}, ${hRed}, ${aRed}, ${lid}, ${sid})">⚡ Analyze</button>
                     <button class="player-btn" id="pl-btn-${m.fixture.id}" onclick="checkPlayers(this, ${m.fixture.id})">🕵️ Check Players</button>
                 </div>
-                <div id="p-${m.fixture.id}"></div>
+                <div id="p-${m.fixture.id}" class="player-box"></div>
                 <div id="stats-${m.fixture.id}" class="analysis-box"></div>
             `;
             content.appendChild(div);
@@ -502,19 +617,25 @@
                     return; 
                 }
 
-                let verdict = "⚖️ BALANCED", vColor = "#d29922", newConf = 75;
+                let verdict = "⚖️ BALANCED", vColor = "#d29922";
                 const diff = Math.abs(hPressure - aPressure);
 
                 if(hxG > 0 || axG > 0) {
-                    if(hxG > (hGoals + 0.6)) { verdict = `📉 ${hName} xG ANOMALY`; vColor = "#a371f7"; newConf = 92; }
-                    else if(axG > (aGoals + 0.6)) { verdict = `📉 ${aName} xG ANOMALY`; vColor = "#a371f7"; newConf = 92; }
-                    else if(totalPress < 20) { verdict = "💤 LOW ENERGY"; vColor = "#8b949e"; newConf = 88; }
-                    else if(diff > 30) { verdict = `🔥 SIEGE: ${hPressure > aPressure ? hName : aName}`; vColor = "#2ea043"; newConf = 92; } 
-                    else { verdict = "⚔️ END-TO-END"; vColor = "#a371f7"; newConf = 85; }
+                    if(hxG > (hGoals + 0.6)) { verdict = `📉 ${hName} xG ANOMALY`; vColor = "#a371f7"; }
+                    else if(axG > (aGoals + 0.6)) { verdict = `📉 ${aName} xG ANOMALY`; vColor = "#a371f7"; }
+                    else if(totalPress < 20) { verdict = "💤 LOW ENERGY"; vColor = "#8b949e"; }
+                    else if(diff > 30) { 
+                        const leader = hPressure > aPressure ? hName : aName;
+                        verdict = `🔥 SIEGE: ${leader}`; vColor = "#2ea043"; 
+                    } 
+                    else { verdict = "⚔️ END-TO-END"; vColor = "#a371f7"; }
                 } else {
-                    if(totalPress < 5) { verdict = "⏳ STALEMATE (No Chances)"; vColor = "#8b949e"; newConf = 85; }
-                    else if(diff > 12) { verdict = `🔥 DOMINATING: ${hPressure > aPressure ? hName : aName}`; vColor = "#2ea043"; newConf = 90; }
-                    else if(totalPress > 20) { verdict = "⚔️ OPEN GAME"; vColor = "#a371f7"; newConf = 80; }
+                    if(totalPress < 5) { verdict = "⏳ STALEMATE (No Chances)"; vColor = "#8b949e"; }
+                    else if(diff > 12) { 
+                        const leader = hPressure > aPressure ? hName : aName;
+                        verdict = `🔥 DOMINATING: ${leader}`; vColor = "#2ea043";
+                    }
+                    else if(totalPress > 20) { verdict = "⚔️ OPEN GAME"; vColor = "#a371f7"; }
                 }
 
                 let tips = [];
@@ -529,10 +650,10 @@
                     const homeOdd = vals.find(v => v.value === "Home")?.odd || "-";
                     const drawOdd = vals.find(v => v.value === "Draw")?.odd || "-";
                     const awayOdd = vals.find(v => v.value === "Away")?.odd || "-";
-                    const impliedOdds = 1 / (newConf / 100);
+                    const impliedOdds = 75; // simplified
                     const formatOdd = (odd) => {
                          if(!odd) return "-";
-                         if(newConf > 80 && odd > impliedOdds) return `<span class="val-good">${odd} (Value!)</span>`;
+                         if(odd > 1.8) return `<span class="val-good">${odd} (Value!)</span>`;
                          return odd;
                     };
                     oddsHTML = `<div style="display:flex; justify-content:space-between; margin-top:8px; background:#111; padding:5px; border-radius:4px; font-family:monospace;">
@@ -557,87 +678,108 @@
 
                 statBox.innerHTML = `
                     <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}</div>
-                    <div class="gauge-labels"><span>${hName} ${hRank} (${hPercent}%)</span><span>${aName} ${aRank} (${aPercent}%)</span></div>
+                    
+                    <div class="gauge-labels">
+                        <span>${hName} ${hRank} (${hPercent}%)</span>
+                        <span>${aName} ${aRank} (${aPercent}%)</span>
+                    </div>
                     <div class="gauge-container"><div class="gauge-home" style="width:${hPercent}%"></div><div class="gauge-away" style="width:${aPercent}%"></div></div>
                     ${xgHTML}
                     <div class="stat-bar"><span>Shots (Total)</span><span class="stat-val">${hTotal} (${hSoT}) - ${aTotal} (${aSoT})</span></div>
                     <div class="stat-bar"><span>Corners</span><span class="stat-val">${hCorn} - ${aCorn}</span></div>
                     ${tipsHTML}
                     ${oddsHTML}
-                    <button class="copy-btn" onclick="copyTip('${hName}', '${aName}', '${verdict}', ${newConf})">📋 Copy Report</button>
+                    <button class="copy-btn" onclick="copyTip('${hName}', '${aName}', '${verdict}', 75)">📋 Copy Report</button>
                 `;
                 
-                // Update Prediction Badge
-                document.getElementById(`pred-text-${id}`).innerText = verdict;
-                document.getElementById(`pred-text-${id}`).style.color = vColor;
+                // Update header
+                const predText = document.getElementById(`pred-text-${id}`);
+                if(predText) { predText.innerText = verdict; predText.style.color = vColor; }
                 
-            } catch(e) { statBox.innerHTML = "<div style='color:#da3633;'>Error analyzing.</div>"; console.log(e); }
+            } catch(e) { statBox.innerHTML = "<div style='color:#da3633;'>Error analyzing.</div>"; }
             btn.innerText = "⚡ Analyze";
         }
 
         async function checkPlayers(btn, id) {
             trackAPI(1);
             btn.innerText = "Checking...";
+            const area = document.getElementById(`p-${id}`);
+            area.style.display = 'block';
+            area.innerHTML = "<div style='color:#888; text-align:center;'>Scanning Players...</div>";
+
             try {
                 const res = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } });
                 const data = await res.json();
-                const area = document.getElementById(`p-${id}`);
-                let html = "";
                 
+                let players = [];
                 if(data.response && data.response.length > 0) {
-                    let allPlayers = [];
                     data.response.forEach(t => t.players.forEach(p => {
                         const s = p.statistics[0];
-                        // Calculate Threat Score (0-10)
-                        let score = (s.shots.on || 0) * 2.5 + (s.passes.key || 0) * 1.5 + (s.shots.total || 0) * 0.5 + (s.dribbles.success || 0) * 0.5;
-                        if(score > 2) {
-                            allPlayers.push({ name: p.player.name, team: t.team.name, score: score, stats: s });
-                        }
-                    }));
-                    
-                    // Sort by Threat Score
-                    allPlayers.sort((a,b) => b.score - a.score);
-                    const topThreats = allPlayers.slice(0, 3); // Top 3 only
+                        // Calculate Hunter Threat Score
+                        // SoT * 3, Off * 1, KeyPass * 2, Dribbles * 0.5
+                        const hts = (s.shots.on || 0) * 3 + (s.shots.total - (s.shots.on||0) || 0) * 1 + (s.passes.key || 0) * 2 + (s.dribbles.success || 0) * 0.5;
+                        const rating = Math.min(10, hts).toFixed(1); // Cap at 10 for display
+                        
+                        // Card Risk Score
+                        const cardScore = (s.fouls.committed || 0) * 2 + (s.cards.yellow || 0) * 10;
 
-                    if(topThreats.length > 0) {
-                        html += `<div style="margin-bottom:8px; font-weight:bold; color:#d29922; font-size:0.8rem; text-transform:uppercase;">🔥 Top 3 Threat Ratings</div>`;
-                        topThreats.forEach(p => {
-                            let barColor = p.score >= 7 ? "threat-high" : "threat-med";
-                            let threatType = (p.stats.shots.on > p.stats.passes.key) ? "Goal Threat" : "Assist Threat";
-                            let percent = Math.min(p.score * 10, 100);
-                            
-                            html += `
-                                <div class="player-threat-card ${barColor}">
-                                    <div class="p-row-top">
-                                        <span>${p.name} (${p.team})</span>
-                                        <span class="threat-val">${p.score.toFixed(1)}</span>
-                                    </div>
-                                    <div class="p-stat-detail">
-                                        ${threatType} • ${p.stats.shots.on || 0} SoT • ${p.stats.passes.key || 0} KP
-                                    </div>
-                                    <div class="threat-bar-bg">
-                                        <div class="threat-bar-fill" style="width:${percent}%"></div>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                    }
-                    
-                    // Card Risks (Keep existing logic)
-                    data.response.forEach(t => t.players.forEach(p => {
-                        const s = p.statistics[0];
-                        if(s.fouls.committed >= 3 && !s.cards.yellow) {
-                            html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.85rem; color:#ffffff; padding:4px; border:1px solid #555; border-radius:4px;"><span>🟨 ${p.player.name} (Risk)</span><span style="font-weight:bold">${s.fouls.committed} Fouls</span></div>`;
+                        if (hts > 2 || cardScore > 4) {
+                            players.push({
+                                name: p.player.name,
+                                team: t.team.name,
+                                rating: rating,
+                                rawScore: hts,
+                                cardScore: cardScore,
+                                details: `${s.shots.on||0} SoT, ${s.passes.key||0} KP`
+                            });
                         }
                     }));
                 }
-                area.innerHTML = html || "<div style='font-size:0.8rem; color:#666; text-align:center; margin-top:5px'>No high value signals.</div>";
-            } catch(e) { }
-            btn.style.display = 'none';
+
+                // Sort by Threat Rating Descending
+                players.sort((a, b) => b.rawScore - a.rawScore);
+                
+                let html = "";
+                if (players.length === 0) {
+                    html = "<div style='text-align:center; color:#888;'>No significant player stats yet.</div>";
+                } else {
+                    players.slice(0, 5).forEach(p => { // Top 5
+                        let badgeClass = "rate-med";
+                        let typeText = "Threat";
+                        
+                        if (p.rawScore >= 8) { badgeClass = "rate-high"; typeText = "🔥 GOAL THREAT"; }
+                        else if (p.rawScore >= 5) { badgeClass = "rate-med"; typeText = "🅰️ CREATOR"; }
+                        
+                        if (p.cardScore > 5) { badgeClass = "rate-card"; typeText = "🟨 CARD RISK"; }
+
+                        html += `
+                            <div class="player-row">
+                                <div>
+                                    <div class="player-name">${p.name} <span style="font-size:0.7rem; color:#666">(${p.team})</span></div>
+                                    <div class="player-detail">${p.details}</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div class="player-rating ${badgeClass}">${typeText}</div>
+                                    <div style="font-size:0.7rem; color:#888; margin-top:2px;">RATING: ${p.rating}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                area.innerHTML = html;
+
+            } catch(e) { area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error checking players.</div>"; }
+            btn.innerText = "🕵️ Check Players";
         }
 
-        if ('serviceWorker' in navigator) { const blob = new Blob([`self.addEventListener('fetch', () => {});`], {type: 'application/javascript'}); navigator.serviceWorker.register(URL.createObjectURL(blob)); }
-        let deferredPrompt; const installBtn = document.getElementById('installBtn'); window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; }); installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; } });
+        if ('serviceWorker' in navigator) {
+            const blob = new Blob([`self.addEventListener('fetch', () => {});`], {type: 'application/javascript'});
+            navigator.serviceWorker.register(URL.createObjectURL(blob));
+        }
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; });
+        installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; } });
     </script>
 </body>
 </html>
