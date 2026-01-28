@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0d1117">
-    <title>60' Hunter Sniper</title>
+    <title>60' Hunter Pro Max</title>
 
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="target_PNG26.png">
@@ -18,7 +18,9 @@
         header { display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid #30363d; padding-bottom: 15px; margin-bottom: 15px; }
         .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         h1 { margin: 0; font-size: 1.4rem; color: var(--green); display: flex; align-items: center; gap: 10px; }
+        .header-right { display: flex; gap: 10px; align-items: center; }
         .api-badge { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-family: monospace; font-weight: bold; }
+        .help-btn { background: #21262d; border: 1px solid #30363d; color: var(--gold); width: 28px; height: 28px; border-radius: 50%; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
         /* PULSE ANIMATIONS */
         @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(46, 160, 67, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0); } }
@@ -83,6 +85,7 @@
         .copy-btn { width:100%; background: #333; border: 1px solid #444; color: #fff; padding: 8px; border-radius: 6px; font-size: 0.8rem; margin-top: 8px; cursor: pointer; }
         .mark-btn { flex: 0.4; background: #21262d; border: 1px solid #30363d; color: #888; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
         .mark-btn.active { background: var(--green); color: white; border-color: var(--green); }
+        .export-btn { width:100%; background: #21262d; border: 1px solid var(--gold); color: var(--gold); padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 20px; }
 
         /* ANALYSIS & PLAYER BOX */
         .analysis-box { background: #1c1c1c; border: 1px solid var(--purple); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; display: none; }
@@ -104,6 +107,7 @@
         .rank-badge { font-size: 0.75rem; color: var(--gold); margin-left: 4px; font-weight: normal; }
         .est-badge { font-size: 0.7rem; background: #333; padding: 2px 4px; border-radius: 3px; color: #888; margin-left: 5px; }
         .ignore-msg { color: var(--red); font-weight: bold; text-align: center; border: 1px solid var(--red); padding: 8px; border-radius: 6px; background: rgba(218, 54, 51, 0.1); margin-bottom: 10px; }
+        .ref-name { font-size: 0.75rem; color: #888; display: block; text-align: center; margin-top: 4px; font-style: italic; }
         
         .form-badge { font-family: monospace; font-size: 0.7rem; letter-spacing: 1px; margin-left: 5px; }
         .form-w { color: var(--green); } .form-l { color: var(--red); } .form-d { color: #888; }
@@ -119,6 +123,14 @@
 
         .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
         
+        /* HELP MODAL */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; overflow-y: auto; }
+        .modal-content { background: #161b22; margin: 10% auto; padding: 20px; width: 85%; border-radius: 12px; border: 1px solid #30363d; max-width: 500px; padding-bottom: 100px; }
+        .modal h2 { color: var(--green); border-bottom: 1px solid #30363d; padding-bottom: 10px; margin-top: 0; }
+        .modal h3 { color: var(--gold); margin-top: 20px; margin-bottom: 5px; }
+        .modal p { color: #ccc; font-size: 0.9rem; line-height: 1.5; margin-top: 0; }
+        .close-modal { background: #333; color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 20px; font-size: 1rem; cursor: pointer; }
+
         /* COMMON */
         .pred-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; margin-top: 10px; }
         .pred-text { color: var(--green); font-weight: bold; font-size: 0.9rem; }
@@ -132,8 +144,11 @@
 
     <header>
         <div class="top-row">
-            <h1><img src="target_PNG26.png" style="width:28px;"> Hunter Sniper</h1>
-            <div id="apiCounter" class="api-badge">API: 0</div>
+            <h1><img src="target_PNG26.png" style="width:28px;"> Hunter Pro Max</h1>
+            <div class="header-right">
+                <div id="apiCounter" class="api-badge">API: 0</div>
+                <button class="help-btn" onclick="openHelp()">?</button>
+            </div>
         </div>
         
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -182,6 +197,37 @@
         <div id="histContent" style="padding-bottom:100px;"></div>
     </div>
 
+    <div id="helpModal" class="modal" onclick="closeHelp(event)">
+        <div class="modal-content">
+            <h2>🔎 Hunter Pro Guide</h2>
+            
+            <h3>🔴 Live Hunt & Auto-Pilot</h3>
+            <p>The core mode. Click <b>"Auto-Pilot"</b> to have the app scan every 60s automatically. It will send notifications if a "Siege" game is found. <br><b>Tip:</b> Auto-Pilot also automatically opens analysis for Elite games.</p>
+
+            <h3>🎯 Sniper Mode (Chips)</h3>
+            <p>Use the scrollable buttons above the matches to filter instantly:</p>
+            <p>• <b>Fav Losing:</b> Finds home teams losing.</p>
+            <p>• <b>Red Card:</b> Isolates 10-man situations.</p>
+            <p>• <b>Late:</b> Only shows 80th min+ for late drama.</p>
+
+            <h3>⚡ Deep Analysis (The Gauge)</h3>
+            <p>Click "Analyze" to see xG, Corners, and Pressure.</p>
+            <p>• <b>Pulse Animation:</b> If a card pulses Green or Purple, that team has >70% pressure momentum.</p>
+            <p>• <b>Ghost Mode:</b> Greyed-out cards mean the API has no live stats (risky to bet).</p>
+
+            <h3>✅ Bet Tracking</h3>
+            <p>Click the <b>📌 Pin</b> button to mark a bet. The app will automatically track the score. If the goal count increases, it marks as a <b>WIN (+1)</b>. If it ends the same, it marks as a <b>LOSS (-1)</b>.</p>
+
+            <h3>🕵️ Player Checks</h3>
+            <p>Scans for individual value.</p>
+            <p>• <b>🔥 Goal Threat:</b> High shots + touches in box.</p>
+            <p>• <b>🅰️ Creator:</b> High key passes.</p>
+            <p>• <b>🟨 Card Risk:</b> High foul count + strict ref.</p>
+
+            <button class="close-modal" onclick="document.getElementById('helpModal').style.display='none'">Close Guide</button>
+        </div>
+    </div>
+
     <script>
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
         
@@ -193,11 +239,16 @@
         let pilotInterval;
         let alertedGames = new Set();
         let currentStrategy = 'all';
+        let momentumHistory = {}; 
         
         const content = document.getElementById('content');
         const mainBtn = document.getElementById('mainBtn');
         const pilotBtn = document.getElementById('pilotBtn');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // --- HELP MODAL ---
+        function openHelp() { document.getElementById('helpModal').style.display = 'block'; }
+        function closeHelp(e) { if(e.target.id === 'helpModal') document.getElementById('helpModal').style.display = 'none'; }
 
         // --- TRACKER LOGIC ---
         function getHistory() { return JSON.parse(localStorage.getItem('betHistory') || "[]"); }
@@ -214,6 +265,27 @@
             }
             saveHistory(bets);
             applyFilter(); 
+        }
+
+        function exportCSV() {
+            const bets = getHistory();
+            if (bets.length === 0) { alert("No history to export."); return; }
+            let csv = "Date,Match,Result,Status\n";
+            bets.forEach(b => {
+                let res = "OPEN";
+                if(b.status === 'WIN') res = "WIN (+1)";
+                if(b.status === 'LOSS') res = "LOSS (-1)";
+                csv += `${b.date},${b.teams.replace(',',' ')},${res},${b.status}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('hidden', '');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'hunter_history.csv');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
         async function checkBetOutcomes(liveMatches) {
@@ -263,7 +335,7 @@
                 return acc;
             }, {});
 
-            let html = "";
+            let html = `<button class="export-btn" onclick="exportCSV()">📥 Export to Excel (CSV)</button>`;
             for (const [date, dayBets] of Object.entries(grouped)) {
                 let dailyUnits = 0;
                 let cardsHtml = "";
@@ -426,7 +498,7 @@
 
                 // 2. Strategy Filter (Sniper Mode)
                 if (currentStrategy === 'all') return true;
-                if (currentStrategy === 'losing') return (m.goals.home < m.goals.away); // Simple "Home Losing" logic
+                if (currentStrategy === 'losing') return (m.goals.home < m.goals.away); 
                 if (currentStrategy === 'red') {
                     if(!m.events) return false;
                     return m.events.some(e => e.type === 'Card' && e.detail === 'Red Card');
@@ -462,6 +534,11 @@
             const t = m.fixture.status.elapsed;
             const lid = m.league.id;
             const sid = m.league.season;
+            
+            let refName = "";
+            if (m.fixture.referee) {
+                refName = `<span class="ref-name">👮 ${m.fixture.referee.split(',')[0]}</span>`;
+            }
             
             let hGoals = "", aGoals = "";
             let hRed = false, aRed = false;
@@ -520,7 +597,7 @@
                         ${aRedBadge}
                     </div>
                 </div>
-                <div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">${t}' Played</div>
+                <div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">${t}' Played ${refName}</div>
                 ${upsetHtml}
                 <div class="pred-row">
                     <span class="pred-text" id="pred-text-${m.fixture.id}">${predText}</span>
@@ -615,7 +692,13 @@
                     return; 
                 }
 
-                // MOMENTUM PULSE
+                // MOMENTUM TREND
+                const prev = momentumHistory[id] || 50;
+                let trendBadge = "";
+                if(hPercent > prev + 5) trendBadge = " 📈 RISING";
+                else if(hPercent < prev - 5) trendBadge = " 📉 FADING";
+                momentumHistory[id] = hPercent;
+
                 const card = document.getElementById(`card-${id}`);
                 card.classList.remove('pulse-home', 'pulse-away');
                 if(hPercent > 70) card.classList.add('pulse-home');
@@ -686,7 +769,7 @@
                 }
 
                 statBox.innerHTML = `
-                    <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}</div>
+                    <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}${trendBadge}</div>
                     
                     <div class="gauge-labels">
                         <span>${hName} ${hRank} ${hForm} (${hPercent}%)</span>
