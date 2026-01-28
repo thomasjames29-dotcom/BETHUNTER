@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0d1117">
-    <title>60' Hunter Ultimate</title>
+    <title>60' Hunter Pro Max</title>
 
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="target_PNG26.png">
@@ -20,7 +20,7 @@
         h1 { margin: 0; font-size: 1.4rem; color: var(--green); display: flex; align-items: center; gap: 10px; }
         .api-badge { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-family: monospace; font-weight: bold; }
 
-        /* PULSE ANIMATIONS */
+        /* ANIMATIONS */
         @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(46, 160, 67, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0); } }
         @keyframes pulse-purple { 0% { box-shadow: 0 0 0 0 rgba(163, 113, 247, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(163, 113, 247, 0); } 100% { box-shadow: 0 0 0 0 rgba(163, 113, 247, 0); } }
 
@@ -42,11 +42,9 @@
         .match-card.placed { border: 1px solid var(--green); background: rgba(46, 160, 67, 0.05); }
         .match-card.ghost { opacity: 0.5; border-color: #30363d; filter: grayscale(0.8); }
         .match-card.ghost:hover { opacity: 1; filter: grayscale(0); }
-        
-        /* PULSE CLASSES */
         .match-card.pulse-home { animation: pulse-green 2s infinite; border-color: var(--green); }
         .match-card.pulse-away { animation: pulse-purple 2s infinite; border-color: var(--purple); }
-
+        
         .placed-badge { position: absolute; top: 0; right: 0; background: var(--green); color: white; font-size: 0.7rem; font-weight: bold; padding: 4px 8px; border-bottom-left-radius: 8px; }
 
         .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
@@ -103,9 +101,7 @@
         
         /* FORM BADGE */
         .form-badge { font-family: monospace; font-size: 0.7rem; letter-spacing: 1px; margin-left: 5px; }
-        .form-w { color: var(--green); }
-        .form-l { color: var(--red); }
-        .form-d { color: #888; }
+        .form-w { color: var(--green); } .form-l { color: var(--red); } .form-d { color: #888; }
 
         /* PLAYER RATINGS */
         .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #333; }
@@ -182,7 +178,7 @@
         let allMatches = [];
         let pilotMode = false;
         let pilotInterval;
-        let alertedGames = new Set(); // Prevent spam notifications
+        let alertedGames = new Set();
         
         const content = document.getElementById('content');
         const mainBtn = document.getElementById('mainBtn');
@@ -401,7 +397,6 @@
         function togglePilot() {
             pilotMode = !pilotMode;
             if(pilotMode) {
-                // ASK PERMISSION FOR NOTIFICATIONS
                 if (Notification.permission !== "granted") {
                     Notification.requestPermission();
                 }
@@ -577,6 +572,7 @@
             btn.innerText = "Scanning...";
             const statBox = document.getElementById(`stats-${id}`);
             const predText = document.getElementById(`pred-text-${id}`);
+            const predBadge = document.getElementById(`pred-badge-${id}`);
             statBox.style.display = 'block';
             statBox.innerHTML = "<div style='color:#888; text-align:center;'>Fetching Data...</div>";
 
@@ -591,7 +587,6 @@
                 const oddsData = await oddsRes.json();
                 const standData = await standRes.json();
 
-                // GHOST CHECK
                 if(!statData.response || statData.response.length === 0) {
                     statBox.innerHTML = "<div class='ignore-msg'>⚠️ MATCH IGNORED: Insufficient Data</div>";
                     document.getElementById(`card-${id}`).classList.add('ghost');
@@ -599,10 +594,8 @@
                     return; 
                 }
 
-                // FORM & RANK
                 let hRank = "", aRank = "";
                 let hForm = "", aForm = "";
-                
                 if(standData.response && standData.response.length > 0) {
                     const table = standData.response[0].league.standings[0];
                     const hTeam = table.find(t => t.team.name === hName);
@@ -638,7 +631,6 @@
                 const hPercent = Math.round((hPressure / totalPress) * 100);
                 const aPercent = 100 - hPercent;
 
-                // GHOST CHECK 2
                 if(totalPress <= 1) {
                     statBox.innerHTML = "<div class='ignore-msg'>⚠️ MATCH IGNORED: Insufficient Data</div>";
                     document.getElementById(`card-${id}`).classList.add('ghost');
@@ -673,7 +665,6 @@
                     else if(totalPress > 20) { verdict = "⚔️ OPEN GAME"; vColor = "#a371f7"; newConf = 80; }
                 }
 
-                // ALERT NOTIFICATION
                 if(pilotMode && newConf >= 90 && !alertedGames.has(id)) {
                     if (Notification.permission === "granted") {
                         new Notification("Hunter Alert! " + verdict, { body: `${hName} vs ${aName}` });
@@ -753,7 +744,9 @@
                 const res = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } });
                 const data = await res.json();
                 
-                let players = [];
+                let attackers = [];
+                let villains = [];
+
                 if(data.response && data.response.length > 0) {
                     data.response.forEach(t => t.players.forEach(p => {
                         const s = p.statistics[0];
@@ -761,30 +754,41 @@
                         const rating = Math.min(10, hts).toFixed(1);
                         const cardScore = (s.fouls.committed || 0) * 2 + (s.cards.yellow || 0) * 10;
 
-                        if (hts > 2 || cardScore > 4) {
-                            players.push({
-                                name: p.player.name,
-                                team: t.team.name,
-                                rating: rating,
-                                rawScore: hts,
-                                cardScore: cardScore,
-                                details: `${s.shots.on||0} SoT, ${s.passes.key||0} KP`
-                            });
-                        }
+                        const playerObj = {
+                            name: p.player.name,
+                            team: t.team.name,
+                            rating: rating,
+                            rawScore: hts,
+                            cardScore: cardScore,
+                            details: `${s.shots.on||0} SoT, ${s.passes.key||0} KP, ${s.fouls.committed||0} Fouls`
+                        };
+
+                        if(hts > 1) attackers.push(playerObj);
+                        if(cardScore > 2) villains.push(playerObj);
                     }));
                 }
 
-                players.sort((a, b) => b.rawScore - a.rawScore);
-                
+                // Sort lists
+                attackers.sort((a, b) => b.rawScore - a.rawScore);
+                villains.sort((a, b) => b.cardScore - a.cardScore);
+
+                // Merge: Top 4 Attackers + Top 3 Villains
+                let finalDisplay = [...attackers.slice(0, 4), ...villains.slice(0, 3)];
+                // Remove duplicates (if a player is both)
+                finalDisplay = finalDisplay.filter((p, index, self) => index === self.findIndex((t) => t.name === p.name));
+
                 let html = "";
-                if (players.length === 0) {
+                if (finalDisplay.length === 0) {
                     html = "<div style='text-align:center; color:#888;'>No significant player stats yet.</div>";
                 } else {
-                    players.slice(0, 5).forEach(p => { 
+                    finalDisplay.forEach(p => { 
                         let badgeClass = "rate-med";
                         let typeText = "Threat";
+                        
                         if (p.rawScore >= 8) { badgeClass = "rate-high"; typeText = "🔥 GOAL THREAT"; }
                         else if (p.rawScore >= 5) { badgeClass = "rate-med"; typeText = "🅰️ CREATOR"; }
+                        
+                        // Card score overrides if high
                         if (p.cardScore > 5) { badgeClass = "rate-card"; typeText = "🟨 CARD RISK"; }
 
                         html += `
