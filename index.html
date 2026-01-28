@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -57,14 +56,21 @@
         /* HISTORY ITEM */
         .hist-day { margin-bottom: 20px; }
         .hist-date-row { display: flex; justify-content: space-between; padding: 10px; background: #21262d; border-radius: 8px; font-weight: bold; margin-bottom: 10px; }
-        .hist-unit-plus { color: var(--green); }
-        .hist-unit-minus { color: var(--red); }
-        .hist-unit-even { color: #888; }
-        
+        .hist-unit-plus { color: var(--green); } .hist-unit-minus { color: var(--red); } .hist-unit-even { color: #888; }
         .hist-card { background: #161b22; border-bottom: 1px solid #30363d; padding: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
         .hist-res-win { color: var(--green); font-weight: bold; border: 1px solid var(--green); padding: 2px 6px; border-radius: 4px; }
         .hist-res-loss { color: var(--red); font-weight: bold; border: 1px solid var(--red); padding: 2px 6px; border-radius: 4px; }
         .hist-res-open { color: var(--gold); font-weight: bold; border: 1px solid var(--gold); padding: 2px 6px; border-radius: 4px; }
+
+        /* PLAYER THREAT CARD */
+        .player-threat-card { background: rgba(255,255,255,0.03); padding: 8px; border-radius: 6px; margin-bottom: 6px; border-left: 2px solid #333; }
+        .p-row-top { display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: bold; color: #ddd; }
+        .p-stat-detail { font-size: 0.75rem; color: #888; margin-top: 2px; }
+        .threat-bar-bg { height: 6px; background: #333; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+        .threat-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+        .threat-high { border-left-color: var(--green); } .threat-high .threat-bar-fill { background: var(--green); }
+        .threat-med { border-left-color: var(--gold); } .threat-med .threat-bar-fill { background: var(--gold); }
+        .threat-val { font-family: monospace; font-weight: bold; }
 
         /* BUTTONS */
         .btn-row { display: flex; gap: 10px; margin-top: 10px; }
@@ -75,14 +81,7 @@
         .mark-btn { flex: 0.4; background: #21262d; border: 1px solid #30363d; color: #888; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
         .mark-btn.active { background: var(--green); color: white; border-color: var(--green); }
 
-        /* COMMON */
-        .pred-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; margin-top: 10px; }
-        .pred-text { color: var(--green); font-weight: bold; font-size: 0.9rem; }
-        .conf-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; color: #000; }
-        .conf-high { background-color: var(--green); } .conf-med { background-color: var(--gold); } .conf-low { background-color: #8b949e; }
-        .upset-badge { background: rgba(218, 54, 51, 0.15); border: 1px solid var(--red); color: var(--red); font-size: 0.75rem; font-weight: bold; text-align: center; padding: 6px; border-radius: 6px; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
-        .red-card-badge { background: rgba(218, 54, 51, 0.2); border: 1px solid var(--red); color: white; font-weight: bold; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; }
-        
+        /* ANALYSIS */
         .analysis-box { background: #1c1c1c; border: 1px solid var(--purple); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; display: none; }
         .stat-bar { display: flex; justify-content: space-between; margin-bottom: 4px; color: #bbb; font-size: 0.8rem; }
         .stat-val { font-weight: bold; color: white; }
@@ -90,10 +89,12 @@
         .gauge-home { background: var(--green); height: 100%; transition: width 0.5s; }
         .gauge-away { background: var(--purple); height: 100%; transition: width 0.5s; }
         .gauge-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #888; margin-top:-2px; margin-bottom: 10px; }
+        
         .tip-box { background: rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 8px; margin: 10px 0; border-left: 3px solid var(--gold); }
         .tip-header { font-size: 0.75rem; color: #888; text-transform: uppercase; margin-bottom: 4px; font-weight: bold; }
         .tip-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .tip-name { color: #fff; font-weight: bold; font-size: 0.9rem; }
+        
         .val-good { color: var(--green); text-shadow: 0 0 5px rgba(46, 160, 67, 0.5); }
         .rank-badge { font-size: 0.75rem; color: var(--gold); margin-left: 4px; font-weight: normal; }
         .est-badge { font-size: 0.7rem; background: #333; padding: 2px 4px; border-radius: 3px; color: #888; margin-left: 5px; }
@@ -134,7 +135,7 @@
             <div style="text-align:center; padding-top:50px; color:#888;">
                 <p style="font-size:2rem; margin-bottom:10px;">🔭</p>
                 <p>Ready to Hunt (60'-85').</p>
-                <p style="font-size:0.8rem; color:#555">Active: xG • Bet365 • Standings</p>
+                <p style="font-size:0.8rem; color:#555">Active: xG • Player Ratings • Bet365</p>
             </div>
         </div>
         <button class="scan-btn" onclick="runScan()" id="mainBtn">🎯 SCAN MARKETS</button>
@@ -163,56 +164,33 @@
         const pilotBtn = document.getElementById('pilotBtn');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // --- TRACKER LOGIC ---
-        // Storage Structure: Array of { id, date, teams, goalsAtBet, status: 'OPEN'|'WIN'|'LOSS' }
         function getHistory() { return JSON.parse(localStorage.getItem('betHistory') || "[]"); }
-        
         function saveHistory(bets) { localStorage.setItem('betHistory', JSON.stringify(bets)); }
-
         function toggleBet(id, homeGoals, awayGoals, teams) {
             let bets = getHistory();
             const existingIndex = bets.findIndex(b => b.id === id);
-            
-            if(existingIndex >= 0) {
-                // Unmark/Remove if it's still open or user wants to undo
-                bets.splice(existingIndex, 1);
-            } else {
-                // Add new bet
+            if(existingIndex >= 0) { bets.splice(existingIndex, 1); } else {
                 const today = new Date().toLocaleDateString('en-CA');
-                bets.push({
-                    id: id,
-                    date: today,
-                    teams: teams,
-                    goalsAtBet: homeGoals + awayGoals,
-                    status: 'OPEN'
-                });
+                bets.push({ id: id, date: today, teams: teams, goalsAtBet: homeGoals + awayGoals, status: 'OPEN' });
             }
             saveHistory(bets);
-            applyFilter(); // Refresh UI
+            applyFilter(); 
         }
 
-        // --- AUTO-RESULTING LOGIC ---
         async function checkBetOutcomes(liveMatches) {
             let bets = getHistory();
             let changed = false;
             let openBets = bets.filter(b => b.status === 'OPEN');
-            
             if(openBets.length === 0) return;
 
-            // 1. Check against LIVE matches first (Fastest)
             openBets.forEach(bet => {
                 const liveMatch = liveMatches.find(m => m.fixture.id === bet.id);
                 if(liveMatch) {
                     const currentTotal = liveMatch.goals.home + liveMatch.goals.away;
-                    if(currentTotal > bet.goalsAtBet) {
-                        bet.status = 'WIN';
-                        changed = true;
-                    }
+                    if(currentTotal > bet.goalsAtBet) { bet.status = 'WIN'; changed = true; }
                 }
             });
 
-            // 2. If any open bets are NOT in live list, check API (Game finished?)
-            // We fetch specific IDs
             const missingBets = openBets.filter(b => b.status === 'OPEN' && !liveMatches.find(m => m.fixture.id === b.id));
             if(missingBets.length > 0) {
                 const ids = missingBets.map(b => b.id).join('-');
@@ -220,81 +198,40 @@
                 try {
                     const res = await fetch(`https://v3.football.api-sports.io/fixtures?ids=${ids}`, { headers: { "x-rapidapi-key": API_KEY } });
                     const data = await res.json();
-                    
                     data.response.forEach(m => {
                         const bet = bets.find(b => b.id === m.fixture.id);
                         if(bet) {
                             const finalTotal = m.goals.home + m.goals.away;
                             const status = m.fixture.status.short;
-                            
-                            if (finalTotal > bet.goalsAtBet) {
-                                bet.status = 'WIN';
-                                changed = true;
-                            } else if (['FT', 'AET', 'PEN'].includes(status)) {
-                                bet.status = 'LOSS'; // Ended with same score
-                                changed = true;
-                            }
+                            if (finalTotal > bet.goalsAtBet) { bet.status = 'WIN'; changed = true; }
+                            else if (['FT', 'AET', 'PEN'].includes(status)) { bet.status = 'LOSS'; changed = true; }
                         }
                     });
                 } catch(e) {}
             }
-
-            if(changed) {
-                saveHistory(bets);
-                if(document.getElementById('tabHist').classList.contains('active')) renderHistory();
-            }
+            if(changed) { saveHistory(bets); if(document.getElementById('tabHist').classList.contains('active')) renderHistory(); }
         }
 
         function renderHistory() {
             const bets = getHistory();
             const histDiv = document.getElementById('histContent');
-            
-            if(bets.length === 0) {
-                histDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>No bets tracked yet.</p>";
-                return;
-            }
-
-            // Sort by date (newest first)
+            if(bets.length === 0) { histDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>No bets tracked yet.</p>"; return; }
             bets.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            // Group by Date
-            const grouped = bets.reduce((acc, bet) => {
-                if(!acc[bet.date]) acc[bet.date] = [];
-                acc[bet.date].push(bet);
-                return acc;
-            }, {});
+            const grouped = bets.reduce((acc, bet) => { if(!acc[bet.date]) acc[bet.date] = []; acc[bet.date].push(bet); return acc; }, {});
 
             let html = "";
             for (const [date, dayBets] of Object.entries(grouped)) {
                 let dailyUnits = 0;
                 let cardsHtml = "";
-                
                 dayBets.forEach(b => {
-                    let resClass = "hist-res-open";
-                    let resText = "OPEN";
+                    let resClass = "hist-res-open", resText = "OPEN";
                     if(b.status === 'WIN') { resClass = "hist-res-win"; resText = "WIN (+1)"; dailyUnits++; }
                     if(b.status === 'LOSS') { resClass = "hist-res-loss"; resText = "LOSS (-1)"; dailyUnits--; }
-                    
-                    cardsHtml += `
-                        <div class="hist-card">
-                            <div style="flex:1">${b.teams}</div>
-                            <div class="${resClass}">${resText}</div>
-                        </div>
-                    `;
+                    cardsHtml += `<div class="hist-card"><div style="flex:1">${b.teams}</div><div class="${resClass}">${resText}</div></div>`;
                 });
-
                 let unitClass = dailyUnits > 0 ? "hist-unit-plus" : (dailyUnits < 0 ? "hist-unit-minus" : "hist-unit-even");
                 let unitSign = dailyUnits > 0 ? "+" : "";
-
-                html += `
-                    <div class="hist-day">
-                        <div class="hist-date-row">
-                            <span>📅 ${date}</span>
-                            <span class="${unitClass}">${unitSign}${dailyUnits} Units</span>
-                        </div>
-                        ${cardsHtml}
-                    </div>
-                `;
+                html += `<div class="hist-day"><div class="hist-date-row"><span>📅 ${date}</span><span class="${unitClass}">${unitSign}${dailyUnits} Units</span></div>${cardsHtml}</div>`;
             }
             histDiv.innerHTML = html;
         }
@@ -330,7 +267,7 @@
             } else {
                 document.getElementById('histView').style.display = 'block';
                 document.getElementById('tabHist').classList.add('active');
-                checkBetOutcomes(allMatches); // Force check
+                checkBetOutcomes(allMatches);
                 renderHistory();
             }
         }
@@ -345,49 +282,25 @@
                 const data = await res.json();
                 const eliteGames = data.response.filter(m => ELITE_IDS.includes(m.league.id));
                 eliteGames.sort((a, b) => a.fixture.timestamp - b.fixture.timestamp);
-
-                if(eliteGames.length === 0) {
-                    schedDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>No Elite Games Scheduled Today.</p>";
-                    return;
-                }
-
+                if(eliteGames.length === 0) { schedDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>No Elite Games Scheduled Today.</p>"; return; }
                 let html = "";
                 eliteGames.forEach(m => {
                     const date = new Date(m.fixture.timestamp * 1000);
                     const time = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                    html += `<div class="sched-card">
-                            <div style="text-align:center; margin-right:15px;"><div class="sched-time">${time}</div></div>
-                            <div class="sched-teams">
-                                <div class="sched-league">${m.league.country} • ${m.league.name}</div>
-                                <div>${m.teams.home.name} vs ${m.teams.away.name}</div>
-                            </div>
-                        </div>`;
+                    html += `<div class="sched-card"><div style="text-align:center; margin-right:15px;"><div class="sched-time">${time}</div></div><div class="sched-teams"><div class="sched-league">${m.league.country} • ${m.league.name}</div><div>${m.teams.home.name} vs ${m.teams.away.name}</div></div></div>`;
                 });
                 schedDiv.innerHTML = html;
             } catch(e) { schedDiv.innerHTML = "<p style='text-align:center; color:#da3633;'>Error loading schedule.</p>"; }
         }
 
-        function playPing() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.4);
-        }
+        function playPing() { if (audioCtx.state === 'suspended') audioCtx.resume(); const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.setValueAtTime(800, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1); gain.gain.setValueAtTime(0.5, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4); osc.start(); osc.stop(audioCtx.currentTime + 0.4); }
 
         function togglePilot() {
             pilotMode = !pilotMode;
             if(pilotMode) {
                 pilotBtn.classList.add('active');
                 pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (60s)`;
-                playPing(); 
-                runScan(true); 
+                playPing(); runScan(true); 
                 pilotInterval = setInterval(() => runScan(true), 60000); 
             } else {
                 pilotBtn.classList.remove('active');
@@ -398,16 +311,10 @@
 
         async function runScan(isAuto = false) {
             trackAPI(1);
-            if(!isAuto) {
-                mainBtn.innerText = "Scanning Global Feeds..."; mainBtn.disabled = true;
-                content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data...</p>";
-            } else {
-                mainBtn.innerText = "🤖 Auto-Scanning...";
-            }
+            if(!isAuto) { mainBtn.innerText = "Scanning Global Feeds..."; mainBtn.disabled = true; content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data...</p>"; }
+            else { mainBtn.innerText = "🤖 Auto-Scanning..."; }
             try {
-                const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", {
-                    headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" }
-                });
+                const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", { headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" } });
                 const data = await res.json();
                 if(!data.response || data.results === 0) {
                     if(!isAuto) content.innerHTML = "<p style='text-align:center; margin-top:50px'>No live games.</p>";
@@ -415,8 +322,6 @@
                 } else {
                     allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
                     allMatches.sort((a, b) => b.fixture.status.elapsed - a.fixture.status.elapsed);
-                    
-                    // CHECK BET RESULTS
                     checkBetOutcomes(allMatches);
                     applyFilter(isAuto);
                 }
@@ -428,7 +333,6 @@
             const mode = document.getElementById('filterSelect').value;
             content.innerHTML = "";
             let highValueFound = false;
-            
             const placedBets = getHistory().map(b => b.id);
 
             if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
@@ -444,9 +348,8 @@
                 else return true;
             });
 
-            if(filtered.length === 0) {
-                content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found.</p>`;
-            } else {
+            if(filtered.length === 0) { content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No ${mode.toUpperCase()} games found.</p>`; }
+            else {
                 filtered.forEach(m => {
                     const t = m.fixture.status.elapsed;
                     const s = m.goals;
@@ -462,17 +365,9 @@
             const div = document.createElement('div');
             div.className = `match-card ${isPlaced ? 'placed' : ''}`;
             div.id = `card-${m.fixture.id}`;
+            const h = m.teams.home; const a = m.teams.away; const s = m.goals; const t = m.fixture.status.elapsed; const lid = m.league.id; const sid = m.league.season;
             
-            const h = m.teams.home;
-            const a = m.teams.away;
-            const s = m.goals;
-            const t = m.fixture.status.elapsed;
-            const lid = m.league.id;
-            const sid = m.league.season;
-            
-            let hGoals = "", aGoals = "";
-            let hRed = false, aRed = false;
-
+            let hGoals = "", aGoals = ""; let hRed = false, aRed = false;
             if (m.events) {
                 hGoals = m.events.filter(e => e.type === 'Goal' && e.team.id === h.id).map(e => e.time.elapsed + "'").join(', ');
                 aGoals = m.events.filter(e => e.type === 'Goal' && e.team.id === a.id).map(e => e.time.elapsed + "'").join(', ');
@@ -485,29 +380,17 @@
             const placedBadge = isPlaced ? "<div class='placed-badge'>✅ BET PLACED</div>" : "";
 
             let upsetHtml = "";
-            if (ELITE_IDS.includes(lid) && s.home < s.away && (s.away - s.home === 1)) {
-                upsetHtml = `<div class="upset-badge">🔥 UPSET ALERT: ${h.name} Chasing!</div>`;
-            }
+            if (ELITE_IDS.includes(lid) && s.home < s.away && (s.away - s.home === 1)) { upsetHtml = `<div class="upset-badge">🔥 UPSET ALERT: ${h.name} Chasing!</div>`; }
 
-            let predText = "Monitoring...";
-            let confVal = 0;
-            let confClass = "conf-low";
-
+            let predText = "Monitoring..."; let confVal = 0; let confClass = "conf-low";
             if (s.home === s.away) {
                 if (s.home > 1) { predText = "⚔️ High Score Draw"; confVal = 78; }
                 else if (s.home === 0) { predText = "🛡️ 0-0 Stalemate"; confVal = 70; }
                 else { predText = "⚠️ Tight Match"; confVal = 75; }
                 if(hRed || aRed) { predText = "⚔️ 10 Men vs 11"; confVal = 85; }
             } 
-            else if (Math.abs(s.home - s.away) === 1) {
-                predText = "⚽ Late Goal Likely";
-                confVal = (t > 75) ? 90 : 82;
-            } 
-            else {
-                predText = "🔒 Result Likely Safe";
-                confVal = 94;
-            }
-            
+            else if (Math.abs(s.home - s.away) === 1) { predText = "⚽ Late Goal Likely"; confVal = (t > 75) ? 90 : 82; } 
+            else { predText = "🔒 Result Likely Safe"; confVal = 94; }
             if(upsetHtml !== "") { predText = "🔥 Favorite Chasing"; confVal = 95; }
             if(confVal >= 80) confClass = "conf-high"; else if(confVal >= 60) confClass = "conf-med";
 
@@ -558,8 +441,6 @@
             trackAPI(3);
             btn.innerText = "Scanning...";
             const statBox = document.getElementById(`stats-${id}`);
-            const predText = document.getElementById(`pred-text-${id}`);
-            const predBadge = document.getElementById(`pred-badge-${id}`);
             statBox.style.display = 'block';
             statBox.innerHTML = "<div style='color:#888; text-align:center;'>Fetching Data...</div>";
 
@@ -628,17 +509,11 @@
                     if(hxG > (hGoals + 0.6)) { verdict = `📉 ${hName} xG ANOMALY`; vColor = "#a371f7"; newConf = 92; }
                     else if(axG > (aGoals + 0.6)) { verdict = `📉 ${aName} xG ANOMALY`; vColor = "#a371f7"; newConf = 92; }
                     else if(totalPress < 20) { verdict = "💤 LOW ENERGY"; vColor = "#8b949e"; newConf = 88; }
-                    else if(diff > 30) { 
-                        const leader = hPressure > aPressure ? hName : aName;
-                        verdict = `🔥 SIEGE: ${leader}`; vColor = "#2ea043"; newConf = 92;
-                    } 
+                    else if(diff > 30) { verdict = `🔥 SIEGE: ${hPressure > aPressure ? hName : aName}`; vColor = "#2ea043"; newConf = 92; } 
                     else { verdict = "⚔️ END-TO-END"; vColor = "#a371f7"; newConf = 85; }
                 } else {
                     if(totalPress < 5) { verdict = "⏳ STALEMATE (No Chances)"; vColor = "#8b949e"; newConf = 85; }
-                    else if(diff > 12) { 
-                        const leader = hPressure > aPressure ? hName : aName;
-                        verdict = `🔥 DOMINATING: ${leader}`; vColor = "#2ea043"; newConf = 90;
-                    }
+                    else if(diff > 12) { verdict = `🔥 DOMINATING: ${hPressure > aPressure ? hName : aName}`; vColor = "#2ea043"; newConf = 90; }
                     else if(totalPress > 20) { verdict = "⚔️ OPEN GAME"; vColor = "#a371f7"; newConf = 80; }
                 }
 
@@ -682,10 +557,7 @@
 
                 statBox.innerHTML = `
                     <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}</div>
-                    <div class="gauge-labels">
-                        <span>${hName} ${hRank} (${hPercent}%)</span>
-                        <span>${aName} ${aRank} (${aPercent}%)</span>
-                    </div>
+                    <div class="gauge-labels"><span>${hName} ${hRank} (${hPercent}%)</span><span>${aName} ${aRank} (${aPercent}%)</span></div>
                     <div class="gauge-container"><div class="gauge-home" style="width:${hPercent}%"></div><div class="gauge-away" style="width:${aPercent}%"></div></div>
                     ${xgHTML}
                     <div class="stat-bar"><span>Shots (Total)</span><span class="stat-val">${hTotal} (${hSoT}) - ${aTotal} (${aSoT})</span></div>
@@ -695,18 +567,12 @@
                     <button class="copy-btn" onclick="copyTip('${hName}', '${aName}', '${verdict}', ${newConf})">📋 Copy Report</button>
                 `;
                 
-                predText.innerText = verdict; 
-                predText.style.color = vColor;
-                predBadge.innerText = newConf + "%";
-                if(newConf > 80) predBadge.className = "conf-badge conf-high"; else if(newConf > 60) predBadge.className = "conf-badge conf-med"; else predBadge.className = "conf-badge conf-low";
+                // Update Prediction Badge
+                document.getElementById(`pred-text-${id}`).innerText = verdict;
+                document.getElementById(`pred-text-${id}`).style.color = vColor;
                 
             } catch(e) { statBox.innerHTML = "<div style='color:#da3633;'>Error analyzing.</div>"; console.log(e); }
             btn.innerText = "⚡ Analyze";
-        }
-
-        function copyTip(h, a, verdict, conf) {
-            const text = `🎯 Hunter Pro Tip\n⚽ ${h} vs ${a}\n📊 Verdict: ${verdict}\n🔥 Confidence: ${conf}%\nSent from 60' Hunter`;
-            navigator.clipboard.writeText(text).then(() => alert("Tip Copied!"));
         }
 
         async function checkPlayers(btn, id) {
@@ -717,11 +583,52 @@
                 const data = await res.json();
                 const area = document.getElementById(`p-${id}`);
                 let html = "";
+                
                 if(data.response && data.response.length > 0) {
+                    let allPlayers = [];
                     data.response.forEach(t => t.players.forEach(p => {
                         const s = p.statistics[0];
-                        if(s.shots.on >= 2 && s.goals.total === 0) html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#2ea043"><span>🎯 ${p.player.name} To Score</span><span style="font-weight:bold">${s.shots.on} SoT</span></div>`;
-                        if(s.fouls.committed >= 3 && !s.cards.yellow) html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.9rem; color:#ffffff"><span>🟨 ${p.player.name} Card Risk</span><span style="font-weight:bold">${s.fouls.committed} Fouls</span></div>`;
+                        // Calculate Threat Score (0-10)
+                        let score = (s.shots.on || 0) * 2.5 + (s.passes.key || 0) * 1.5 + (s.shots.total || 0) * 0.5 + (s.dribbles.success || 0) * 0.5;
+                        if(score > 2) {
+                            allPlayers.push({ name: p.player.name, team: t.team.name, score: score, stats: s });
+                        }
+                    }));
+                    
+                    // Sort by Threat Score
+                    allPlayers.sort((a,b) => b.score - a.score);
+                    const topThreats = allPlayers.slice(0, 3); // Top 3 only
+
+                    if(topThreats.length > 0) {
+                        html += `<div style="margin-bottom:8px; font-weight:bold; color:#d29922; font-size:0.8rem; text-transform:uppercase;">🔥 Top 3 Threat Ratings</div>`;
+                        topThreats.forEach(p => {
+                            let barColor = p.score >= 7 ? "threat-high" : "threat-med";
+                            let threatType = (p.stats.shots.on > p.stats.passes.key) ? "Goal Threat" : "Assist Threat";
+                            let percent = Math.min(p.score * 10, 100);
+                            
+                            html += `
+                                <div class="player-threat-card ${barColor}">
+                                    <div class="p-row-top">
+                                        <span>${p.name} (${p.team})</span>
+                                        <span class="threat-val">${p.score.toFixed(1)}</span>
+                                    </div>
+                                    <div class="p-stat-detail">
+                                        ${threatType} • ${p.stats.shots.on || 0} SoT • ${p.stats.passes.key || 0} KP
+                                    </div>
+                                    <div class="threat-bar-bg">
+                                        <div class="threat-bar-fill" style="width:${percent}%"></div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                    }
+                    
+                    // Card Risks (Keep existing logic)
+                    data.response.forEach(t => t.players.forEach(p => {
+                        const s = p.statistics[0];
+                        if(s.fouls.committed >= 3 && !s.cards.yellow) {
+                            html += `<div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.85rem; color:#ffffff; padding:4px; border:1px solid #555; border-radius:4px;"><span>🟨 ${p.player.name} (Risk)</span><span style="font-weight:bold">${s.fouls.committed} Fouls</span></div>`;
+                        }
                     }));
                 }
                 area.innerHTML = html || "<div style='font-size:0.8rem; color:#666; text-align:center; margin-top:5px'>No high value signals.</div>";
@@ -729,14 +636,8 @@
             btn.style.display = 'none';
         }
 
-        if ('serviceWorker' in navigator) {
-            const blob = new Blob([`self.addEventListener('fetch', () => {});`], {type: 'application/javascript'});
-            navigator.serviceWorker.register(URL.createObjectURL(blob));
-        }
-        let deferredPrompt;
-        const installBtn = document.getElementById('installBtn');
-        window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; });
-        installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; } });
+        if ('serviceWorker' in navigator) { const blob = new Blob([`self.addEventListener('fetch', () => {});`], {type: 'application/javascript'}); navigator.serviceWorker.register(URL.createObjectURL(blob)); }
+        let deferredPrompt; const installBtn = document.getElementById('installBtn'); window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBtn.style.display = 'block'; }); installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; } });
     </script>
 </body>
 </html>
