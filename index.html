@@ -33,8 +33,8 @@
         .pilot-btn.active .pilot-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
 
         /* TABS */
-        .nav-tabs { display: flex; gap: 10px; margin-top: 15px; }
-        .nav-tab { flex: 1; text-align: center; padding: 10px; background: #21262d; border-radius: 8px; border: 1px solid #30363d; color: #888; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+        .nav-tabs { display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; }
+        .nav-tab { flex: 1; text-align: center; padding: 10px; background: #21262d; border-radius: 8px; border: 1px solid #30363d; color: #888; font-weight: bold; cursor: pointer; font-size: 0.9rem; white-space: nowrap; }
         .nav-tab.active { background: #2ea043; color: white; border-color: #2ea043; }
 
         select { width: 100%; padding: 12px; background: #21262d; color: white; border: 1px solid #30363d; border-radius: 8px; font-size: 1rem; font-weight: bold; outline: none; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
@@ -76,6 +76,15 @@
         .hist-res-win { color: var(--green); font-weight: bold; border: 1px solid var(--green); padding: 2px 6px; border-radius: 4px; }
         .hist-res-loss { color: var(--red); font-weight: bold; border: 1px solid var(--red); padding: 2px 6px; border-radius: 4px; }
         .hist-res-open { color: var(--gold); font-weight: bold; border: 1px solid var(--gold); padding: 2px 6px; border-radius: 4px; }
+
+        /* CARD WATCH TABLE */
+        .card-table-row { display: flex; justify-content: space-between; align-items: center; background: #161b22; padding: 12px; border-bottom: 1px solid #30363d; }
+        .card-table-row:nth-child(even) { background: #0d1117; }
+        .card-player-info { display: flex; flex-direction: column; flex: 1; }
+        .card-player-name { font-weight: bold; color: white; }
+        .card-match-info { font-size: 0.75rem; color: #888; }
+        .card-foul-badge { background: rgba(218, 54, 51, 0.2); color: var(--red); border: 1px solid var(--red); padding: 4px 8px; border-radius: 6px; font-weight: bold; font-family: monospace; }
+        .card-scan-btn { width: 100%; background: #da3633; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 1rem; margin-bottom: 20px; cursor: pointer; box-shadow: 0 4px 15px rgba(218, 54, 51, 0.3); }
 
         /* BUTTONS */
         .btn-row { display: flex; gap: 10px; margin-top: 10px; }
@@ -173,6 +182,7 @@
         <div class="nav-tabs">
             <div id="tabLive" class="nav-tab active" onclick="switchTab('live')">🔴 Live Hunt</div>
             <div id="tabSched" class="nav-tab" onclick="switchTab('sched')">📅 Elite Schedule</div>
+            <div id="tabCards" class="nav-tab" onclick="switchTab('cards')">🟨 Card Watch</div>
             <div id="tabHist" class="nav-tab" onclick="switchTab('hist')">📜 History</div>
         </div>
 
@@ -206,6 +216,11 @@
         <div id="schedContent" style="padding-bottom:100px;"></div>
     </div>
 
+    <div id="cardView" style="display:none;">
+        <button class="card-scan-btn" onclick="scanGlobalCards(this)">⚠️ SCAN GLOBAL CARD RISKS</button>
+        <div id="cardContent" style="padding-bottom:100px; text-align:center; color:#888;">Click above to find high-risk players across all live games.</div>
+    </div>
+
     <div id="histView" style="display:none;">
         <div id="histContent" style="padding-bottom:100px;"></div>
     </div>
@@ -223,19 +238,11 @@
             <p>• <b>Red Card:</b> Isolates 10-man situations.</p>
             <p>• <b>Late:</b> Only shows 80th min+ for late drama.</p>
 
-            <h3>⚡ Deep Analysis (The Gauge)</h3>
-            <p>Click "Analyze" to see xG, Corners, and Pressure.</p>
-            <p>• <b>Pulse Animation:</b> If a card pulses Green or Purple, that team has >70% pressure momentum.</p>
-            <p>• <b>Ghost Mode:</b> Greyed-out cards mean the API has no live stats (risky to bet).</p>
+            <h3>🟨 Card Watch (New!)</h3>
+            <p>A global scanner that checks EVERY live game for players who have committed 2+ fouls but haven't been booked yet. This is your "Hit List" for card betting.</p>
 
             <h3>✅ Bet Tracking</h3>
             <p>Click the <b>📌 Pin</b> button to mark a bet. The app will automatically track the score. If the goal count increases, it marks as a <b>WIN (+1)</b>. If it ends the same, it marks as a <b>LOSS (-1)</b>.</p>
-
-            <h3>🕵️ Player Checks</h3>
-            <p>Scans for individual value.</p>
-            <p>• <b>🔥 Goal Threat:</b> High shots + touches in box.</p>
-            <p>• <b>🅰️ Creator:</b> High key passes.</p>
-            <p>• <b>🟨 Card Risk:</b> High foul count + strict ref.</p>
 
             <button class="close-modal" onclick="document.getElementById('helpModal').style.display='none'">Close Guide</button>
         </div>
@@ -248,9 +255,9 @@
                 Unlock the full power of the Hunter:
                 <br><br>
                 🚀 <b>Deep Analysis (xG & Pressure)</b><br>
+                🟨 <b>Global Card Risk Scanner</b><br>
                 🕵️ <b>Player Threat Ratings</b><br>
                 🤖 <b>Auto-Pilot & Alerts</b><br>
-                🎯 <b>Sniper Strategy Chips</b>
             </div>
             <button class="upgrade-btn" onclick="mockUpgrade()">👉 Get Pro Access (£19/mo)</button>
             <button class="restore-btn" onclick="closePaywall()">Maybe Later</button>
@@ -423,9 +430,11 @@
             document.getElementById('liveView').style.display = 'none';
             document.getElementById('schedView').style.display = 'none';
             document.getElementById('histView').style.display = 'none';
+            document.getElementById('cardView').style.display = 'none';
             document.getElementById('tabLive').classList.remove('active');
             document.getElementById('tabSched').classList.remove('active');
             document.getElementById('tabHist').classList.remove('active');
+            document.getElementById('tabCards').classList.remove('active');
             document.getElementById('filterSelect').style.display = 'none';
 
             if(tab === 'live') {
@@ -436,6 +445,9 @@
                 document.getElementById('schedView').style.display = 'block';
                 document.getElementById('tabSched').classList.add('active');
                 loadSchedule();
+            } else if(tab === 'cards') {
+                document.getElementById('cardView').style.display = 'block';
+                document.getElementById('tabCards').classList.add('active');
             } else {
                 document.getElementById('histView').style.display = 'block';
                 document.getElementById('tabHist').classList.add('active');
@@ -541,6 +553,7 @@
             if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
 
             const filtered = allMatches.filter(m => {
+                // 1. League Filter
                 const league = (m.league.name || "").toLowerCase();
                 const blocked = ["friendly", "friendlies", "club friendlies", "u19", "u20", "u21", "u23", "youth", "reserve", "reserves"];
                 if(blocked.some(word => league.includes(word))) return false; 
@@ -855,7 +868,6 @@
             trackAPI(1);
             const area = document.getElementById(`p-${id}`);
             
-            // TOGGLE LOGIC
             if(area.style.display === 'block') {
                 area.style.display = 'none';
                 btn.innerText = "🕵️ Check Players";
@@ -874,17 +886,16 @@
                 if(data.response && data.response.length > 0) {
                     data.response.forEach(t => t.players.forEach(p => {
                         const s = p.statistics[0];
+                        // THREAT RATING (Goals/Assists only)
                         const hts = (s.shots.on || 0) * 3 + (s.shots.total - (s.shots.on||0) || 0) * 1 + (s.passes.key || 0) * 2 + (s.dribbles.success || 0) * 0.5;
                         const rating = Math.min(10, hts).toFixed(1);
-                        const cardScore = (s.fouls.committed || 0) * 2 + (s.cards.yellow || 0) * 10;
 
-                        if (hts > 2 || cardScore > 4) {
+                        if (hts > 2) {
                             players.push({
                                 name: p.player.name,
                                 team: t.team.name,
                                 rating: rating,
                                 rawScore: hts,
-                                cardScore: cardScore,
                                 details: `${s.shots.on||0} SoT, ${s.passes.key||0} KP`
                             });
                         }
@@ -902,7 +913,6 @@
                         let typeText = "Threat";
                         if (p.rawScore >= 8) { badgeClass = "rate-high"; typeText = "🔥 GOAL THREAT"; }
                         else if (p.rawScore >= 5) { badgeClass = "rate-med"; typeText = "🅰️ CREATOR"; }
-                        if (p.cardScore > 5) { badgeClass = "rate-card"; typeText = "🟨 CARD RISK"; }
 
                         html += `
                             <div class="player-row">
@@ -921,6 +931,85 @@
                 area.innerHTML = html;
 
             } catch(e) { area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error checking players.</div>"; }
+        }
+
+        // --- NEW CARD SCANNER ---
+        async function scanGlobalCards(btn) {
+            if(!isPremium) { showPaywall(); return; } // LOCK
+            
+            btn.innerText = "⚠️ Scanning ALL Live Games...";
+            const area = document.getElementById('cardContent');
+            area.innerHTML = "<div style='text-align:center; padding:20px; color:#888'>Scanning player discipline across all matches... This may take a moment.</div>";
+            
+            // Get all live IDs
+            const liveIDs = allMatches.map(m => m.fixture.id);
+            if(liveIDs.length === 0) {
+                area.innerHTML = "<div style='text-align:center; padding:20px; color:#da3633'>No live matches to scan.</div>";
+                btn.innerText = "⚠️ SCAN GLOBAL CARD RISKS";
+                return;
+            }
+
+            let riskPlayers = [];
+            
+            // BATCH REQUESTS (5 at a time)
+            for (let i = 0; i < liveIDs.length; i += 5) {
+                const batch = liveIDs.slice(i, i + 5);
+                const promises = batch.map(id => 
+                    fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } })
+                    .then(r => r.json())
+                    .catch(e => null)
+                );
+                trackAPI(batch.length);
+                
+                const results = await Promise.all(promises);
+                
+                results.forEach(data => {
+                    if(data && data.response && data.response.length > 0) {
+                        // Get Match Info (Time, Team Names)
+                        // Note: players endpoint doesn't give match time, need to cross ref with allMatches
+                        // but accessing via closure is safe here
+                    }
+                    if(data && data.response) {
+                        data.response.forEach(t => t.players.forEach(p => {
+                            const s = p.statistics[0];
+                            if (s.fouls.committed >= 2 && !s.cards.yellow && !s.cards.red) {
+                                // Find match time for context
+                                const match = allMatches.find(m => m.fixture.id === data.parameters.fixture);
+                                const time = match ? match.fixture.status.elapsed + "'" : "Live";
+                                riskPlayers.push({
+                                    name: p.player.name,
+                                    team: t.team.name,
+                                    time: time,
+                                    fouls: s.fouls.committed
+                                });
+                            }
+                        }));
+                    }
+                });
+            }
+
+            // Sort by Fouls Desc
+            riskPlayers.sort((a, b) => b.fouls - a.fouls);
+
+            let html = "";
+            if(riskPlayers.length === 0) {
+                html = "<div style='text-align:center; padding:20px; color:#888'>No high-risk players found yet.</div>";
+            } else {
+                riskPlayers.forEach(p => {
+                    html += `
+                        <div class="card-table-row">
+                            <div class="card-player-info">
+                                <div class="card-player-name">${p.name}</div>
+                                <div class="card-match-info">${p.team} • ${p.time}</div>
+                            </div>
+                            <div class="card-foul-badge">${p.fouls} Fouls</div>
+                        </div>
+                    `;
+                });
+            }
+            
+            area.innerHTML = html;
+            btn.innerText = "⚠️ SCAN GLOBAL CARD RISKS";
         }
 
         if ('serviceWorker' in navigator) {
