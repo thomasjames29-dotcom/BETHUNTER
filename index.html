@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,8 +19,6 @@
         header { display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid #30363d; padding-bottom: 15px; margin-bottom: 15px; }
         .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         h1 { margin: 0; font-size: 1.4rem; color: var(--green); display: flex; align-items: center; gap: 10px; }
-        
-        /* API BADGE */
         .api-badge { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-family: monospace; font-weight: bold; }
 
         /* AUTO-PILOT */
@@ -31,18 +30,15 @@
         select { width: 100%; padding: 12px; background: #21262d; color: white; border: 1px solid #30363d; border-radius: 8px; font-size: 1rem; font-weight: bold; outline: none; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
 
         /* TABS */
-        .nav-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-        .nav-tab { flex: 1; text-align: center; padding: 10px; background: #21262d; border-radius: 8px; border: 1px solid #30363d; color: #888; font-weight: bold; cursor: pointer; }
+        .nav-tabs { display: flex; gap: 10px; margin-top: 15px; }
+        .nav-tab { flex: 1; text-align: center; padding: 10px; background: #21262d; border-radius: 8px; border: 1px solid #30363d; color: #888; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
         .nav-tab.active { background: #2ea043; color: white; border-color: #2ea043; }
 
         /* CARDS */
         .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; transition: all 0.3s; }
         .match-card.placed { border: 1px solid var(--green); background: rgba(46, 160, 67, 0.05); }
-        
-        /* GHOST MODE (Low Data) */
         .match-card.ghost { opacity: 0.5; border-color: #30363d; filter: grayscale(0.8); }
-        .match-card.ghost:hover { opacity: 1; filter: grayscale(0); } /* Peek on hover */
-
+        .match-card.ghost:hover { opacity: 1; filter: grayscale(0); }
         .placed-badge { position: absolute; top: 0; right: 0; background: var(--green); color: white; font-size: 0.7rem; font-weight: bold; padding: 4px 8px; border-bottom-left-radius: 8px; }
 
         .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
@@ -58,15 +54,17 @@
         .sched-teams { flex: 1; font-size: 0.9rem; }
         .sched-league { font-size: 0.75rem; color: #a371f7; text-transform: uppercase; margin-bottom: 4px; font-weight: bold; letter-spacing: 0.5px; }
 
-        /* BADGES */
-        .pred-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; margin-top: 10px; }
-        .pred-text { color: var(--green); font-weight: bold; font-size: 0.9rem; }
-        .conf-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; color: #000; }
-        .conf-high { background-color: var(--green); } 
-        .conf-med { background-color: var(--gold); }   
-        .conf-low { background-color: #8b949e; }
-        .upset-badge { background: rgba(218, 54, 51, 0.15); border: 1px solid var(--red); color: var(--red); font-size: 0.75rem; font-weight: bold; text-align: center; padding: 6px; border-radius: 6px; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
-        .red-card-badge { background: rgba(218, 54, 51, 0.2); border: 1px solid var(--red); color: white; font-weight: bold; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; }
+        /* HISTORY ITEM */
+        .hist-day { margin-bottom: 20px; }
+        .hist-date-row { display: flex; justify-content: space-between; padding: 10px; background: #21262d; border-radius: 8px; font-weight: bold; margin-bottom: 10px; }
+        .hist-unit-plus { color: var(--green); }
+        .hist-unit-minus { color: var(--red); }
+        .hist-unit-even { color: #888; }
+        
+        .hist-card { background: #161b22; border-bottom: 1px solid #30363d; padding: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+        .hist-res-win { color: var(--green); font-weight: bold; border: 1px solid var(--green); padding: 2px 6px; border-radius: 4px; }
+        .hist-res-loss { color: var(--red); font-weight: bold; border: 1px solid var(--red); padding: 2px 6px; border-radius: 4px; }
+        .hist-res-open { color: var(--gold); font-weight: bold; border: 1px solid var(--gold); padding: 2px 6px; border-radius: 4px; }
 
         /* BUTTONS */
         .btn-row { display: flex; gap: 10px; margin-top: 10px; }
@@ -77,7 +75,14 @@
         .mark-btn { flex: 0.4; background: #21262d; border: 1px solid #30363d; color: #888; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
         .mark-btn.active { background: var(--green); color: white; border-color: var(--green); }
 
-        /* ANALYSIS */
+        /* COMMON */
+        .pred-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; margin-top: 10px; }
+        .pred-text { color: var(--green); font-weight: bold; font-size: 0.9rem; }
+        .conf-badge { padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; color: #000; }
+        .conf-high { background-color: var(--green); } .conf-med { background-color: var(--gold); } .conf-low { background-color: #8b949e; }
+        .upset-badge { background: rgba(218, 54, 51, 0.15); border: 1px solid var(--red); color: var(--red); font-size: 0.75rem; font-weight: bold; text-align: center; padding: 6px; border-radius: 6px; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .red-card-badge { background: rgba(218, 54, 51, 0.2); border: 1px solid var(--red); color: white; font-weight: bold; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; }
+        
         .analysis-box { background: #1c1c1c; border: 1px solid var(--purple); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; display: none; }
         .stat-bar { display: flex; justify-content: space-between; margin-bottom: 4px; color: #bbb; font-size: 0.8rem; }
         .stat-val { font-weight: bold; color: white; }
@@ -85,12 +90,10 @@
         .gauge-home { background: var(--green); height: 100%; transition: width 0.5s; }
         .gauge-away { background: var(--purple); height: 100%; transition: width 0.5s; }
         .gauge-labels { display: flex; justify-content: space-between; font-size: 0.75rem; color: #888; margin-top:-2px; margin-bottom: 10px; }
-        
         .tip-box { background: rgba(255, 255, 255, 0.05); border-radius: 6px; padding: 8px; margin: 10px 0; border-left: 3px solid var(--gold); }
         .tip-header { font-size: 0.75rem; color: #888; text-transform: uppercase; margin-bottom: 4px; font-weight: bold; }
         .tip-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .tip-name { color: #fff; font-weight: bold; font-size: 0.9rem; }
-        
         .val-good { color: var(--green); text-shadow: 0 0 5px rgba(46, 160, 67, 0.5); }
         .rank-badge { font-size: 0.75rem; color: var(--gold); margin-left: 4px; font-weight: normal; }
         .est-badge { font-size: 0.7rem; background: #333; padding: 2px 4px; border-radius: 3px; color: #888; margin-left: 5px; }
@@ -113,9 +116,10 @@
             </button>
         </div>
         
-        <div class="nav-tabs" style="margin-top:15px;">
+        <div class="nav-tabs">
             <div id="tabLive" class="nav-tab active" onclick="switchTab('live')">🔴 Live Hunt</div>
             <div id="tabSched" class="nav-tab" onclick="switchTab('sched')">📅 Elite Schedule</div>
+            <div id="tabHist" class="nav-tab" onclick="switchTab('hist')">📜 History</div>
         </div>
 
         <select id="filterSelect" onchange="applyFilter()">
@@ -140,6 +144,10 @@
         <div id="schedContent" style="padding-bottom:100px;"></div>
     </div>
 
+    <div id="histView" style="display:none;">
+        <div id="histContent" style="padding-bottom:100px;"></div>
+    </div>
+
     <script>
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
         
@@ -155,13 +163,140 @@
         const pilotBtn = document.getElementById('pilotBtn');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // --- BET MARKER STORAGE ---
-        function getPlacedBets() { return JSON.parse(localStorage.getItem('placedBets') || "[]"); }
-        function toggleBet(id) {
-            let bets = getPlacedBets();
-            if(bets.includes(id)) { bets = bets.filter(b => b !== id); } else { bets.push(id); }
-            localStorage.setItem('placedBets', JSON.stringify(bets));
-            applyFilter(); 
+        // --- TRACKER LOGIC ---
+        // Storage Structure: Array of { id, date, teams, goalsAtBet, status: 'OPEN'|'WIN'|'LOSS' }
+        function getHistory() { return JSON.parse(localStorage.getItem('betHistory') || "[]"); }
+        
+        function saveHistory(bets) { localStorage.setItem('betHistory', JSON.stringify(bets)); }
+
+        function toggleBet(id, homeGoals, awayGoals, teams) {
+            let bets = getHistory();
+            const existingIndex = bets.findIndex(b => b.id === id);
+            
+            if(existingIndex >= 0) {
+                // Unmark/Remove if it's still open or user wants to undo
+                bets.splice(existingIndex, 1);
+            } else {
+                // Add new bet
+                const today = new Date().toLocaleDateString('en-CA');
+                bets.push({
+                    id: id,
+                    date: today,
+                    teams: teams,
+                    goalsAtBet: homeGoals + awayGoals,
+                    status: 'OPEN'
+                });
+            }
+            saveHistory(bets);
+            applyFilter(); // Refresh UI
+        }
+
+        // --- AUTO-RESULTING LOGIC ---
+        async function checkBetOutcomes(liveMatches) {
+            let bets = getHistory();
+            let changed = false;
+            let openBets = bets.filter(b => b.status === 'OPEN');
+            
+            if(openBets.length === 0) return;
+
+            // 1. Check against LIVE matches first (Fastest)
+            openBets.forEach(bet => {
+                const liveMatch = liveMatches.find(m => m.fixture.id === bet.id);
+                if(liveMatch) {
+                    const currentTotal = liveMatch.goals.home + liveMatch.goals.away;
+                    if(currentTotal > bet.goalsAtBet) {
+                        bet.status = 'WIN';
+                        changed = true;
+                    }
+                }
+            });
+
+            // 2. If any open bets are NOT in live list, check API (Game finished?)
+            // We fetch specific IDs
+            const missingBets = openBets.filter(b => b.status === 'OPEN' && !liveMatches.find(m => m.fixture.id === b.id));
+            if(missingBets.length > 0) {
+                const ids = missingBets.map(b => b.id).join('-');
+                trackAPI(1);
+                try {
+                    const res = await fetch(`https://v3.football.api-sports.io/fixtures?ids=${ids}`, { headers: { "x-rapidapi-key": API_KEY } });
+                    const data = await res.json();
+                    
+                    data.response.forEach(m => {
+                        const bet = bets.find(b => b.id === m.fixture.id);
+                        if(bet) {
+                            const finalTotal = m.goals.home + m.goals.away;
+                            const status = m.fixture.status.short;
+                            
+                            if (finalTotal > bet.goalsAtBet) {
+                                bet.status = 'WIN';
+                                changed = true;
+                            } else if (['FT', 'AET', 'PEN'].includes(status)) {
+                                bet.status = 'LOSS'; // Ended with same score
+                                changed = true;
+                            }
+                        }
+                    });
+                } catch(e) {}
+            }
+
+            if(changed) {
+                saveHistory(bets);
+                if(document.getElementById('tabHist').classList.contains('active')) renderHistory();
+            }
+        }
+
+        function renderHistory() {
+            const bets = getHistory();
+            const histDiv = document.getElementById('histContent');
+            
+            if(bets.length === 0) {
+                histDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>No bets tracked yet.</p>";
+                return;
+            }
+
+            // Sort by date (newest first)
+            bets.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            // Group by Date
+            const grouped = bets.reduce((acc, bet) => {
+                if(!acc[bet.date]) acc[bet.date] = [];
+                acc[bet.date].push(bet);
+                return acc;
+            }, {});
+
+            let html = "";
+            for (const [date, dayBets] of Object.entries(grouped)) {
+                let dailyUnits = 0;
+                let cardsHtml = "";
+                
+                dayBets.forEach(b => {
+                    let resClass = "hist-res-open";
+                    let resText = "OPEN";
+                    if(b.status === 'WIN') { resClass = "hist-res-win"; resText = "WIN (+1)"; dailyUnits++; }
+                    if(b.status === 'LOSS') { resClass = "hist-res-loss"; resText = "LOSS (-1)"; dailyUnits--; }
+                    
+                    cardsHtml += `
+                        <div class="hist-card">
+                            <div style="flex:1">${b.teams}</div>
+                            <div class="${resClass}">${resText}</div>
+                        </div>
+                    `;
+                });
+
+                let unitClass = dailyUnits > 0 ? "hist-unit-plus" : (dailyUnits < 0 ? "hist-unit-minus" : "hist-unit-even");
+                let unitSign = dailyUnits > 0 ? "+" : "";
+
+                html += `
+                    <div class="hist-day">
+                        <div class="hist-date-row">
+                            <span>📅 ${date}</span>
+                            <span class="${unitClass}">${unitSign}${dailyUnits} Units</span>
+                        </div>
+                        ${cardsHtml}
+                    </div>
+                `;
+            }
+            histDiv.innerHTML = html;
         }
 
         function trackAPI(count) {
@@ -176,19 +311,27 @@
         trackAPI(0);
 
         function switchTab(tab) {
+            document.getElementById('liveView').style.display = 'none';
+            document.getElementById('schedView').style.display = 'none';
+            document.getElementById('histView').style.display = 'none';
+            document.getElementById('tabLive').classList.remove('active');
+            document.getElementById('tabSched').classList.remove('active');
+            document.getElementById('tabHist').classList.remove('active');
+            document.getElementById('filterSelect').style.display = 'none';
+
             if(tab === 'live') {
                 document.getElementById('liveView').style.display = 'block';
-                document.getElementById('schedView').style.display = 'none';
                 document.getElementById('tabLive').classList.add('active');
-                document.getElementById('tabSched').classList.remove('active');
                 document.getElementById('filterSelect').style.display = 'block';
-            } else {
-                document.getElementById('liveView').style.display = 'none';
+            } else if(tab === 'sched') {
                 document.getElementById('schedView').style.display = 'block';
-                document.getElementById('tabLive').classList.remove('active');
                 document.getElementById('tabSched').classList.add('active');
-                document.getElementById('filterSelect').style.display = 'none';
                 loadSchedule();
+            } else {
+                document.getElementById('histView').style.display = 'block';
+                document.getElementById('tabHist').classList.add('active');
+                checkBetOutcomes(allMatches); // Force check
+                renderHistory();
             }
         }
 
@@ -272,6 +415,9 @@
                 } else {
                     allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
                     allMatches.sort((a, b) => b.fixture.status.elapsed - a.fixture.status.elapsed);
+                    
+                    // CHECK BET RESULTS
+                    checkBetOutcomes(allMatches);
                     applyFilter(isAuto);
                 }
             } catch(e) { if(!isAuto) content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#da3633'>Error.</p>"; }
@@ -283,7 +429,7 @@
             content.innerHTML = "";
             let highValueFound = false;
             
-            const placedBets = getPlacedBets();
+            const placedBets = getHistory().map(b => b.id);
 
             if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
 
@@ -315,7 +461,7 @@
         function createCard(m, isPlaced) {
             const div = document.createElement('div');
             div.className = `match-card ${isPlaced ? 'placed' : ''}`;
-            div.id = `card-${m.fixture.id}`; // Add ID for Ghost target
+            div.id = `card-${m.fixture.id}`;
             
             const h = m.teams.home;
             const a = m.teams.away;
@@ -389,7 +535,7 @@
                 </div>
                 <div class="btn-row">
                     <a href="https://www.bet365.com/#/IP/B1" target="_blank" class="bet365-btn">Bet365</a>
-                    <button class="mark-btn ${isPlaced ? 'active' : ''}" onclick="toggleBet(${m.fixture.id})">${isPlaced ? '✅' : '📌'}</button>
+                    <button class="mark-btn ${isPlaced ? 'active' : ''}" onclick="toggleBet(${m.fixture.id}, ${s.home}, ${s.away}, '${h.name} vs ${a.name}')">${isPlaced ? '✅' : '📌'}</button>
                 </div>
                 <div class="btn-row">
                     <button class="analyze-btn" id="an-btn-${m.fixture.id}" onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name}', '${a.name}', ${s.home}, ${s.away}, ${hRed}, ${aRed}, ${lid}, ${sid})">⚡ Analyze</button>
@@ -428,11 +574,9 @@
                 const oddsData = await oddsRes.json();
                 const standData = await standRes.json();
 
-                // --- GHOST MODE TRIGGER ---
-                // If API returns no stats, dim the card
                 if(!statData.response || statData.response.length === 0) {
                     statBox.innerHTML = "<div class='ignore-msg'>⚠️ MATCH IGNORED: Insufficient Data</div>";
-                    document.getElementById(`card-${id}`).classList.add('ghost'); // Adds visual dimming
+                    document.getElementById(`card-${id}`).classList.add('ghost');
                     btn.innerText = "⚡ Analyze";
                     return; 
                 }
@@ -470,7 +614,6 @@
                 const hPercent = Math.round((hPressure / totalPress) * 100);
                 const aPercent = 100 - hPercent;
 
-                // --- GHOST MODE TRIGGER (Empty Stats) ---
                 if(totalPress <= 1) {
                     statBox.innerHTML = "<div class='ignore-msg'>⚠️ MATCH IGNORED: Insufficient Data</div>";
                     document.getElementById(`card-${id}`).classList.add('ghost');
