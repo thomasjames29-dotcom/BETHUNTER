@@ -11,7 +11,7 @@
     <link rel="apple-touch-icon" href="target_PNG26.png">
 
     <style>
-        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --gold: #d29922; --red: #da3633; --purple: #a371f7; --blue: #1f6feb; --text: #c9d1d9; }
+        :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --gold: #d29922; --red: #da3633; --purple: #a371f7; --blue: #1f6feb; --text: #c9d1d9; --cyan: #3fb950; }
         body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 16px; padding-bottom: 120px; }
         
         /* HEADER */
@@ -39,7 +39,7 @@
 
         select { width: 100%; padding: 12px; background: #21262d; color: white; border: 1px solid #30363d; border-radius: 8px; font-size: 1rem; font-weight: bold; outline: none; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
 
-        /* STRATEGY CHIPS (SNIPER MODE) */
+        /* STRATEGY CHIPS */
         .chip-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 15px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
         .chip-container::-webkit-scrollbar { display: none; }
         .chip { white-space: nowrap; padding: 6px 12px; border-radius: 20px; background: #21262d; border: 1px solid #30363d; color: #888; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
@@ -54,7 +54,6 @@
         .match-card.pulse-away { animation: pulse-purple 2s infinite; border-color: var(--purple); }
 
         .placed-badge { position: absolute; top: 0; right: 0; background: var(--green); color: white; font-size: 0.7rem; font-weight: bold; padding: 4px 8px; border-bottom-left-radius: 8px; }
-
         .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
         .score-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 10px 0; }
         .team-col { width: 40%; display: flex; flex-direction: column; }
@@ -120,6 +119,7 @@
         .val-good { color: var(--green); text-shadow: 0 0 5px rgba(46, 160, 67, 0.5); }
         .rank-badge { font-size: 0.75rem; color: var(--gold); margin-left: 4px; font-weight: normal; }
         .est-badge { font-size: 0.7rem; background: #333; padding: 2px 4px; border-radius: 3px; color: #888; margin-left: 5px; }
+        .synth-badge { font-size: 0.7rem; background: rgba(63, 185, 80, 0.2); color: var(--cyan); padding: 2px 4px; border-radius: 3px; margin-left: 5px; border: 1px solid var(--cyan); }
         .ignore-msg { color: var(--red); font-weight: bold; text-align: center; border: 1px solid var(--red); padding: 8px; border-radius: 6px; background: rgba(218, 54, 51, 0.1); margin-bottom: 10px; }
         .ref-name { font-size: 0.75rem; color: #888; display: block; text-align: center; margin-top: 4px; font-style: italic; }
         
@@ -236,6 +236,9 @@
             <h3>✅ Bet Tracking</h3>
             <p>Click the <b>📌 Pin</b> button to mark a bet. The app will automatically track the score. If the goal count increases, it marks as a <b>WIN (+1)</b>. If it ends the same, it marks as a <b>LOSS (-1)</b>.</p>
 
+            <h3>🧬 Synthetic Pressure</h3>
+            <p>If a match has no live stats (like corners/shots), the app will attempt to <b>rebuild the data</b> by summing up individual player stats. Look for the <span style="color:#3fb950; font-family:monospace;">[🧬 SYNTH]</span> tag.</p>
+
             <button class="close-modal" onclick="document.getElementById('helpModal').style.display='none'">Close Guide</button>
         </div>
     </div>
@@ -243,7 +246,7 @@
     <script>
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
         
-        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143];
+        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 71];
         const EU_COUNTRIES = ["Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Turkey", "Ukraine", "Wales"];
 
         let allMatches = [];
@@ -518,14 +521,17 @@
             if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
 
             const filtered = allMatches.filter(m => {
+                // 1. League Filter
                 const league = (m.league.name || "").toLowerCase();
                 const blocked = ["friendly", "friendlies", "club friendlies", "u19", "u20", "u21", "u23", "youth", "reserve", "reserves"];
                 if(blocked.some(word => league.includes(word))) return false; 
+                
                 const lid = m.league.id;
                 const country = m.league.country;
                 let leagueMatch = true;
                 if (mode === 'elite') leagueMatch = ELITE_IDS.includes(lid); 
                 else if (mode === 'europe') leagueMatch = (EU_COUNTRIES.includes(country) || ELITE_IDS.includes(lid)); 
+                
                 if (!leagueMatch) return false;
 
                 if (currentStrategy === 'all') return true;
@@ -671,11 +677,33 @@
                 const oddsData = await oddsRes.json();
                 const standData = await standRes.json();
 
+                let hStats = [], aStats = [];
+                let isSynthetic = false;
+
+                // CHECK FOR EMPTY STATS -> TRIGGER SYNTHESIS
                 if(!statData.response || statData.response.length === 0) {
-                    statBox.innerHTML = "<div class='ignore-msg'>⚠️ MATCH IGNORED: Insufficient Data</div>";
-                    document.getElementById(`card-${id}`).classList.add('ghost');
-                    btn.innerText = "⚡ Analyze";
-                    return; 
+                    isSynthetic = true;
+                    // FETCH PLAYERS TO SYNTHESIZE
+                    const playerRes = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } });
+                    const playerData = await playerRes.json();
+                    
+                    if(playerData.response && playerData.response.length > 0) {
+                        let hTotalShots = 0, aTotalShots = 0, hOnTarget = 0, aOnTarget = 0;
+                        playerData.response[0].players.forEach(p => { hTotalShots += (p.statistics[0].shots.total||0); hOnTarget += (p.statistics[0].shots.on||0); });
+                        playerData.response[1].players.forEach(p => { aTotalShots += (p.statistics[0].shots.total||0); aOnTarget += (p.statistics[0].shots.on||0); });
+                        
+                        // MOCK THE STAT OBJECTS
+                        hStats = [{type:"Total Shots",value:hTotalShots}, {type:"Shots on Goal",value:hOnTarget}, {type:"Corner Kicks",value:0}]; // Corners unknown
+                        aStats = [{type:"Total Shots",value:aTotalShots}, {type:"Shots on Goal",value:aOnTarget}, {type:"Corner Kicks",value:0}];
+                    } else {
+                        statBox.innerHTML = "<div class='ignore-msg'>⚠️ MATCH IGNORED: Insufficient Data</div>";
+                        document.getElementById(`card-${id}`).classList.add('ghost');
+                        btn.innerText = "⚡ Analyze";
+                        return;
+                    }
+                } else {
+                    hStats = statData.response[0].statistics;
+                    aStats = statData.response[1].statistics;
                 }
 
                 let hRank = "", aRank = "";
@@ -689,8 +717,6 @@
                     if(aTeam) { aRank = `<span class="rank-badge">[${aTeam.rank}]</span>`; aForm = `<span class="form-badge">${formatForm(aTeam.form.slice(-5))}</span>`; }
                 }
 
-                const hStats = statData.response[0].statistics;
-                const aStats = statData.response[1].statistics;
                 const getStat = (arr, type) => { 
                     const i = arr.find(s => s.type === type || s.type === type.replace(" ", "")); 
                     if(i && i.value) return parseFloat(i.value);
@@ -704,8 +730,8 @@
                 let hCorn = getStat(hStats, "Corner Kicks");
                 let aCorn = getStat(aStats, "Corner Kicks");
                 
-                const hxG = getStat(hStats, "expected_goals");
-                const axG = getStat(aStats, "expected_goals");
+                const hxG = isSynthetic ? 0 : getStat(hStats, "expected_goals");
+                const axG = isSynthetic ? 0 : getStat(aStats, "expected_goals");
 
                 const hPressure = (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
                 const aPressure = (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
@@ -795,8 +821,10 @@
                     tipsHTML += `</div>`;
                 }
 
+                const synthBadge = isSynthetic ? `<span class="synth-badge">[🧬 SYNTH]</span>` : "";
+
                 statBox.innerHTML = `
-                    <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}${trendBadge}</div>
+                    <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}${trendBadge} ${synthBadge}</div>
                     
                     <div class="gauge-labels">
                         <span>${hName} ${hRank} ${hForm} (${hPercent}%)</span>
@@ -841,6 +869,7 @@
                 if(data.response && data.response.length > 0) {
                     data.response.forEach(t => t.players.forEach(p => {
                         const s = p.statistics[0];
+                        // THREAT RATING (Goals/Assists only)
                         const hts = (s.shots.on || 0) * 3 + (s.shots.total - (s.shots.on||0) || 0) * 1 + (s.passes.key || 0) * 2 + (s.dribbles.success || 0) * 0.5;
                         const rating = Math.min(10, hts).toFixed(1);
 
@@ -986,6 +1015,23 @@
             
             area.innerHTML = html;
             btn.innerText = "⚠️ SCAN GLOBAL CARD RISKS";
+        }
+
+        function getMarkedPlayers() { return JSON.parse(localStorage.getItem('cardBets') || "[]"); }
+        function togglePlayerBet(uid, el) {
+            let pBets = getMarkedPlayers();
+            if(pBets.includes(uid)) {
+                pBets = pBets.filter(b => b !== uid);
+                el.classList.remove('active');
+                el.innerText = "";
+                el.parentElement.classList.remove('marked');
+            } else {
+                pBets.push(uid);
+                el.classList.add('active');
+                el.innerText = "✓";
+                el.parentElement.classList.add('marked');
+            }
+            localStorage.setItem('cardBets', JSON.stringify(pBets));
         }
 
         if ('serviceWorker' in navigator) {
