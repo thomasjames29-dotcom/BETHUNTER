@@ -58,10 +58,13 @@
         .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
         .score-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 10px 0; }
         .team-col { width: 40%; display: flex; flex-direction: column; }
-        .team-name { font-size: 1rem; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .team-name { font-size: 1rem; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px; }
         .goal-times { font-size: 0.75rem; color: var(--gold); margin-top: 4px; min-height: 14px; font-family: monospace; }
         .score-box { background: #21262d; padding: 8px 14px; border-radius: 8px; border: 1px solid #30363d; font-family: monospace; font-size: 1.2rem; font-weight: bold; }
         
+        /* RANK BADGE ON CARD */
+        .rank-on-card { color: var(--gold); font-size: 0.8rem; font-weight: bold; font-family: monospace; }
+
         /* SCHED ITEM */
         .sched-card { background: #161b22; border-bottom: 1px solid #30363d; padding: 12px; display: flex; justify-content: space-between; align-items: center; }
         .sched-time { font-family: monospace; color: var(--gold); font-weight: bold; width: 50px; font-size: 1rem; }
@@ -242,7 +245,7 @@
                 <summary>🎯 Sniper Mode (Chips)</summary>
                 <p>Filter the live list instantly:</p>
                 <ul>
-                    <li><b>Fav Losing:</b> Home team (favorite) is losing.</li>
+                    <li><b>Fav Losing:</b> Finds home teams losing.</li>
                     <li><b>Red Card:</b> Isolates 10-man situations.</li>
                     <li><b>Late:</b> Only shows 80th min+ for late drama.</li>
                 </ul>
@@ -749,13 +752,19 @@
                 <div class="league-name">${m.league.country} • ${m.league.name}</div>
                 <div class="score-row">
                     <div class="team-col" style="align-items:flex-end; text-align:right;">
-                        <span class="team-name">${h.name}</span>
+                        <div style="display:flex; align-items:center;">
+                            <span id="rank-h-${m.fixture.id}" class="rank-on-card"></span>
+                            <span class="team-name">${h.name}</span>
+                        </div>
                         <span class="goal-times">${hGoals}</span>
                         ${hRedBadge}
                     </div>
                     <span class="score-box">${s.home}-${s.away}</span>
                     <div class="team-col" style="align-items:flex-start; text-align:left;">
-                        <span class="team-name">${a.name}</span>
+                        <div style="display:flex; align-items:center;">
+                            <span class="team-name">${a.name}</span>
+                            <span id="rank-a-${m.fixture.id}" class="rank-on-card"></span>
+                        </div>
                         <span class="goal-times">${aGoals}</span>
                         ${aRedBadge}
                     </div>
@@ -834,6 +843,10 @@
                     const formatForm = (f) => f.split('').map(c => `<span class="form-${c.toLowerCase()}">${c}</span>`).join('');
                     if(hTeam) { hRank = `<span class="rank-badge">[${hTeam.rank}]</span>`; hForm = `<span class="form-badge">${formatForm(hTeam.form.slice(-5))}</span>`; }
                     if(aTeam) { aRank = `<span class="rank-badge">[${aTeam.rank}]</span>`; aForm = `<span class="form-badge">${formatForm(aTeam.form.slice(-5))}</span>`; }
+                    
+                    // UPDATE CARD RANKS
+                    if(hTeam) document.getElementById(`rank-h-${id}`).innerText = `[#${hTeam.rank}]`;
+                    if(aTeam) document.getElementById(`rank-a-${id}`).innerText = `[#${aTeam.rank}]`;
                 }
 
                 const getStat = (arr, type) => { 
@@ -852,8 +865,14 @@
                 const hxG = isSynthetic ? 0 : getStat(hStats, "expected_goals");
                 const axG = isSynthetic ? 0 : getStat(aStats, "expected_goals");
 
-                const hPressure = (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
-                const aPressure = (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
+                const hPressure = isSynthetic 
+                    ? (hSoT * 15) + (hTotal * 3) 
+                    : (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
+                    
+                const aPressure = isSynthetic 
+                    ? (aSoT * 15) + (aTotal * 3) 
+                    : (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
+
                 const totalPress = hPressure + aPressure || 1; 
                 const hPercent = Math.round((hPressure / totalPress) * 100);
                 const aPercent = 100 - hPercent;
@@ -890,7 +909,7 @@
                     else { verdict = "⚔️ END-TO-END"; vColor = "#a371f7"; newConf = 85; }
                 } else {
                     if(totalPress < 5) { verdict = "⏳ STALEMATE (No Chances)"; vColor = "#8b949e"; newConf = 85; }
-                    else if(diff > 12) { 
+                    else if(diff > (isSynthetic ? 40 : 12)) { 
                         const leader = hPressure > aPressure ? hName : aName;
                         verdict = `🔥 DOMINATING: ${leader}`; vColor = "#2ea043"; newConf = 90;
                     }
