@@ -39,7 +39,7 @@
 
         select { width: 100%; padding: 12px; background: #21262d; color: white; border: 1px solid #30363d; border-radius: 8px; font-size: 1rem; font-weight: bold; outline: none; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
 
-        /* STRATEGY CHIPS */
+        /* STRATEGY CHIPS (SNIPER MODE) */
         .chip-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 15px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
         .chip-container::-webkit-scrollbar { display: none; }
         .chip { white-space: nowrap; padding: 6px 12px; border-radius: 20px; background: #21262d; border: 1px solid #30363d; color: #888; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
@@ -49,10 +49,12 @@
         .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; transition: all 0.3s; }
         .match-card.placed { border: 1px solid var(--green); background: rgba(46, 160, 67, 0.05); }
         .match-card.ghost { opacity: 0.5; border-color: #30363d; filter: grayscale(0.8); }
+        .match-card.ghost:hover { opacity: 1; filter: grayscale(0); }
         .match-card.pulse-home { animation: pulse-green 2s infinite; border-color: var(--green); }
         .match-card.pulse-away { animation: pulse-purple 2s infinite; border-color: var(--purple); }
 
         .placed-badge { position: absolute; top: 0; right: 0; background: var(--green); color: white; font-size: 0.7rem; font-weight: bold; padding: 4px 8px; border-bottom-left-radius: 8px; }
+
         .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
         .score-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 10px 0; }
         .team-col { width: 40%; display: flex; flex-direction: column; }
@@ -130,6 +132,7 @@
         .player-rating { font-family: monospace; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; }
         .rate-high { color: var(--green); border: 1px solid var(--green); background: rgba(46, 160, 67, 0.1); }
         .rate-med { color: var(--gold); border: 1px solid var(--gold); background: rgba(210, 153, 34, 0.1); }
+        .rate-card { color: #fff; border: 1px solid var(--red); background: rgba(218, 54, 51, 0.15); }
         .player-detail { font-size: 0.75rem; color: #888; margin-top: 2px; }
 
         .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
@@ -220,7 +223,7 @@
 
     <div id="cardView" style="display:none;">
         <button class="card-scan-btn" onclick="scanGlobalCards(this)">⚠️ SCAN GLOBAL CARD RISKS</button>
-        <div id="cardContent" style="padding-bottom:100px; text-align:center; color:#888;">Click above to find high-risk players across Elite live games.</div>
+        <div id="cardContent" style="padding-bottom:100px; text-align:center; color:#888;">Click above to find high-risk players across all live games.</div>
     </div>
 
     <div id="histView" style="display:none;">
@@ -241,7 +244,7 @@
             <p>• <b>Late:</b> Only shows 80th min+ for late drama.</p>
 
             <h3>🟨 Card Watch (New!)</h3>
-            <p>A global scanner that checks EVERY live Elite game for players who have committed 2+ fouls but haven't been booked yet. This is your "Hit List" for card betting.</p>
+            <p>A global scanner that checks EVERY live game for players who have committed 2+ fouls but haven't been booked yet. This is your "Hit List" for card betting.</p>
             <p>• <b>Ref Logic:</b> The app calculates the Ref's "Live Strictness" based on the ratio of fouls to cards in the current game.</p>
 
             <h3>✅ Bet Tracking</h3>
@@ -279,9 +282,7 @@
         let alertedGames = new Set();
         let currentStrategy = 'all';
         let momentumHistory = {}; 
-        
-        // --- IMPORTANT: SET TO TRUE FOR TESTING ---
-        let isPremium = true; 
+        let isPremium = localStorage.getItem('isPremium') === 'true'; 
         
         const content = document.getElementById('content');
         const mainBtn = document.getElementById('mainBtn');
@@ -624,8 +625,6 @@
             const a = m.teams.away;
             const s = m.goals;
             const t = m.fixture.status.elapsed;
-            const lid = m.league.id;
-            const sid = m.league.season;
             
             let refName = "";
             if (m.fixture.referee) {
@@ -647,6 +646,7 @@
             const placedBadge = isPlaced ? "<div class='placed-badge'>✅ BET PLACED</div>" : "";
 
             let upsetHtml = "";
+            const lid = m.league.id;
             if (ELITE_IDS.includes(lid) && s.home < s.away && (s.away - s.home === 1)) {
                 upsetHtml = `<div class="upset-badge">🔥 UPSET ALERT: ${h.name} Chasing!</div>`;
             }
@@ -700,7 +700,7 @@
                     <button class="mark-btn ${isPlaced ? 'active' : ''}" onclick="toggleBet(${m.fixture.id}, ${s.home}, ${s.away}, '${h.name} vs ${a.name}')">${isPlaced ? '✅' : '📌'}</button>
                 </div>
                 <div class="btn-row">
-                    <button class="analyze-btn" id="an-btn-${m.fixture.id}" onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name}', '${a.name}', ${s.home}, ${s.away}, ${hRed}, ${aRed}, ${lid}, ${sid})">⚡ Analyze</button>
+                    <button class="analyze-btn" id="an-btn-${m.fixture.id}" onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name}', '${a.name}', ${s.home}, ${s.away}, ${hRed}, ${aRed}, ${lid}, ${m.league.season})">⚡ Analyze</button>
                     <button class="player-btn" id="pl-btn-${m.fixture.id}" onclick="checkPlayers(this, ${m.fixture.id})">🕵️ Check Players</button>
                 </div>
                 <div id="p-${m.fixture.id}" class="player-box"></div>
@@ -710,10 +710,7 @@
 
             if(pilotMode) {
                 const aBtn = document.getElementById(`an-btn-${m.fixture.id}`);
-                const pBtn = document.getElementById(`pl-btn-${m.fixture.id}`);
-                if(aBtn) { aBtn.innerText = "Auto-Scan..."; deepAnalyze(aBtn, m.fixture.id, h.name, a.name, s.home, s.away, hRed, aRed, lid, sid); }
-                // Only auto-open players if premium user
-                // if(pBtn && document.getElementById('filterSelect').value === 'elite' && isPremium) { pBtn.innerText = "Auto-Check..."; checkPlayers(pBtn, m.fixture.id); }
+                if(aBtn) { aBtn.innerText = "Auto-Scan..."; deepAnalyze(aBtn, m.fixture.id, h.name, a.name, s.home, s.away, hRed, aRed, lid, m.league.season); }
             }
         }
 
@@ -960,17 +957,13 @@
         async function scanGlobalCards(btn) {
             if(!isPremium) { showPaywall(); return; } // LOCK
             
-            btn.innerText = "⚠️ Scanning Elite Leagues...";
+            btn.innerText = "⚠️ Scanning ALL Live Games...";
             const area = document.getElementById('cardContent');
-            area.innerHTML = "<div style='text-align:center; padding:20px; color:#888'>Scanning player discipline across Elite matches... This may take a moment.</div>";
+            area.innerHTML = "<div style='text-align:center; padding:20px; color:#888'>Scanning player discipline across all matches... This may take a moment.</div>";
             
-            // ELITE FILTER
-            const liveIDs = allMatches
-                .filter(m => ELITE_IDS.includes(m.league.id))
-                .map(m => m.fixture.id);
-
+            const liveIDs = allMatches.map(m => m.fixture.id);
             if(liveIDs.length === 0) {
-                area.innerHTML = "<div style='text-align:center; padding:20px; color:#da3633'>No live Elite matches to scan.</div>";
+                area.innerHTML = "<div style='text-align:center; padding:20px; color:#da3633'>No live matches to scan.</div>";
                 btn.innerText = "⚠️ SCAN GLOBAL CARD RISKS";
                 return;
             }
@@ -1035,7 +1028,7 @@
 
             let html = "";
             if(riskPlayers.length === 0) {
-                html = "<div style='text-align:center; padding:20px; color:#888'>No high-risk players found in Elite leagues yet.</div>";
+                html = "<div style='text-align:center; padding:20px; color:#888'>No high-risk players found yet.</div>";
             } else {
                 riskPlayers.forEach(p => {
                     const activeClass = p.isMarked ? 'active' : '';
