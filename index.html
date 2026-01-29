@@ -17,10 +17,7 @@
         /* HEADER */
         header { display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid #30363d; padding-bottom: 15px; margin-bottom: 15px; }
         .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        
-        /* UPDATED: Title is now Blue */
         h1 { margin: 0; font-size: 1.4rem; color: var(--blue); display: flex; align-items: center; gap: 10px; }
-        
         .header-right { display: flex; gap: 10px; align-items: center; }
         .api-badge { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-family: monospace; font-weight: bold; }
         .help-btn { background: #21262d; border: 1px solid #30363d; color: var(--gold); width: 28px; height: 28px; border-radius: 50%; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -34,9 +31,10 @@
         .pilot-btn.active { background: rgba(46, 160, 67, 0.2); border-color: var(--green); color: var(--green); }
         .pilot-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; }
         .pilot-btn.active .pilot-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
-        .pilot-btn.paused { border-color: var(--gold); color: var(--gold); animation: none; }
+        .pilot-btn.paused { border-color: var(--gold); color: var(--gold); background: rgba(210, 153, 34, 0.1); animation: none; }
+        .pilot-btn.paused .pilot-dot { background: var(--gold); box-shadow: 0 0 8px var(--gold); }
 
-        /* TABS - UPDATED: Active state is Blue */
+        /* TABS */
         .nav-tabs { display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; }
         .nav-tab { flex: 1; text-align: center; padding: 10px; background: #21262d; border-radius: 8px; border: 1px solid #30363d; color: #888; font-weight: bold; cursor: pointer; font-size: 0.9rem; white-space: nowrap; }
         .nav-tab.active { background: var(--blue); color: white; border-color: var(--blue); }
@@ -104,7 +102,7 @@
         .mark-btn.active { background: var(--green); color: white; border-color: var(--green); }
         .export-btn { width:100%; background: #21262d; border: 1px solid var(--gold); color: var(--gold); padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 20px; }
         
-        /* UPDATED: Scan Button is Blue */
+        /* SCAN BUTTON - BLUE */
         .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--blue); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
 
         /* ANALYSIS & PLAYER BOX */
@@ -226,7 +224,7 @@
             <h2>🔎 User Guide</h2>
             
             <h3>🔴 Live Hunt & Auto-Pilot</h3>
-            <p>The core mode. Click <b>"Auto-Pilot"</b> to have the app scan every 60s automatically. It will send notifications if a "Siege" game is found. <br><b>Tip:</b> Auto-Pilot pauses refreshing if you have an analysis box open.</p>
+            <p>The core mode. Click <b>"Auto-Pilot"</b> to have the app scan every 60s automatically. It will send notifications if a "Siege" game is found. <br><b>Tip:</b> Auto-Pilot pauses refreshing if you have an analysis box open (Busy Mode). Click "Paused" to force a resume.</p>
 
             <h3>🎯 Sniper Mode (Chips)</h3>
             <p>Use the scrollable buttons above the matches to filter instantly:</p>
@@ -243,6 +241,9 @@
 
             <h3>🧬 Synthetic Pressure</h3>
             <p>If a match has no live stats (like corners/shots), the app will attempt to <b>rebuild the data</b> by summing up individual player stats. Look for the <span style="color:#3fb950; font-family:monospace;">[🧬 SYNTH]</span> tag.</p>
+
+            <h3>🏆 Elite League Filter</h3>
+            <p>The "Elite" setting scans: Premier League, Championship, La Liga, Bundesliga, Serie A, Ligue 1, Eredivisie, Primeira Liga, MLS, Saudi Pro League (SPL), Scottish Premiership, and Major UEFA Cups.</p>
 
             <button class="close-modal" onclick="document.getElementById('helpModal').style.display='none'">Close Guide</button>
         </div>
@@ -480,6 +481,21 @@
         }
 
         function togglePilot() {
+            // UNPAUSE LOGIC
+            if(pilotMode && pilotBtn.classList.contains('paused')) {
+                // Close all busy windows
+                document.querySelectorAll('.analysis-box').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.player-box').forEach(el => el.style.display = 'none');
+                
+                // Reset Button
+                pilotBtn.classList.remove('paused');
+                pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (60s)`;
+                
+                // Force Scan
+                runScan(true); 
+                return; 
+            }
+
             pilotMode = !pilotMode;
             if(pilotMode) {
                 if (Notification.permission !== "granted") { Notification.requestPermission(); }
@@ -505,7 +521,9 @@
                 mainBtn.innerText = "🤖 Auto-Scanning...";
                 // SAFEGUARD: If user has an analysis box open, PAUSE scan
                 const openAnalysis = document.querySelector('.analysis-box[style*="block"]');
-                if(openAnalysis) {
+                const openPlayers = document.querySelector('.player-box[style*="block"]');
+                
+                if(openAnalysis || openPlayers) {
                     pilotBtn.innerHTML = `<div class="pilot-dot"></div> Paused (Busy)`;
                     pilotBtn.classList.add('paused');
                     return; 
@@ -541,7 +559,6 @@
             if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
 
             const filtered = allMatches.filter(m => {
-                // 1. League Filter
                 const league = (m.league.name || "").toLowerCase();
                 const blocked = ["friendly", "friendlies", "club friendlies", "u19", "u20", "u21", "u23", "youth", "reserve", "reserves"];
                 if(blocked.some(word => league.includes(word))) return false; 
@@ -681,7 +698,6 @@
             statBox.innerHTML = "<div style='color:#888; text-align:center;'>Fetching Data...</div>";
 
             try {
-                // SEQUENTIAL FETCH TO AVOID RATE LIMITS (Stability Fix)
                 const statRes = await fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } });
                 const statData = await statRes.json();
                 
@@ -696,7 +712,6 @@
 
                 if(!statData.response || statData.response.length === 0) {
                     isSynthetic = true;
-                    // FETCH PLAYERS TO SYNTHESIZE
                     const playerRes = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } });
                     const playerData = await playerRes.json();
                     
