@@ -794,11 +794,19 @@
                 let hCorn = getStat(hStats, "Corner Kicks");
                 let aCorn = getStat(aStats, "Corner Kicks");
                 
+                // SYNTHETIC WEIGHT ADJUSTMENT
+                // If Synth, we triple the value of shots because corners are missing
+                const hPressure = isSynthetic 
+                    ? (hSoT * 15) + (hTotal * 3) 
+                    : (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
+                    
+                const aPressure = isSynthetic 
+                    ? (aSoT * 15) + (aTotal * 3) 
+                    : (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
+
                 const hxG = isSynthetic ? 0 : getStat(hStats, "expected_goals");
                 const axG = isSynthetic ? 0 : getStat(aStats, "expected_goals");
 
-                const hPressure = (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
-                const aPressure = (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
                 const totalPress = hPressure + aPressure || 1; 
                 const hPercent = Math.round((hPressure / totalPress) * 100);
                 const aPercent = 100 - hPercent;
@@ -834,8 +842,9 @@
                     } 
                     else { verdict = "⚔️ END-TO-END"; vColor = "#a371f7"; newConf = 85; }
                 } else {
+                    // SYNTHETIC VERDICTS (No xG)
                     if(totalPress < 5) { verdict = "⏳ STALEMATE (No Chances)"; vColor = "#8b949e"; newConf = 85; }
-                    else if(diff > 12) { 
+                    else if(diff > (isSynthetic ? 40 : 12)) { 
                         const leader = hPressure > aPressure ? hName : aName;
                         verdict = `🔥 DOMINATING: ${leader}`; vColor = "#2ea043"; newConf = 90;
                     }
