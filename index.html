@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0d1117">
-    <title>60' Hunter Pro Max</title>
+    <title>The Final Third</title>
 
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="target_PNG26.png">
@@ -17,7 +17,10 @@
         /* HEADER */
         header { display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid #30363d; padding-bottom: 15px; margin-bottom: 15px; }
         .top-row { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        h1 { margin: 0; font-size: 1.4rem; color: var(--green); display: flex; align-items: center; gap: 10px; }
+        
+        /* UPDATED: Title is now Blue */
+        h1 { margin: 0; font-size: 1.4rem; color: var(--blue); display: flex; align-items: center; gap: 10px; }
+        
         .header-right { display: flex; gap: 10px; align-items: center; }
         .api-badge { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-family: monospace; font-weight: bold; }
         .help-btn { background: #21262d; border: 1px solid #30363d; color: var(--gold); width: 28px; height: 28px; border-radius: 50%; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -33,10 +36,10 @@
         .pilot-btn.active .pilot-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
         .pilot-btn.paused { border-color: var(--gold); color: var(--gold); animation: none; }
 
-        /* TABS */
+        /* TABS - UPDATED: Active state is Blue */
         .nav-tabs { display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; }
         .nav-tab { flex: 1; text-align: center; padding: 10px; background: #21262d; border-radius: 8px; border: 1px solid #30363d; color: #888; font-weight: bold; cursor: pointer; font-size: 0.9rem; white-space: nowrap; }
-        .nav-tab.active { background: #2ea043; color: white; border-color: #2ea043; }
+        .nav-tab.active { background: var(--blue); color: white; border-color: var(--blue); }
 
         select { width: 100%; padding: 12px; background: #21262d; color: white; border: 1px solid #30363d; border-radius: 8px; font-size: 1rem; font-weight: bold; outline: none; appearance: none; background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23FFFFFF%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E"); background-repeat: no-repeat; background-position: right 15px top 50%; background-size: 12px auto; }
 
@@ -100,6 +103,9 @@
         .mark-btn { flex: 0.4; background: #21262d; border: 1px solid #30363d; color: #888; border-radius: 8px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
         .mark-btn.active { background: var(--green); color: white; border-color: var(--green); }
         .export-btn { width:100%; background: #21262d; border: 1px solid var(--gold); color: var(--gold); padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 20px; }
+        
+        /* UPDATED: Scan Button is Blue */
+        .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--blue); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
 
         /* ANALYSIS & PLAYER BOX */
         .analysis-box { background: #1c1c1c; border: 1px solid var(--purple); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; display: none; }
@@ -135,12 +141,10 @@
         .rate-med { color: var(--gold); border: 1px solid var(--gold); background: rgba(210, 153, 34, 0.1); }
         .player-detail { font-size: 0.75rem; color: #888; margin-top: 2px; }
 
-        .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--green); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
-        
         /* MODALS */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; overflow-y: auto; }
         .modal-content { background: #161b22; margin: 10% auto; padding: 20px; width: 85%; border-radius: 12px; border: 1px solid #30363d; max-width: 500px; padding-bottom: 100px; }
-        .modal h2 { color: var(--green); border-bottom: 1px solid #30363d; padding-bottom: 10px; margin-top: 0; }
+        .modal h2 { color: var(--blue); border-bottom: 1px solid #30363d; padding-bottom: 10px; margin-top: 0; }
         .modal h3 { color: var(--gold); margin-top: 20px; margin-bottom: 5px; }
         .modal p { color: #ccc; font-size: 0.9rem; line-height: 1.5; margin-top: 0; }
         .close-modal { background: #333; color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 20px; font-size: 1rem; cursor: pointer; }
@@ -158,7 +162,7 @@
 
     <header>
         <div class="top-row">
-            <h1><img src="target_PNG26.png" style="width:28px;"> Hunter Pro Max</h1>
+            <h1><img src="target_PNG26.png" style="width:28px;"> The Final Third</h1>
             <div class="header-right">
                 <div id="apiCounter" class="api-badge">API: 0</div>
                 <button class="help-btn" onclick="openHelp()">?</button>
@@ -219,27 +223,26 @@
 
     <div id="helpModal" class="modal" onclick="closeHelp(event)">
         <div class="modal-content">
-            <h2>🔎 Hunter User Guide</h2>
+            <h2>🔎 User Guide</h2>
             
-            <h3>The 3 Core Menus</h3>
-            <p><b>1. 🔴 Live Hunt:</b> Your main dashboard. Shows games currently in the "Goldilocks Zone" (60-85 mins). Use "Sniper Mode" chips to filter specifically for Red Cards or Losing Favorites.</p>
-            <p><b>2. 🟨 Card Watch:</b> A disciplinary scanner. It checks ALL live "Elite" games for players with >2 fouls who haven't been booked. It ignores minor leagues to save data.</p>
-            <p><b>3. 📅 Elite Schedule:</b> Shows upcoming games from major leagues only, so you can plan your day.</p>
+            <h3>🔴 Live Hunt & Auto-Pilot</h3>
+            <p>The core mode. Click <b>"Auto-Pilot"</b> to have the app scan every 60s automatically. It will send notifications if a "Siege" game is found. <br><b>Tip:</b> Auto-Pilot pauses refreshing if you have an analysis box open.</p>
 
-            <h3>Visual Cues</h3>
-            <p><b>💓 Pulse Animation:</b> If a match card is glowing Green or Purple, that team has massive momentum (>70% pressure) right now.</p>
-            <p><b>👻 Ghost Mode:</b> If a card is greyed out/faded, the API has no stats for it. Be careful betting on these.</p>
-            <p><b>🧬 [SYNTH] Tag:</b> Means the app reconstructed match stats by summing up individual player actions because the main feed was broken.</p>
+            <h3>🎯 Sniper Mode (Chips)</h3>
+            <p>Use the scrollable buttons above the matches to filter instantly:</p>
+            <p>• <b>Fav Losing:</b> Finds home teams losing.</p>
+            <p>• <b>Red Card:</b> Isolates 10-man situations.</p>
+            <p>• <b>Late:</b> Only shows 80th min+ for late drama.</p>
 
-            <h3>Icon Legend</h3>
-            <p>🔥 <b>Siege/Threat:</b> Heavy pressure or high probability of a goal.</p>
-            <p>🅰️ <b>Creator:</b> A player generating high "Key Passes" (assist threat).</p>
-            <p>👮 <b>Strict Ref:</b> This referee is giving cards frequently in the current match.</p>
-            <p>💤 <b>Lenient Ref:</b> This referee is letting fouls go unpunished.</p>
-            <p>📈 <b>Rising:</b> Momentum is increasing compared to 5 minutes ago.</p>
+            <h3>🟨 Card Watch (New!)</h3>
+            <p>A global scanner that checks EVERY live Elite game for players who have committed 2+ fouls but haven't been booked yet. This is your "Hit List" for card betting.</p>
+            <p>• <b>Ref Logic:</b> The app calculates the Ref's "Live Strictness" based on the ratio of fouls to cards in the current game.</p>
 
-            <h3>Elite League Filter</h3>
-            <p>The "Elite" setting restricts scans to: Premier League, Championship, La Liga, Bundesliga, Serie A, Ligue 1, Eredivisie, Primeira Liga, MLS, Brazil Serie A, Saudi Pro League, and Major UEFA Cups.</p>
+            <h3>✅ Bet Tracking</h3>
+            <p>Click the <b>📌 Pin</b> button to mark a bet. The app will automatically track the score. If the goal count increases, it marks as a <b>WIN (+1)</b>. If it ends the same, it marks as a <b>LOSS (-1)</b>.</p>
+
+            <h3>🧬 Synthetic Pressure</h3>
+            <p>If a match has no live stats (like corners/shots), the app will attempt to <b>rebuild the data</b> by summing up individual player stats. Look for the <span style="color:#3fb950; font-family:monospace;">[🧬 SYNTH]</span> tag.</p>
 
             <button class="close-modal" onclick="document.getElementById('helpModal').style.display='none'">Close Guide</button>
         </div>
@@ -248,7 +251,8 @@
     <script>
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
         
-        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 71];
+        // UPDATED: Brazil Removed (71), Scotland (179) and Saudi (307) included
+        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253];
         const EU_COUNTRIES = ["Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Turkey", "Ukraine", "Wales"];
 
         let allMatches = [];
