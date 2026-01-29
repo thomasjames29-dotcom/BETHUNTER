@@ -219,26 +219,27 @@
 
     <div id="helpModal" class="modal" onclick="closeHelp(event)">
         <div class="modal-content">
-            <h2>🔎 Hunter Pro Guide</h2>
+            <h2>🔎 Hunter User Guide</h2>
             
-            <h3>🔴 Live Hunt & Auto-Pilot</h3>
-            <p>The core mode. Click <b>"Auto-Pilot"</b> to have the app scan every 60s automatically. It will send notifications if a "Siege" game is found. <br><b>Tip:</b> Auto-Pilot pauses refreshing if you have an analysis box open.</p>
+            <h3>The 3 Core Menus</h3>
+            <p><b>1. 🔴 Live Hunt:</b> Your main dashboard. Shows games currently in the "Goldilocks Zone" (60-85 mins). Use "Sniper Mode" chips to filter specifically for Red Cards or Losing Favorites.</p>
+            <p><b>2. 🟨 Card Watch:</b> A disciplinary scanner. It checks ALL live "Elite" games for players with >2 fouls who haven't been booked. It ignores minor leagues to save data.</p>
+            <p><b>3. 📅 Elite Schedule:</b> Shows upcoming games from major leagues only, so you can plan your day.</p>
 
-            <h3>🎯 Sniper Mode (Chips)</h3>
-            <p>Use the scrollable buttons above the matches to filter instantly:</p>
-            <p>• <b>Fav Losing:</b> Finds home teams losing.</p>
-            <p>• <b>Red Card:</b> Isolates 10-man situations.</p>
-            <p>• <b>Late:</b> Only shows 80th min+ for late drama.</p>
+            <h3>Visual Cues</h3>
+            <p><b>💓 Pulse Animation:</b> If a match card is glowing Green or Purple, that team has massive momentum (>70% pressure) right now.</p>
+            <p><b>👻 Ghost Mode:</b> If a card is greyed out/faded, the API has no stats for it. Be careful betting on these.</p>
+            <p><b>🧬 [SYNTH] Tag:</b> Means the app reconstructed match stats by summing up individual player actions because the main feed was broken.</p>
 
-            <h3>🟨 Card Watch (New!)</h3>
-            <p>A global scanner that checks EVERY live Elite game for players who have committed 2+ fouls but haven't been booked yet. This is your "Hit List" for card betting.</p>
-            <p>• <b>Ref Logic:</b> The app calculates the Ref's "Live Strictness" based on the ratio of fouls to cards in the current game.</p>
+            <h3>Icon Legend</h3>
+            <p>🔥 <b>Siege/Threat:</b> Heavy pressure or high probability of a goal.</p>
+            <p>🅰️ <b>Creator:</b> A player generating high "Key Passes" (assist threat).</p>
+            <p>👮 <b>Strict Ref:</b> This referee is giving cards frequently in the current match.</p>
+            <p>💤 <b>Lenient Ref:</b> This referee is letting fouls go unpunished.</p>
+            <p>📈 <b>Rising:</b> Momentum is increasing compared to 5 minutes ago.</p>
 
-            <h3>✅ Bet Tracking</h3>
-            <p>Click the <b>📌 Pin</b> button to mark a bet. The app will automatically track the score. If the goal count increases, it marks as a <b>WIN (+1)</b>. If it ends the same, it marks as a <b>LOSS (-1)</b>.</p>
-
-            <h3>🧬 Synthetic Pressure</h3>
-            <p>If a match has no live stats (like corners/shots), the app will attempt to <b>rebuild the data</b> by summing up individual player stats. Look for the <span style="color:#3fb950; font-family:monospace;">[🧬 SYNTH]</span> tag.</p>
+            <h3>Elite League Filter</h3>
+            <p>The "Elite" setting restricts scans to: Premier League, Championship, La Liga, Bundesliga, Serie A, Ligue 1, Eredivisie, Primeira Liga, MLS, Brazil Serie A, Saudi Pro League, and Major UEFA Cups.</p>
 
             <button class="close-modal" onclick="document.getElementById('helpModal').style.display='none'">Close Guide</button>
         </div>
@@ -257,7 +258,7 @@
         let currentStrategy = 'all';
         let momentumHistory = {}; 
         
-        // --- IMPORTANT: SET TO TRUE FOR UNLOCKED ACCESS ---
+        // UNLOCKED
         let isPremium = true; 
         
         const content = document.getElementById('content');
@@ -503,7 +504,7 @@
                 if(openAnalysis) {
                     pilotBtn.innerHTML = `<div class="pilot-dot"></div> Paused (Busy)`;
                     pilotBtn.classList.add('paused');
-                    return; // Skip this scan cycle to protect UI
+                    return; 
                 } else {
                     pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (60s)`;
                     pilotBtn.classList.remove('paused');
@@ -665,12 +666,6 @@
                 <div id="stats-${m.fixture.id}" class="analysis-box"></div>
             `;
             content.appendChild(div);
-
-            if(pilotMode) {
-                const aBtn = document.getElementById(`an-btn-${m.fixture.id}`);
-                const pBtn = document.getElementById(`pl-btn-${m.fixture.id}`);
-                if(aBtn) { aBtn.innerText = "Auto-Scan..."; deepAnalyze(aBtn, m.fixture.id, h.name, a.name, s.home, s.away, hRed, aRed, lid, sid); }
-            }
         }
 
         async function deepAnalyze(btn, id, hName, aName, hGoals, aGoals, hRed, aRed, leagueId, season) {
