@@ -145,6 +145,16 @@
         .modal h3 { color: var(--gold); margin-top: 20px; margin-bottom: 5px; }
         .modal p { color: #ccc; font-size: 0.9rem; line-height: 1.5; margin-top: 0; }
         .close-modal { background: #333; color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 20px; font-size: 1rem; cursor: pointer; }
+        
+        /* EXPANDABLE DETAILS */
+        details { margin-bottom: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px; border: 1px solid #30363d; }
+        summary { cursor: pointer; font-weight: bold; color: var(--blue); outline: none; list-style: none; display: flex; justify-content: space-between; align-items: center; }
+        summary::-webkit-details-marker { display: none; }
+        summary:after { content: "+"; color: #888; font-weight: bold; }
+        details[open] summary:after { content: "-"; }
+        details p { margin-top: 10px; margin-bottom: 0; color: #ccc; font-size: 0.9rem; line-height: 1.5; }
+        details ul { margin: 5px 0 0 20px; padding: 0; color: #ccc; font-size: 0.85rem; }
+        details li { margin-bottom: 4px; }
 
         /* COMMON */
         .pred-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.05); padding: 10px; border-radius: 8px; margin-top: 10px; }
@@ -220,31 +230,67 @@
 
     <div id="helpModal" class="modal" onclick="closeHelp(event)">
         <div class="modal-content">
-            <h2>🔎 User Guide</h2>
+            <h2>🔎 User Manual</h2>
             
-            <h3>🔴 Live Hunt & Auto-Pilot</h3>
-            <p>The core mode. Click <b>"Auto-Pilot"</b> to have the app scan every 5 minutes automatically. It will send notifications if a "Siege" game is found. <br><b>Tip:</b> Auto-Pilot pauses refreshing if you have an analysis box open (Busy Mode). Click "Paused" to force a resume.</p>
+            <details open>
+                <summary>🔴 Live Hunt & Auto-Pilot</summary>
+                <p>The core dashboard. Shows games currently in the "Goldilocks Zone" (60-85 mins) where stats have matured.</p>
+                <p><b>Auto-Pilot:</b> Scans every 5 minutes. Sends notifications for "Siege" games. Pauses if you are reading stats (click "Paused" to resume).</p>
+            </details>
 
-            <h3>🎯 Sniper Mode (Chips)</h3>
-            <p>Use the scrollable buttons above the matches to filter instantly:</p>
-            <p>• <b>Fav Losing:</b> Finds home teams losing.</p>
-            <p>• <b>Red Card:</b> Isolates 10-man situations.</p>
-            <p>• <b>Late:</b> Only shows 80th min+ for late drama.</p>
+            <details>
+                <summary>🎯 Sniper Mode (Chips)</summary>
+                <p>Filter the live list instantly:</p>
+                <ul>
+                    <li><b>Fav Losing:</b> Home team (favorite) is losing.</li>
+                    <li><b>Red Card:</b> Isolates 10-man situations.</li>
+                    <li><b>Late:</b> Only shows 80th min+ for late drama.</li>
+                </ul>
+            </details>
 
-            <h3>🟨 Card Watch (New!)</h3>
-            <p>A global scanner that checks EVERY live Elite game for players who have committed 2+ fouls but haven't been booked yet. This is your "Hit List" for card betting.</p>
-            <p>• <b>Ref Logic:</b> The app calculates the Ref's "Live Strictness" based on the ratio of fouls to cards in the current game.</p>
+            <details>
+                <summary>📊 Dashboard Data</summary>
+                <p><b>Pulse Animation:</b> Glowing Green/Purple border = >70% Pressure.</p>
+                <p><b>Ghost Mode:</b> Faded card = No API stats available.</p>
+                <p><b>[SYNTH]:</b> Synthetic Pressure. The app rebuilt stats by summing individual player data because match stats were missing.</p>
+            </details>
 
-            <h3>✅ Bet Tracking</h3>
-            <p>Click the <b>📌 Pin</b> button to mark a bet. The app will automatically track the score. If the goal count increases, it marks as a <b>WIN (+1)</b>. If it ends the same, it marks as a <b>LOSS (-1)</b>.</p>
+            <details>
+                <summary>🟨 Card Watch</summary>
+                <p>Scans ALL live <b>Elite</b> games for players with <b>2+ Fouls</b> who have <b>0 Cards</b>.</p>
+                <p><b>Strict Ref:</b> Calculated live based on Cards per Foul ratio in the current game.</p>
+            </details>
 
-            <h3>🧬 Synthetic Pressure</h3>
-            <p>If a match has no live stats (like corners/shots), the app will attempt to <b>rebuild the data</b> by summing up individual player stats. Look for the <span style="color:#3fb950; font-family:monospace;">[🧬 SYNTH]</span> tag.</p>
+            <details>
+                <summary>🏆 Elite Leagues List</summary>
+                <p>The "Elite" filter restricts deep scanning to these competitions to ensure high-quality data:</p>
+                <ul>
+                    <li>🇬🇧 Premier League & Championship</li>
+                    <li>🇪🇸 La Liga</li>
+                    <li>🇩🇪 Bundesliga</li>
+                    <li>🇮🇹 Serie A</li>
+                    <li>🇫🇷 Ligue 1</li>
+                    <li>🇳🇱 Eredivisie</li>
+                    <li>🇵🇹 Primeira Liga</li>
+                    <li>🇺🇸 MLS (USA)</li>
+                    <li>🇸🇦 Saudi Pro League</li>
+                    <li>🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scottish Premiership</li>
+                    <li>🇪🇺 UEFA Champions/Europa League</li>
+                </ul>
+            </details>
 
-            <h3>🏆 Elite League Filter</h3>
-            <p>The "Elite" setting scans: Premier League, Championship, La Liga, Bundesliga, Serie A, Ligue 1, Eredivisie, Primeira Liga, MLS, Saudi Pro League (SPL), Scottish Premiership, and Major UEFA Cups.</p>
+            <details>
+                <summary>💡 Icon Glossary</summary>
+                <ul>
+                    <li>🔥 <b>Siege:</b> Heavy pressure to score.</li>
+                    <li>🅰️ <b>Creator:</b> High Key Passes (Assist threat).</li>
+                    <li>👮 <b>Strict Ref:</b> High card frequency.</li>
+                    <li>💤 <b>Lenient Ref:</b> Low card frequency.</li>
+                    <li>📈 <b>Rising:</b> Momentum is increasing.</li>
+                </ul>
+            </details>
 
-            <button class="close-modal" onclick="document.getElementById('helpModal').style.display='none'">Close Guide</button>
+            <button class="close-modal" onclick="document.getElementById('helpModal').style.display='none'">Close Manual</button>
         </div>
     </div>
 
@@ -389,7 +435,16 @@
                 });
                 let unitClass = dailyUnits > 0 ? "hist-unit-plus" : (dailyUnits < 0 ? "hist-unit-minus" : "hist-unit-even");
                 let unitSign = dailyUnits > 0 ? "+" : "";
-                html += `<div class="hist-day"><div class="hist-date-row"><span>📅 ${date}</span><span class="${unitClass}">${unitSign}${dailyUnits} Units</span></div>${cardsHtml}</div>`;
+                
+                // NEW MINIMALIST HISTORY ROW
+                html += `
+                    <div class="hist-day" style="margin-bottom:10px;">
+                        <div class="hist-date-row">
+                            <span>📅 ${date}</span>
+                            <span class="${unitClass}">${unitSign}${dailyUnits} Units</span>
+                        </div>
+                    </div>
+                `;
             }
             histDiv.innerHTML = html;
         }
@@ -794,19 +849,11 @@
                 let hCorn = getStat(hStats, "Corner Kicks");
                 let aCorn = getStat(aStats, "Corner Kicks");
                 
-                // SYNTHETIC WEIGHT ADJUSTMENT
-                // If Synth, we triple the value of shots because corners are missing
-                const hPressure = isSynthetic 
-                    ? (hSoT * 15) + (hTotal * 3) 
-                    : (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
-                    
-                const aPressure = isSynthetic 
-                    ? (aSoT * 15) + (aTotal * 3) 
-                    : (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
-
                 const hxG = isSynthetic ? 0 : getStat(hStats, "expected_goals");
                 const axG = isSynthetic ? 0 : getStat(aStats, "expected_goals");
 
+                const hPressure = (hSoT * 5) + (hCorn * 2) + (hTotal * 1);
+                const aPressure = (aSoT * 5) + (aCorn * 2) + (aTotal * 1);
                 const totalPress = hPressure + aPressure || 1; 
                 const hPercent = Math.round((hPressure / totalPress) * 100);
                 const aPercent = 100 - hPercent;
@@ -842,9 +889,8 @@
                     } 
                     else { verdict = "⚔️ END-TO-END"; vColor = "#a371f7"; newConf = 85; }
                 } else {
-                    // SYNTHETIC VERDICTS (No xG)
                     if(totalPress < 5) { verdict = "⏳ STALEMATE (No Chances)"; vColor = "#8b949e"; newConf = 85; }
-                    else if(diff > (isSynthetic ? 40 : 12)) { 
+                    else if(diff > 12) { 
                         const leader = hPressure > aPressure ? hName : aName;
                         verdict = `🔥 DOMINATING: ${leader}`; vColor = "#2ea043"; newConf = 90;
                     }
