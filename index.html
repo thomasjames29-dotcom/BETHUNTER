@@ -31,6 +31,7 @@
         .pilot-btn.active { background: rgba(46, 160, 67, 0.2); border-color: var(--green); color: var(--green); }
         .pilot-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; }
         .pilot-btn.active .pilot-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .pilot-btn.paused { border-color: var(--gold); color: var(--gold); animation: none; }
 
         /* TABS */
         .nav-tabs { display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; }
@@ -221,7 +222,7 @@
             <h2>🔎 Hunter Pro Guide</h2>
             
             <h3>🔴 Live Hunt & Auto-Pilot</h3>
-            <p>The core mode. Click <b>"Auto-Pilot"</b> to have the app scan every 60s automatically. It will send notifications if a "Siege" game is found. <br><b>Tip:</b> Auto-Pilot also automatically opens analysis for Elite games.</p>
+            <p>The core mode. Click <b>"Auto-Pilot"</b> to have the app scan every 60s automatically. It will send notifications if a "Siege" game is found. <br><b>Tip:</b> Auto-Pilot pauses refreshing if you have an analysis box open.</p>
 
             <h3>🎯 Sniper Mode (Chips)</h3>
             <p>Use the scrollable buttons above the matches to filter instantly:</p>
@@ -255,6 +256,9 @@
         let alertedGames = new Set();
         let currentStrategy = 'all';
         let momentumHistory = {}; 
+        
+        // --- IMPORTANT: SET TO TRUE FOR UNLOCKED ACCESS ---
+        let isPremium = true; 
         
         const content = document.getElementById('content');
         const mainBtn = document.getElementById('mainBtn');
@@ -481,6 +485,7 @@
                 pilotInterval = setInterval(() => runScan(true), 60000); 
             } else {
                 pilotBtn.classList.remove('active');
+                pilotBtn.classList.remove('paused');
                 pilotBtn.innerHTML = `<div class="pilot-dot"></div> Auto-Pilot`;
                 clearInterval(pilotInterval);
             }
@@ -493,6 +498,16 @@
                 content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data...</p>";
             } else {
                 mainBtn.innerText = "🤖 Auto-Scanning...";
+                // SAFEGUARD: If user has an analysis box open, PAUSE scan
+                const openAnalysis = document.querySelector('.analysis-box[style*="block"]');
+                if(openAnalysis) {
+                    pilotBtn.innerHTML = `<div class="pilot-dot"></div> Paused (Busy)`;
+                    pilotBtn.classList.add('paused');
+                    return; // Skip this scan cycle to protect UI
+                } else {
+                    pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (60s)`;
+                    pilotBtn.classList.remove('paused');
+                }
             }
             try {
                 const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", {
@@ -667,20 +682,19 @@
             statBox.innerHTML = "<div style='color:#888; text-align:center;'>Fetching Data...</div>";
 
             try {
-                const [statRes, oddsRes, standRes] = await Promise.all([
-                    fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
-                    fetch(`https://v3.football.api-sports.io/odds/live?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
-                    fetch(`https://v3.football.api-sports.io/standings?league=${leagueId}&season=${season}`, { headers: { "x-rapidapi-key": API_KEY } })
-                ]);
-                
+                // SEQUENTIAL FETCH TO AVOID RATE LIMITS (Stability Fix)
+                const statRes = await fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } });
                 const statData = await statRes.json();
+                
+                const oddsRes = await fetch(`https://v3.football.api-sports.io/odds/live?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } });
                 const oddsData = await oddsRes.json();
+                
+                const standRes = await fetch(`https://v3.football.api-sports.io/standings?league=${leagueId}&season=${season}`, { headers: { "x-rapidapi-key": API_KEY } });
                 const standData = await standRes.json();
 
                 let hStats = [], aStats = [];
                 let isSynthetic = false;
 
-                // CHECK FOR EMPTY STATS -> TRIGGER SYNTHESIS
                 if(!statData.response || statData.response.length === 0) {
                     isSynthetic = true;
                     // FETCH PLAYERS TO SYNTHESIZE
@@ -692,8 +706,7 @@
                         playerData.response[0].players.forEach(p => { hTotalShots += (p.statistics[0].shots.total||0); hOnTarget += (p.statistics[0].shots.on||0); });
                         playerData.response[1].players.forEach(p => { aTotalShots += (p.statistics[0].shots.total||0); aOnTarget += (p.statistics[0].shots.on||0); });
                         
-                        // MOCK THE STAT OBJECTS
-                        hStats = [{type:"Total Shots",value:hTotalShots}, {type:"Shots on Goal",value:hOnTarget}, {type:"Corner Kicks",value:0}]; // Corners unknown
+                        hStats = [{type:"Total Shots",value:hTotalShots}, {type:"Shots on Goal",value:hOnTarget}, {type:"Corner Kicks",value:0}];
                         aStats = [{type:"Total Shots",value:aTotalShots}, {type:"Shots on Goal",value:aOnTarget}, {type:"Corner Kicks",value:0}];
                     } else {
                         statBox.innerHTML = "<div class='ignore-msg'>⚠️ MATCH IGNORED: Insufficient Data</div>";
