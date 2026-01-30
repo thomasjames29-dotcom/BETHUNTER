@@ -211,8 +211,8 @@
         <div class="chip-container">
             <div class="chip active" onclick="setStrategy('all', this)">🌍 All Games <span id="badge-all" class="chip-badge">0</span></div>
             <div class="chip" onclick="setStrategy('drought', this)">⏳ Goal Drought <span id="badge-drought" class="chip-badge">0</span></div>
+            <div class="chip" onclick="setStrategy('imminent', this)">🎯 Goal Likely <span id="badge-imminent" class="chip-badge">0</span></div>
             <div class="chip" onclick="setStrategy('red', this)">🟥 Red Card <span id="badge-red" class="chip-badge">0</span></div>
-            <div class="chip" onclick="setStrategy('imminent', this)">🎯 Goal Imminent <span id="badge-imminent" class="chip-badge">0</span></div>
         </div>
 
         <div id="content">
@@ -1285,7 +1285,7 @@
                                     refBadge: refStrict,
                                     isMarked: isMarked,
                                     isSubbed: s.games.minutes === null || (s.games.sub && s.games.sub === "out") || false,
-                                    pos: match ? (t.team.id === match.teams.home.id ? (match.homePos || "") : (match.awayPos || "")) : ""
+                                    pos: s.games.position || ""
                                 });
                             }
                         }));
@@ -1305,7 +1305,7 @@
                     const subbedClass = p.isSubbed ? 'subbed-off' : '';
                     const tick = p.isMarked ? '✓' : '';
                     const subLabel = p.isSubbed ? ' <span style="color:var(--red); font-size:0.7rem;">[SUBBED OFF]</span>' : '';
-                    const posLabel = p.pos ? `<span class="pos-badge">${p.pos}</span>` : '';
+                    const posLabel = p.pos ? `<span class="pos-badge" style="color:var(--cyan); border:1px solid var(--cyan); background:rgba(63, 185, 80, 0.1); padding:1px 6px; font-size:0.7rem; margin-left:5px;">${p.pos}</span>` : '';
                     
                     html += `
                         <div class="card-table-row ${markClass} ${subbedClass}">
