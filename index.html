@@ -128,7 +128,7 @@
             <h2 style="color:var(--blue)">🔎 User Manual</h2>
             <details open><summary>🔴 Live Hunt</summary><p>Scans games between 60-85 mins. Elite leagues auto-fetch pressure data via sequential "waterfall" fetching.</p></details>
             <details><summary>⏳ Goal Drought</summary><p>Identifies matches with >1 goal where scoring has stalled for 50+ mins.</p></details>
-            <details><summary>🟨 Card Watch</summary><p>Only monitors players currently active on the pitch with 2+ fouls and no cards yet.</p></details>
+            <details><summary>🟨 Card Watch</summary><p>Monitors players currently active on the pitch with 2+ fouls and no cards yet.</p></details>
             <details><summary>🏆 Elite Filter</summary><ul><li>Premier League & Champ</li><li>La Liga, Serie A, Bundesliga, Ligue 1</li><li>Scottish Premiership, Saudi Pro League, MLS</li></ul></details>
             <button class="close-modal" onclick="document.getElementById('helpModal').style.display='none'">Close</button>
         </div>
@@ -322,7 +322,7 @@
         }
 
         function openHelp() { document.getElementById('helpModal').style.display = 'block'; }
-        function closeHelp(e) { if(e.target.id === 'helpModal') e.target.style.display = 'none'; }
+        function closeHelp(e) { if(e.target.id === 'helpModal') document.getElementById('helpModal').style.display = 'none'; }
         function setStrategy(s, el) { currentStrategy = s; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); applyFilter(); }
     </script>
 </body>
