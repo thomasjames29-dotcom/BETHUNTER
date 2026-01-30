@@ -203,13 +203,11 @@
         </select>
     </header>
 
-    <div id="liveView">
+        <div id="liveView">
         <div class="chip-container">
             <div class="chip active" onclick="setStrategy('all', this)">🌍 All Games</div>
-            <div class="chip" onclick="setStrategy('losing', this)">🩸 Fav Losing</div>
             <div class="chip" onclick="setStrategy('drought', this)">⏳ Goal Drought</div>
             <div class="chip" onclick="setStrategy('red', this)">🟥 Red Card</div>
-            <div class="chip" onclick="setStrategy('late', this)">🧨 Late (80'+)</div>
             <div class="chip" onclick="setStrategy('imminent', this)">🎯 Goal Imminent</div>
         </div>
 
@@ -627,12 +625,10 @@
                 if (!leagueMatch) return false;
 
                 if (currentStrategy === 'all') return true;
-                if (currentStrategy === 'losing') return (m.goals.home < m.goals.away); 
                 if (currentStrategy === 'red') {
                     if(!m.events) return false;
                     return m.events.some(e => e.type === 'Card' && e.detail === 'Red Card');
                 }
-                if (currentStrategy === 'late') return (m.fixture.status.elapsed >= 80);
                 if (currentStrategy === 'imminent') {
                     // Logic for Goal Imminent:
                     // 1. High Pressure (hPercent or aPercent > 70%)
