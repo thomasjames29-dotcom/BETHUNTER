@@ -598,8 +598,8 @@
                 const container = document.getElementById(`stats-${m.fixture.id}`);
                 if (container && (container.innerHTML === 'Loading Stats...' || container.style.display === "none")) {
                     await deepAnalyze(document.getElementById(`an-btn-${m.fixture.id}`), m.fixture.id, m.teams.home.name, m.teams.away.name, m.goals.home, m.goals.away, false, false, m.league.id, m.league.season);
-                    // DELAY BETWEEN MATCHES TO RESPECT API LIMITS
-                    await new Promise(r => setTimeout(r, 600));
+                    // DELAY BETWEEN MATCHES TO RESPECT API LIMITS (Staggered further to avoid rate errors)
+                    await new Promise(r => setTimeout(r, 1200));
                 }
             }
         }
@@ -835,15 +835,25 @@
             // No loading text for auto-enrich as it's already there
 
             try {
-                // SEQUENTIAL FETCH TO AVOID RATE LIMITS (Stability Fix)
-                const statRes = await fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } });
-                const statData = await statRes.json();
+                trackAPI(3);
+                // RETRY LOGIC FOR STABILITY
+                let statData, oddsData, standData;
+                const fetchWithRetry = async (url, retries = 2) => {
+                    for(let i=0; i<=retries; i++) {
+                        try {
+                            const res = await fetch(url, { headers: { "x-rapidapi-key": API_KEY } });
+                            if(res.ok) return await res.json();
+                        } catch(e) {}
+                        await new Promise(r => setTimeout(r, 1000));
+                    }
+                    return null;
+                };
+
+                statData = await fetchWithRetry(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`);
+                if(!statData) throw new Error("Stat Fetch Failed");
                 
-                const oddsRes = await fetch(`https://v3.football.api-sports.io/odds/live?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } });
-                const oddsData = await oddsRes.json();
-                
-                const standRes = await fetch(`https://v3.football.api-sports.io/standings?league=${leagueId}&season=${season}`, { headers: { "x-rapidapi-key": API_KEY } });
-                const standData = await standRes.json();
+                oddsData = await fetchWithRetry(`https://v3.football.api-sports.io/odds/live?fixture=${id}`);
+                standData = await fetchWithRetry(`https://v3.football.api-sports.io/standings?league=${leagueId}&season=${season}`);
 
                 let hStats = [], aStats = [];
                 let isSynthetic = false;
