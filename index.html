@@ -43,8 +43,12 @@
         /* STRATEGY CHIPS */
         .chip-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 15px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
         .chip-container::-webkit-scrollbar { display: none; }
-        .chip { white-space: nowrap; padding: 6px 12px; border-radius: 20px; background: #21262d; border: 1px solid #30363d; color: #888; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .chip { position: relative; white-space: nowrap; padding: 6px 12px; border-radius: 20px; background: #21262d; border: 1px solid #30363d; color: #888; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
         .chip.active { background: #d29922; color: #0d1117; border-color: #d29922; }
+        .chip-badge { position: absolute; top: -6px; right: -4px; background: var(--blue); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; border: 2px solid var(--bg); display: none; }
+        .chip-badge.active { display: block; }
+        .chip-badge.urgent { background: var(--red); animation: pulse-red 2s infinite; }
+        @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
         /* CARDS */
         .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; overflow: hidden; transition: all 0.3s; }
@@ -205,10 +209,10 @@
 
         <div id="liveView">
         <div class="chip-container">
-            <div class="chip active" onclick="setStrategy('all', this)">🌍 All Games</div>
-            <div class="chip" onclick="setStrategy('drought', this)">⏳ Goal Drought</div>
-            <div class="chip" onclick="setStrategy('red', this)">🟥 Red Card</div>
-            <div class="chip" onclick="setStrategy('imminent', this)">🎯 Goal Imminent</div>
+            <div class="chip active" onclick="setStrategy('all', this)">🌍 All Games <span id="badge-all" class="chip-badge">0</span></div>
+            <div class="chip" onclick="setStrategy('drought', this)">⏳ Goal Drought <span id="badge-drought" class="chip-badge">0</span></div>
+            <div class="chip" onclick="setStrategy('red', this)">🟥 Red Card <span id="badge-red" class="chip-badge">0</span></div>
+            <div class="chip" onclick="setStrategy('imminent', this)">🎯 Goal Imminent <span id="badge-imminent" class="chip-badge">0</span></div>
         </div>
 
         <div id="content">
@@ -563,6 +567,62 @@
             }
         }
 
+        function updateBadges() {
+            const counts = { all: 0, drought: 0, red: 0, imminent: 0 };
+            const mode = document.getElementById('filterSelect').value;
+            const lid_filter = (m) => {
+                const lid = m.league.id;
+                const country = m.league.country;
+                if (mode === 'elite') return ELITE_IDS.includes(lid);
+                if (mode === 'europe') return (EU_COUNTRIES.includes(country) || ELITE_IDS.includes(lid));
+                return true;
+            };
+
+            allMatches.forEach(m => {
+                const time = m.fixture.status.elapsed;
+                if(time < 60 || time > 85) return;
+                if(!lid_filter(m)) return;
+                
+                counts.all++;
+                
+                // Drought logic (MATCHING applyFilter logic)
+                const isDrought = () => {
+                    if (m.goals.home + m.goals.away === 0) return false;
+                    if (!m.events) return false;
+                    const goalTimes = m.events
+                        .filter(e => e.type === 'Goal')
+                        .map(e => e.time.elapsed + (e.time.extra || 0));
+                    if (goalTimes.length === 0) return false;
+                    const lastGoalTime = Math.max(...goalTimes);
+                    return (m.fixture.status.elapsed - lastGoalTime > 50);
+                };
+                if(isDrought()) counts.drought++;
+                
+                // Red card logic
+                const hasRed = m.events?.some(e => e.type === "Card" && e.detail === "Red Card");
+                if(hasRed) counts.red++;
+            });
+
+            // Imminent logic from DOM
+            const cards = document.querySelectorAll('.match-card');
+            cards.forEach(card => {
+                if(card.innerHTML.includes('🎯 GOAL IMMINENT')) counts.imminent++;
+            });
+
+            Object.keys(counts).forEach(key => {
+                const badge = document.getElementById(`badge-${key}`);
+                if(badge) {
+                    badge.innerText = counts[key];
+                    if(counts[key] > 0) {
+                        badge.classList.add('active');
+                        if(key === 'imminent' || key === 'red') badge.classList.add('urgent');
+                    } else {
+                        badge.classList.remove('active', 'urgent');
+                    }
+                }
+            });
+        }
+
         async function runScan(isAuto = false) {
             trackAPI(1);
             if(!isAuto) {
@@ -584,6 +644,7 @@
                     allMatches.sort((a, b) => b.fixture.status.elapsed - a.fixture.status.elapsed);
                     checkBetOutcomes(allMatches);
                     applyFilter(isAuto);
+                    updateBadges();
                 }
             } catch(e) { if(!isAuto) content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#da3633'>Error.</p>"; }
             mainBtn.innerText = "🎯 SCAN MARKETS"; mainBtn.disabled = false;
@@ -674,7 +735,7 @@
             
             // TRIGGER AUTO ENRICHMENT FOR ELITE MATCHES
             if(matchesToEnrich.length > 0) {
-                enrichEliteMatches(matchesToEnrich);
+                enrichEliteMatches(matchesToEnrich).then(() => updateBadges());
             }
         }
 
