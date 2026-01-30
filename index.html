@@ -21,9 +21,6 @@
         .api-badge { background: #21262d; border: 1px solid #30363d; color: #8b949e; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-family: monospace; font-weight: bold; }
         .help-btn { background: #21262d; border: 1px solid #30363d; color: var(--gold); width: 28px; height: 28px; border-radius: 50%; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
-        @keyframes pulse-green { 0% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(46, 160, 67, 0); } 100% { box-shadow: 0 0 0 0 rgba(46, 160, 67, 0); } }
-        @keyframes pulse-purple { 0% { box-shadow: 0 0 0 0 rgba(163, 113, 247, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(163, 113, 247, 0); } 100% { box-shadow: 0 0 0 0 rgba(163, 113, 247, 0); } }
-
         .pilot-btn { background: #21262d; border: 1px solid #30363d; color: #888; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.3s; }
         .pilot-btn.active { background: rgba(46, 160, 67, 0.2); border-color: var(--green); color: var(--green); }
         .pilot-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; }
@@ -33,47 +30,33 @@
         .nav-tab { flex: 1; text-align: center; padding: 10px; background: #21262d; border-radius: 8px; border: 1px solid #30363d; color: #888; font-weight: bold; cursor: pointer; font-size: 0.9rem; white-space: nowrap; }
         .nav-tab.active { background: var(--blue); color: white; border-color: var(--blue); }
 
-        select { width: 100%; padding: 12px; background: #21262d; color: white; border: 1px solid #30363d; border-radius: 8px; font-size: 1rem; font-weight: bold; outline: none; appearance: none; }
-
-        .chip-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 15px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
-        .chip { white-space: nowrap; padding: 6px 12px; border-radius: 20px; background: #21262d; border: 1px solid #30363d; color: #888; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .chip-container { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; margin-bottom: 15px; scrollbar-width: none; }
+        .chip { white-space: nowrap; padding: 6px 12px; border-radius: 20px; background: #21262d; border: 1px solid #30363d; color: #888; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
         .chip.active { background: #d29922; color: #0d1117; border-color: #d29922; }
 
         .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; }
-        .match-card.pulse-home { animation: pulse-green 2s infinite; border-color: var(--green); }
-        .match-card.pulse-away { animation: pulse-purple 2s infinite; border-color: var(--purple); }
-
-        .placed-badge { position: absolute; top: 0; right: 0; background: var(--green); color: white; font-size: 0.7rem; font-weight: bold; padding: 4px 8px; border-bottom-left-radius: 8px; }
-        .league-name { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px; }
         .score-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 10px 0; }
-        .team-col { width: 40%; display: flex; flex-direction: column; }
-        .team-name { font-size: 1rem; font-weight: bold; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px; }
         .score-box { background: #21262d; padding: 8px 14px; border-radius: 8px; border: 1px solid #30363d; font-family: monospace; font-size: 1.2rem; font-weight: bold; }
-        
+        .team-name { font-size: 1rem; font-weight: bold; }
         .rank-on-card { color: var(--gold); font-size: 0.8rem; font-weight: bold; font-family: monospace; }
 
-        .hist-date-row { display: flex; justify-content: space-between; padding: 10px; background: #21262d; border-radius: 8px; font-weight: bold; margin-bottom: 10px; }
-        .hist-unit-plus { color: var(--green); } .hist-unit-minus { color: var(--red); }
+        .analysis-box { background: #1c1c1c; border: 1px solid var(--purple); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; }
+        .gauge-container { height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin: 5px 0; display: flex; }
+        
+        .sched-card { background: #161b22; border-bottom: 1px solid #30363d; padding: 12px; display: flex; align-items: center; }
+        .sched-time { font-family: monospace; color: var(--gold); font-weight: bold; width: 60px; }
 
         .card-table-row { display: flex; justify-content: space-between; align-items: center; background: #161b22; padding: 12px; border-bottom: 1px solid #30363d; }
-        .card-foul-badge { background: rgba(218, 54, 51, 0.2); color: var(--red); border: 1px solid var(--red); padding: 4px 8px; border-radius: 6px; font-weight: bold; font-family: monospace; }
+        .card-foul-badge { background: rgba(218, 54, 51, 0.2); color: var(--red); border: 1px solid var(--red); padding: 4px 8px; border-radius: 6px; font-weight: bold; }
 
-        .analysis-box { background: #1c1c1c; border: 1px solid var(--purple); padding: 10px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; }
-        .stat-bar { display: flex; justify-content: space-between; margin-bottom: 4px; color: #bbb; font-size: 0.8rem; }
-        .gauge-container { height: 8px; background: #333; border-radius: 4px; overflow: hidden; margin: 5px 0 10px 0; display: flex; }
-        
         .btn-row { display: flex; gap: 10px; margin-top: 10px; }
-        .bet365-btn { flex: 1; background: #00703c; border: 1px solid #005c31; color: white; padding: 10px; border-radius: 8px; font-weight: bold; text-decoration: none; text-align: center; }
+        .bet365-btn { flex: 1; background: #00703c; color: white; padding: 10px; border-radius: 8px; font-weight: bold; text-decoration: none; text-align: center; }
         .mark-btn { background: #21262d; border: 1px solid #30363d; color: #888; border-radius: 8px; padding: 0 15px; cursor: pointer; }
         .mark-btn.active { background: var(--green); color: white; }
 
         .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--blue); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; cursor: pointer; }
-        
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; overflow-y: auto; }
-        .modal-content { background: #161b22; margin: 10% auto; padding: 20px; width: 85%; border-radius: 12px; border: 1px solid #30363d; max-width: 500px; padding-bottom: 100px; }
-        details { margin-bottom: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px; border: 1px solid #30363d; }
-        summary { cursor: pointer; font-weight: bold; color: var(--blue); outline: none; }
-        .synth-badge { font-size: 0.7rem; background: rgba(63, 185, 80, 0.2); color: var(--cyan); padding: 2px 4px; border-radius: 3px; margin-left: 5px; border: 1px solid var(--cyan); }
+        .modal-content { background: #161b22; margin: 10% auto; padding: 20px; width: 85%; border-radius: 12px; border: 1px solid #30363d; }
     </style>
 </head>
 <body>
@@ -86,19 +69,15 @@
                 <button class="help-btn" onclick="openHelp()">?</button>
             </div>
         </div>
-        
-        <button id="pilotBtn" class="pilot-btn" onclick="togglePilot()">
-            <div class="pilot-dot"></div> Auto-Pilot
-        </button>
-        
+        <button id="pilotBtn" class="pilot-btn" onclick="togglePilot()"><div class="pilot-dot"></div> Auto-Pilot</button>
         <div class="nav-tabs">
-            <div id="tabLive" class="nav-tab active" onclick="switchTab('live')">🔴 Live Hunt</div>
-            <div id="tabCards" class="nav-tab" onclick="switchTab('cards')">🟨 Card Watch</div>
+            <div id="tabLive" class="nav-tab active" onclick="switchTab('live')">🔴 Live</div>
+            <div id="tabSched" class="nav-tab" onclick="switchTab('sched')">📅 Schedule</div>
+            <div id="tabCards" class="nav-tab" onclick="switchTab('cards')">🟨 Cards</div>
             <div id="tabHist" class="nav-tab" onclick="switchTab('hist')">📜 History</div>
         </div>
-
-        <select id="filterSelect" onchange="applyFilter()">
-            <option value="elite">🇬🇧 UK & Elite (Full Stats)</option>
+        <select id="filterSelect" onchange="applyFilter()" style="width:100%; padding:10px; background:#21262d; color:white; border-radius:8px; margin-top:10px;">
+            <option value="elite">🇬🇧 UK & Elite</option>
             <option value="europe">🇪🇺 Rest of Europe</option>
             <option value="world">🌎 World Scan</option>
         </select>
@@ -106,38 +85,29 @@
 
     <div id="liveView">
         <div class="chip-container">
-            <div class="chip active" onclick="setStrategy('all', this)">🌍 All Games</div>
+            <div class="chip active" onclick="setStrategy('all', this)">🌍 All</div>
             <div class="chip" onclick="setStrategy('losing', this)">🩸 Fav Losing</div>
             <div class="chip" onclick="setStrategy('drought', this)">⏳ Goal Drought</div>
-            <div class="chip" onclick="setStrategy('red', this)">🟥 Red Card</div>
-            <div class="chip" onclick="setStrategy('late', this)">🧨 Late (80'+)</div>
-            <div class="chip" onclick="setStrategy('draw', this)">⚖️ Draw</div>
         </div>
         <div id="content"></div>
         <button class="scan-btn" onclick="runScan()" id="mainBtn">🎯 SCAN MARKETS</button>
     </div>
 
+    <div id="schedView" style="display:none; padding-bottom:100px;"><div id="schedContent"></div></div>
+
     <div id="cardView" style="display:none; padding-bottom:100px;">
-        <button class="scan-btn" style="position:static; width:100%; background:var(--red); margin-bottom:15px;" onclick="scanGlobalCards(this)">⚠️ SCAN ACTIVE CARD RISKS</button>
+        <button onclick="scanGlobalCards(this)" style="width:100%; background:var(--red); color:white; padding:15px; border-radius:12px; border:none; font-weight:bold; margin-bottom:15px; cursor:pointer;">⚠️ SCAN ACTIVE CARD RISKS</button>
         <div id="cardContent"></div>
     </div>
+
     <div id="histView" style="display:none; padding-bottom:100px;"><div id="histContent"></div></div>
 
-    <div id="helpModal" class="modal" onclick="closeHelp(event)">
-        <div class="modal-content">
-            <h2 style="color:var(--blue)">🔎 User Manual</h2>
-            <details open><summary>🔴 Live Hunt</summary><p>Scans games between 60-85 mins. Elite leagues auto-fetch pressure data via sequential "waterfall" fetching.</p></details>
-            <details><summary>⏳ Goal Drought</summary><p>Identifies matches with >1 goal where scoring has stalled for 50+ mins.</p></details>
-            <details><summary>🟨 Card Watch</summary><p>Monitors players currently active on the pitch with 2+ fouls and no cards yet.</p></details>
-            <details><summary>🏆 Elite Filter</summary><ul><li>Premier League & Champ</li><li>La Liga, Serie A, Bundesliga, Ligue 1</li><li>Scottish Premiership, Saudi Pro League, MLS</li></ul></details>
-            <button class="close-modal" onclick="document.getElementById('helpModal').style.display='none'">Close</button>
-        </div>
-    </div>
+    <div id="helpModal" class="modal" onclick="this.style.display='none'"><div class="modal-content"><h2>User Manual</h2><p><b>Drought:</b> 50m since last goal.</p><p><b>Elite:</b> Sequential fetching enabled.</p></div></div>
 
     <script>
-        const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
+        const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0";
         const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253];
-        let allMatches = [], pilotMode = false, pilotInterval, currentStrategy = 'all', momentumHistory = {}; 
+        let allMatches = [], pilotMode = false, currentStrategy = 'all';
 
         const trackAPI = (c) => {
             let n = parseInt(localStorage.getItem('apiCount') || "0") + c;
@@ -146,87 +116,66 @@
         };
 
         const switchTab = (t) => {
-            ['liveView','cardView','histView'].forEach(v => document.getElementById(v).style.display = 'none');
+            ['liveView','schedView','cardView','histView'].forEach(v => document.getElementById(v).style.display = 'none');
             document.getElementById(t + 'View').style.display = 'block';
             document.querySelectorAll('.nav-tab').forEach(n => n.classList.remove('active'));
             document.getElementById('tab' + t.charAt(0).toUpperCase() + t.slice(1)).classList.add('active');
+            if(t === 'sched') loadSchedule();
             if(t === 'hist') renderHistory();
         };
 
         async function runScan(isAuto = false) {
             trackAPI(1);
-            if(!isAuto) document.getElementById('content').innerHTML = "<p style='text-align:center; padding:50px;'>Hunting for value...</p>";
+            if(!isAuto) document.getElementById('content').innerHTML = "<p style='text-align:center; padding:50px;'>Hunting...</p>";
             try {
                 const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", { headers: { "x-rapidapi-key": API_KEY } });
                 const data = await res.json();
                 allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
                 applyFilter(isAuto);
-            } catch(e) { console.error(e); }
+            } catch(e) {}
         }
 
         function applyFilter(isAuto = false) {
             const mode = document.getElementById('filterSelect').value;
             const content = document.getElementById('content');
             content.innerHTML = "";
-            const placed = JSON.parse(localStorage.getItem('betHistory') || "[]").map(b => b.id);
-            
             const filtered = allMatches.filter(m => {
                 if (mode === 'elite' && !ELITE_IDS.includes(m.league.id)) return false;
                 if (currentStrategy === 'losing') return m.goals.home < m.goals.away;
-                if (currentStrategy === 'late') return m.fixture.status.elapsed >= 80;
                 if (currentStrategy === 'drought') {
-                    const goalEvents = m.events?.filter(e => e.type === 'Goal') || [];
-                    if (m.goals.home + m.goals.away === 0 || goalEvents.length === 0) return false;
-                    const lastGoal = goalEvents[goalEvents.length - 1].time.elapsed;
-                    return (m.fixture.status.elapsed - lastGoal > 50);
+                    const goals = m.events?.filter(e => e.type === 'Goal') || [];
+                    if (goals.length === 0) return false;
+                    return (m.fixture.status.elapsed - goals[goals.length-1].time.elapsed > 50);
                 }
                 return true;
             });
-
-            filtered.forEach(m => {
-                const isElite = ELITE_IDS.includes(m.league.id);
-                createCard(m, placed.includes(m.fixture.id), isElite);
-            });
-            
-            if(filtered.length > 0) enrichMatchesWaterfall(filtered.filter(m => ELITE_IDS.includes(m.league.id)));
+            filtered.forEach(m => createCard(m, ELITE_IDS.includes(m.league.id)));
+            if(filtered.length > 0) enrichWaterfall(filtered.filter(m => ELITE_IDS.includes(m.league.id)));
         }
 
-        function createCard(m, isPlaced, isElite) {
+        function createCard(m, isElite) {
             const div = document.createElement('div');
             div.className = 'match-card';
-            div.id = `card-${m.fixture.id}`;
-            div.innerHTML = `
-                <div class="league-name">${m.league.name}</div>
-                ${isPlaced ? '<div class="placed-badge">PINNED</div>' : ''}
+            div.innerHTML = `<div style="font-size:0.75rem; color:#888;">${m.league.name}</div>
                 <div class="score-row">
-                    <div class="team-col" style="text-align:right;">
-                        <span class="team-name"><span id="rank-h-${m.fixture.id}" class="rank-on-card"></span> ${m.teams.home.name}</span>
-                    </div>
+                    <div style="flex:1; text-align:right;"><span id="rank-h-${m.fixture.id}" class="rank-on-card"></span> ${m.teams.home.name}</div>
                     <div class="score-box">${m.goals.home}-${m.goals.away}</div>
-                    <div class="team-col" style="text-align:left;">
-                        <span class="team-name">${m.teams.away.name} <span id="rank-a-${m.fixture.id}" class="rank-on-card"></span></span>
-                    </div>
+                    <div style="flex:1; text-align:left;">${m.teams.away.name} <span id="rank-a-${m.fixture.id}" class="rank-on-card"></span></div>
                 </div>
-                <div id="stats-${m.fixture.id}" class="analysis-box" style="display:${isElite ? 'block' : 'none'}; text-align:center; color:#666;">
-                    ${isElite ? 'Loading data...' : ''}
-                </div>
-                <div class="btn-row">
-                    <a href="https://www.bet365.com" class="bet365-btn">Bet365</a>
-                    <button class="mark-btn ${isPlaced ? 'active' : ''}" onclick="toggleBet(${m.fixture.id}, ${m.goals.home}, ${m.goals.away})">📌</button>
-                </div>
-            `;
+                <div id="stats-${m.fixture.id}" class="analysis-box" style="display:${isElite ? 'block' : 'none'}; text-align:center; color:#666;">${isElite ? 'Waiting...' : ''}</div>
+                <div class="btn-row"><a href="https://www.bet365.com" class="bet365-btn">Bet365</a><button class="mark-btn" onclick="toggleBet(${m.fixture.id}, ${m.goals.home}, ${m.goals.away})">📌</button></div>`;
             document.getElementById('content').appendChild(div);
         }
 
-        async function enrichMatchesWaterfall(matches) {
+        async function enrichWaterfall(matches) {
             for (const m of matches) {
                 await deepAnalyze(m.fixture.id, m.league.id, m.league.season);
-                await new Promise(r => setTimeout(r, 450));
+                await new Promise(r => setTimeout(r, 500));
             }
         }
 
         async function deepAnalyze(id, lid, season) {
-            trackAPI(3);
+            trackAPI(2);
             try {
                 const [sRes, stRes] = await Promise.all([
                     fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
@@ -235,62 +184,57 @@
                 const stats = await sRes.json();
                 const stand = await stRes.json();
                 const box = document.getElementById(`stats-${id}`);
-                
-                let isSynth = false, hStats = stats.response[0]?.statistics, aStats = stats.response[1]?.statistics;
-
-                if (!hStats) {
-                    isSynth = true; trackAPI(1);
-                    const pRes = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } });
-                    const pData = await pRes.json();
-                    if(pData.response) {
-                        let hS = 0, aS = 0;
-                        pData.response[0].players.forEach(p => hS += (p.statistics[0].shots.total || 0));
-                        pData.response[1].players.forEach(p => aS += (p.statistics[0].shots.total || 0));
-                        hStats = [{type:"Total Shots", value:hS}, {type:"Shots on Goal", value: Math.floor(hS/2)}];
-                        aStats = [{type:"Total Shots", value:aS}, {type:"Shots on Goal", value: Math.floor(aS/2)}];
-                    }
-                }
-
-                const getVal = (arr, t) => parseInt(arr.find(x => x.type === t)?.value || 0);
-                const hP = (getVal(hStats, "Shots on Goal") * 15) + getVal(hStats, "Total Shots") * 3;
-                const aP = (getVal(aStats, "Shots on Goal") * 15) + getVal(aStats, "Total Shots") * 3;
+                const hStats = stats.response[0]?.statistics;
+                const aStats = stats.response[1]?.statistics;
+                if(!hStats) { box.innerHTML = "No live stats."; return; }
+                const getS = (arr, t) => parseInt(arr.find(x => x.type === t)?.value || 0);
+                const hP = (getS(hStats, "Shots on Goal") * 5) + (getS(hStats, "Corner Kicks") * 2);
+                const aP = (getS(aStats, "Shots on Goal") * 5) + (getS(aStats, "Corner Kicks") * 2);
                 const hPct = Math.round((hP / (hP + aP || 1)) * 100);
-
-                box.innerHTML = `<div style="display:flex; justify-content:space-between;"><span>Pressure: ${hPct}% ${isSynth ? '<span class="synth-badge">SYNTH</span>' : ''}</span><span>${100-hPct}%</span></div>
+                box.innerHTML = `<div style="display:flex; justify-content:space-between;"><span>Pressure: ${hPct}%</span><span>${100-hPct}%</span></div>
                     <div class="gauge-container"><div style="width:${hPct}%; background:var(--green); height:100%;"></div><div style="width:${100-hPct}%; background:var(--purple); height:100%;"></div></div>`;
-
                 if(stand.response[0]) {
                     const table = stand.response[0].league.standings[0];
-                    const match = allMatches.find(m => m.fixture.id === id);
-                    const hR = table.find(t => t.team.name.includes(match.teams.home.name))?.rank;
-                    const aR = table.find(t => t.team.name.includes(match.teams.away.name))?.rank;
+                    const hR = table.find(t => t.team.id === allMatches.find(m => m.fixture.id === id).teams.home.id)?.rank;
+                    const aR = table.find(t => t.team.id === allMatches.find(m => m.fixture.id === id).teams.away.id)?.rank;
                     if(hR) document.getElementById(`rank-h-${id}`).innerText = `[#${hR}]`;
                     if(aR) document.getElementById(`rank-a-${id}`).innerText = `[#${aR}]`;
                 }
             } catch(e) {}
         }
 
-        async function scanGlobalCards(btn) {
-            btn.innerText = "Scanning...";
-            const area = document.getElementById('cardContent');
-            area.innerHTML = "<p style='text-align:center;'>Verifying on-pitch targets...</p>";
-            const elite = allMatches.filter(m => ELITE_IDS.includes(m.league.id));
-            let risks = [];
+        async function loadSchedule() {
+            trackAPI(1);
+            const area = document.getElementById('schedContent');
+            area.innerHTML = "<p style='text-align:center; padding:50px;'>Loading today's Elite schedule...</p>";
+            const date = new Date().toISOString().split('T')[0];
+            try {
+                const res = await fetch(`https://v3.football.api-sports.io/fixtures?date=${date}`, { headers: { "x-rapidapi-key": API_KEY } });
+                const data = await res.json();
+                const elite = data.response.filter(m => ELITE_IDS.includes(m.league.id));
+                area.innerHTML = elite.map(m => `<div class="sched-card"><div class="sched-time">${new Date(m.fixture.timestamp*1000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div><div>${m.teams.home.name} vs ${m.teams.away.name}</div></div>`).join('');
+            } catch(e) {}
+        }
 
-            for (const m of elite) {
+        async function scanGlobalCards(btn) {
+            btn.innerText = "Checking Active Pitch...";
+            const area = document.getElementById('cardContent');
+            area.innerHTML = "<p style='text-align:center;'>Scanning match events...</p>";
+            const eliteLive = allMatches.filter(m => ELITE_IDS.includes(m.league.id));
+            let risks = [];
+            for (const m of eliteLive) {
                 trackAPI(1);
                 const res = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${m.fixture.id}`, { headers: { "x-rapidapi-key": API_KEY } });
                 const data = await res.json();
-                data.response?.forEach(team => team.players.forEach(p => {
+                data.response?.forEach(t => t.players.forEach(p => {
                     const s = p.statistics[0];
                     const isOff = m.events?.some(e => e.type === 'Substitute' && e.player.id === p.player.id);
-                    if (s.fouls.committed >= 2 && !s.cards.yellow && !s.cards.red && !isOff) {
-                        risks.push({ name: p.player.name, team: team.team.name, fouls: s.fouls.committed, time: m.fixture.status.elapsed });
+                    if (s.fouls.committed >= 2 && !s.cards.yellow && !isOff) {
+                        risks.push({ name: p.player.name, team: t.team.name, fouls: s.fouls.committed });
                     }
                 }));
-                await new Promise(r => setTimeout(r, 450));
             }
-            area.innerHTML = risks.length ? risks.map(r => `<div class="card-table-row"><div><b>${r.name}</b><br><small>${r.team} • ${r.time}'</small></div><div class="card-foul-badge">${r.fouls} Fouls</div></div>`).join('') : "<p style='text-align:center;'>No risks.</p>";
+            area.innerHTML = risks.length ? risks.map(r => `<div class="card-table-row"><div><b>${r.name}</b><br><small>${r.team}</small></div><div class="card-foul-badge">${r.fouls} Fouls</div></div>`).join('') : "<p style='text-align:center;'>No risks found.</p>";
             btn.innerText = "⚠️ SCAN ACTIVE CARD RISKS";
         }
 
@@ -305,24 +249,19 @@
 
         function renderHistory() {
             const bets = JSON.parse(localStorage.getItem('betHistory') || "[]");
-            const grouped = bets.reduce((acc, b) => {
-                acc[b.date] = (acc[b.date] || 0) + (b.status === 'WIN' ? 1 : b.status === 'LOSS' ? -1 : 0);
-                return acc;
-            }, {});
+            const grouped = bets.reduce((acc, b) => { acc[b.date] = (acc[b.date] || 0) + (b.status === 'WIN' ? 1 : b.status === 'LOSS' ? -1 : 0); return acc; }, {});
             const sorted = Object.keys(grouped).sort((a,b) => new Date(b) - new Date(a));
-            document.getElementById('histContent').innerHTML = sorted.length ? sorted.map(d => `<div class="hist-date-row"><span>📅 ${d}</span><span class="${grouped[d] >= 0 ? 'hist-unit-plus' : 'hist-unit-minus'}">${grouped[d] > 0 ? '+' : ''}${grouped[d]} Units</span></div>`).join('') : "<p style='text-align:center;'>No data.</p>";
+            document.getElementById('histContent').innerHTML = sorted.map(d => `<div class="hist-date-row"><span>${d}</span><span>${grouped[d]} Units</span></div>`).join('');
         }
 
         function togglePilot() {
             pilotMode = !pilotMode;
             document.getElementById('pilotBtn').classList.toggle('active', pilotMode);
-            document.getElementById('pilotBtn').innerHTML = pilotMode ? `<div class="pilot-dot"></div> ON (5m)` : `<div class="pilot-dot"></div> Auto-Pilot`;
             if(pilotMode) { runScan(true); pilotInterval = setInterval(() => runScan(true), 300000); }
             else clearInterval(pilotInterval);
         }
 
         function openHelp() { document.getElementById('helpModal').style.display = 'block'; }
-        function closeHelp(e) { if(e.target.id === 'helpModal') document.getElementById('helpModal').style.display = 'none'; }
         function setStrategy(s, el) { currentStrategy = s; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); applyFilter(); }
     </script>
 </body>
