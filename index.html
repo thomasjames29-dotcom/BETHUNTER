@@ -8,7 +8,7 @@
 
     <link rel="manifest" href="./manifest.json">
     <link rel="icon" type="image/png" href="target_PNG26.png">
-    <link rel="apple-touch-icon" href="target_PNG26.png">
+    <link rel="apple-touch-icon" lhref="target_PNG26.png">
 
     <style>
         :root { --bg: #0d1117; --card: #161b22; --green: #2ea043; --gold: #d29922; --red: #da3633; --purple: #a371f7; --blue: #1f6feb; --text: #c9d1d9; --cyan: #3fb950; }
@@ -82,7 +82,8 @@
 
         /* CARD WATCH TABLE */
         .card-table-row { display: flex; justify-content: space-between; align-items: center; background: #161b22; padding: 12px; border-bottom: 1px solid #30363d; transition: all 0.3s; }
-        .card-table-row.marked { background: rgba(46, 160, 67, 0.1); border-left: 3px solid var(--green); }
+        .card-table-row.marked { background: rgba(46, 160, 160, 0.1); border-left: 3px solid var(--green); }
+        .card-table-row.subbed-off { opacity: 0.4; filter: grayscale(1); background: #0d1117; pointer-events: none; }
         .card-player-info { display: flex; flex-direction: column; flex: 1; }
         .card-player-name { font-weight: bold; color: white; display: flex; align-items: center; gap: 6px; }
         .card-match-info { font-size: 0.75rem; color: #888; }
@@ -133,6 +134,9 @@
         .form-badge { font-family: monospace; font-size: 0.7rem; letter-spacing: 1px; margin-left: 5px; }
         .form-w { color: var(--green); } .form-l { color: var(--red); } .form-d { color: #888; }
 
+        .pos-badge { font-size: 0.7rem; color: var(--gold); background: #21262d; padding: 1px 4px; border-radius: 4px; margin-left: 4px; font-weight: bold; border: 1px solid #30363d; vertical-align: middle; }
+        .pos-badge:empty { display: none; }
+        
         /* PLAYER RATINGS */
         .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #333; }
         .player-name { font-weight: bold; color: white; font-size: 0.9rem; }
@@ -684,6 +688,9 @@
             div.className = `match-card ${isPlaced ? 'placed' : ''}`;
             div.id = `card-${m.fixture.id}`;
             
+            // Fetch standings for card
+            getStandings(m.fixture.id, m.teams.home.id, m.teams.away.id, m.league.id, m.league.season);
+
             const h = m.teams.home;
             const a = m.teams.away;
             const s = m.goals;
@@ -760,7 +767,7 @@
                     <div class="team-col" style="align-items:flex-end; text-align:right;">
                         <div style="display:flex; align-items:center;">
                             <span id="rank-h-${m.fixture.id}" class="rank-on-card"></span>
-                            <span class="team-name">${h.name}</span>
+                            <span class="team-name">${h.name} <span class="pos-badge" id="pos-h-${m.fixture.id}"></span></span>
                         </div>
                         <span class="goal-times">${hGoals}</span>
                         ${hRedBadge}
@@ -768,7 +775,7 @@
                     <span class="score-box">${s.home}-${s.away}</span>
                     <div class="team-col" style="align-items:flex-start; text-align:left;">
                         <div style="display:flex; align-items:center;">
-                            <span class="team-name">${a.name}</span>
+                            <span class="team-name">${a.name} <span class="pos-badge" id="pos-a-${m.fixture.id}"></span></span>
                             <span id="rank-a-${m.fixture.id}" class="rank-on-card"></span>
                         </div>
                         <span class="goal-times">${aGoals}</span>
@@ -794,6 +801,31 @@
                 <div id="p-${m.fixture.id}" class="player-box"></div>
             `;
             content.appendChild(div);
+        }
+
+        async function getStandings(fid, hId, aId, lid, sid) {
+            try {
+                const res = await fetch(`https://v3.football.api-sports.io/standings?league=${lid}&season=${sid}`, { headers: { "x-rapidapi-key": API_KEY } });
+                const data = await res.json();
+                if(data.response && data.response.length > 0) {
+                    const standings = data.response[0].league.standings[0];
+                    const homePos = standings.find(s => s.team.id === hId);
+                    const awayPos = standings.find(s => s.team.id === aId);
+                    
+                    if(homePos) {
+                        const hBadge = document.getElementById(`pos-h-${fid}`);
+                        if(hBadge) hBadge.innerText = homePos.rank;
+                        const match = allMatches.find(m => m.fixture.id === fid);
+                        if(match) match.homePos = homePos.rank;
+                    }
+                    if(awayPos) {
+                        const aBadge = document.getElementById(`pos-a-${fid}`);
+                        if(aBadge) aBadge.innerText = awayPos.rank;
+                        const match = allMatches.find(m => m.fixture.id === fid);
+                        if(match) match.awayPos = awayPos.rank;
+                    }
+                }
+            } catch(e) {}
         }
 
         async function deepAnalyze(btn, id, hName, aName, hGoals, aGoals, hRed, aRed, leagueId, season) {
@@ -1116,6 +1148,7 @@
                                 const uid = `${data.parameters.fixture}-${p.player.id}`;
                                 const isMarked = pBets.includes(uid);
                                 
+                                p.statistics[0].subbed_off = p.player.subbed_off || (s.sub === "out"); // Defensive check
                                 riskPlayers.push({
                                     uid: uid,
                                     name: p.player.name,
@@ -1124,7 +1157,9 @@
                                     fouls: s.fouls.committed,
                                     ref: refName,
                                     refBadge: refStrict,
-                                    isMarked: isMarked
+                                    isMarked: isMarked,
+                                    isSubbed: s.games.minutes === null || (s.games.sub && s.games.sub === "out") || false,
+                                    pos: match ? (t.team.id === match.teams.home.id ? (match.homePos || "") : (match.awayPos || "")) : ""
                                 });
                             }
                         }));
@@ -1141,13 +1176,16 @@
                 riskPlayers.forEach(p => {
                     const activeClass = p.isMarked ? 'active' : '';
                     const markClass = p.isMarked ? 'marked' : '';
+                    const subbedClass = p.isSubbed ? 'subbed-off' : '';
                     const tick = p.isMarked ? '✓' : '';
+                    const subLabel = p.isSubbed ? ' <span style="color:var(--red); font-size:0.7rem;">[SUBBED OFF]</span>' : '';
+                    const posLabel = p.pos ? `<span class="pos-badge">${p.pos}</span>` : '';
                     
                     html += `
-                        <div class="card-table-row ${markClass}">
+                        <div class="card-table-row ${markClass} ${subbedClass}">
                             <div class="card-check-btn ${activeClass}" onclick="togglePlayerBet('${p.uid}', this)">${tick}</div>
                             <div class="card-player-info">
-                                <div class="card-player-name">${p.name} <span style="font-weight:normal; color:#666">(${p.team})</span></div>
+                                <div class="card-player-name">${p.name}${subLabel} ${posLabel} <span style="font-weight:normal; color:#666">(${p.team})</span></div>
                                 <div class="card-match-info">${p.time} • Ref: ${p.ref}</div>
                                 ${p.refBadge}
                             </div>
