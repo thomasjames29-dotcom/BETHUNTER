@@ -245,7 +245,7 @@
             <details open>
                 <summary>🔴 Live Hunt & Auto-Pilot</summary>
                 <p>The core dashboard. Shows games currently in the "Goldilocks Zone" (60-85 mins) where stats have matured.</p>
-                <p><b>Auto-Pilot:</b> Scans every 5 minutes. Sends notifications for "Siege" games.</p>
+                <p><b>Auto-Pilot:</b> Scans every 2.5 minutes. Sends notifications for "Siege" games.</p>
             </details>
 
             <details>
@@ -556,10 +556,10 @@
                     }
                 }
                 pilotBtn.classList.add('active');
-                pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (5m)`;
+                pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (2.5m)`;
                 playPing(); 
                 runScan(true); 
-                pilotInterval = setInterval(() => runScan(true), 300000); 
+                pilotInterval = setInterval(() => runScan(true), 150000); 
             } else {
                 pilotBtn.classList.remove('active');
                 pilotBtn.innerHTML = `<div class="pilot-dot"></div> Auto-Pilot`;
