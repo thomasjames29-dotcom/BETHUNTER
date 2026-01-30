@@ -24,8 +24,6 @@
         .chip { padding: 6px 12px; border-radius: 20px; background: #21262d; border: 1px solid #30363d; color: #888; font-size: 0.8rem; font-weight: bold; cursor: pointer; white-space: nowrap; }
         .chip.active { background: #d29922; color: #0d1117; border-color: #d29922; }
         .match-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; position: relative; }
-        .match-card.pulse-home { animation: pulse-green 2s infinite; border-color: var(--green); }
-        .match-card.pulse-away { animation: pulse-purple 2s infinite; border-color: var(--purple); }
         .score-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; }
         .score-box { background: #21262d; padding: 8px 14px; border-radius: 8px; font-family: monospace; font-weight: bold; }
         .team-name { font-size: 1rem; font-weight: bold; display: flex; align-items: center; gap: 5px; }
@@ -35,15 +33,13 @@
         .bet365-btn { flex: 1; background: #00703c; color: white; padding: 10px; border-radius: 8px; text-align: center; text-decoration: none; font-weight: bold; }
         .mark-btn { background: #21262d; border: 1px solid #30363d; color: #888; border-radius: 8px; padding: 0 15px; cursor: pointer; }
         .mark-btn.active { background: var(--green); color: white; }
-        .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--blue); color: white; padding: 16px; border-radius: 16px; font-weight: bold; border: none; z-index: 100; }
+        .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--blue); color: white; padding: 16px; border-radius: 16px; font-weight: bold; border: none; z-index: 100; cursor: pointer; }
         .card-table-row { display: flex; justify-content: space-between; align-items: center; background: #161b22; padding: 12px; border-bottom: 1px solid #30363d; }
         .card-foul-badge { background: rgba(218, 54, 51, 0.2); color: var(--red); border: 1px solid var(--red); padding: 4px 8px; border-radius: 6px; font-weight: bold; font-family: monospace; }
-        .ref-badge { font-size: 0.7rem; background: #333; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; }
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; overflow-y: auto; }
         .modal-content { background: #161b22; margin: 10% auto; padding: 20px; width: 85%; border-radius: 12px; border: 1px solid #30363d; }
-        details { margin-bottom: 10px; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px; border: 1px solid #30363d; }
-        summary { cursor: pointer; font-weight: bold; color: var(--blue); outline: none; }
         .hist-date-row { display: flex; justify-content: space-between; padding: 10px; background: #21262d; border-radius: 8px; margin-bottom: 8px; font-weight: bold; }
+        .unit-win { color: var(--green); } .unit-loss { color: var(--red); }
     </style>
 </head>
 <body>
@@ -59,7 +55,6 @@
         <button id="pilotBtn" class="pilot-btn" onclick="togglePilot()"><div class="pilot-dot"></div> Auto-Pilot</button>
         <div class="nav-tabs">
             <div id="tabLive" class="nav-tab active" onclick="switchTab('live')">🔴 Live Hunt</div>
-            <div id="tabSched" class="nav-tab" onclick="switchTab('sched')">📅 Schedule</div>
             <div id="tabCards" class="nav-tab" onclick="switchTab('cards')">🟨 Card Watch</div>
             <div id="tabHist" class="nav-tab" onclick="switchTab('hist')">📜 History</div>
         </div>
@@ -82,19 +77,18 @@
         <button class="scan-btn" onclick="runScan()" id="mainBtn">🎯 SCAN MARKETS</button>
     </div>
 
-    <div id="schedView" style="display:none;"><div id="schedContent"></div></div>
-    <div id="cardView" style="display:none;">
-        <button class="card-scan-btn" style="width:100%; background:var(--red); color:white; padding:14px; border-radius:8px; border:none; margin-bottom:15px; font-weight:bold;" onclick="scanGlobalCards(this)">⚠️ SCAN ACTIVE CARD RISKS</button>
+    <div id="cardView" style="display:none; padding-bottom:100px;">
+        <button class="card-scan-btn" style="width:100%; background:var(--red); color:white; padding:14px; border-radius:8px; border:none; margin-bottom:15px; font-weight:bold; cursor:pointer;" onclick="scanGlobalCards(this)">⚠️ SCAN ACTIVE CARD RISKS</button>
         <div id="cardContent"></div>
     </div>
-    <div id="histView" style="display:none;"><div id="histContent"></div></div>
+    <div id="histView" style="display:none; padding-bottom:100px;"><div id="histContent"></div></div>
 
     <div id="helpModal" class="modal" onclick="closeHelp(event)">
         <div class="modal-content">
             <h2 style="color:var(--blue)">User Manual</h2>
-            <details open><summary>🔴 Live & Sniper</summary><p>Scans 60-85m games. <b>Drought</b> finds games with >50m since last goal.</p></details>
-            <details><summary>🟨 Card Watch</summary><p>Shows players with 2+ fouls who are <b>still on the pitch</b>. Substitutes are automatically hidden.</p></details>
-            <details><summary>🏆 Elite Leagues</summary><p>PL, Championship, La Liga, Bundesliga, Serie A, Ligue 1, Eredivisie, Primeira Liga, MLS, SPL, Saudi Pro League.</p></details>
+            <p><b>Drought:</b> Games with >50m since last goal.</p>
+            <p><b>Card Watch:</b> Only shows players currently on the pitch.</p>
+            <p><b>History:</b> Daily profit/loss summary.</p>
             <button onclick="document.getElementById('helpModal').style.display='none'" style="width:100%; padding:12px; margin-top:10px; background:#333; color:white; border:none; border-radius:8px;">Close</button>
         </div>
     </div>
@@ -111,12 +105,22 @@
         };
 
         const switchTab = (tab) => {
-            ['liveView','schedView','cardView','histView'].forEach(v => document.getElementById(v).style.display = 'none');
+            ['liveView','cardView','histView'].forEach(v => document.getElementById(v).style.display = 'none');
             document.getElementById(tab + 'View').style.display = 'block';
             document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
             if(tab === 'hist') renderHistory();
         };
+
+        function toggleBet(id, homeGoals, awayGoals) {
+            let bets = JSON.parse(localStorage.getItem('betHistory') || "[]");
+            const today = new Date().toLocaleDateString('en-CA');
+            const idx = bets.findIndex(b => b.id === id);
+            if(idx >= 0) bets.splice(idx, 1);
+            else bets.push({ id, date: today, goalsAtBet: homeGoals + awayGoals, status: 'OPEN' });
+            localStorage.setItem('betHistory', JSON.stringify(bets));
+            applyFilter();
+        }
 
         async function runScan(isAuto = false) {
             trackAPI(1);
@@ -126,13 +130,16 @@
                 const data = await res.json();
                 allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
                 applyFilter(isAuto);
+                checkOutcomes();
             } catch(e) { console.error(e); }
         }
 
         function applyFilter(isAuto = false) {
-            const mode = document.getElementById('filterSelect').value;
             const content = document.getElementById('content');
             content.innerHTML = "";
+            const mode = document.getElementById('filterSelect').value;
+            const placed = JSON.parse(localStorage.getItem('betHistory') || "[]").map(b => b.id);
+            
             const filtered = allMatches.filter(m => {
                 if (mode === 'elite' && !ELITE_IDS.includes(m.league.id)) return false;
                 if (currentStrategy === 'losing') return m.goals.home < m.goals.away;
@@ -143,11 +150,11 @@
                 }
                 return true;
             });
-            filtered.forEach(m => createCard(m));
+            filtered.forEach(m => createCard(m, placed.includes(m.fixture.id)));
             if(mode === 'elite') enrichEliteMatches(filtered);
         }
 
-        function createCard(m) {
+        function createCard(m, isPlaced) {
             const div = document.createElement('div');
             div.className = 'match-card';
             div.innerHTML = `
@@ -157,11 +164,10 @@
                     <div class="score-box">${m.goals.home}-${m.goals.away}</div>
                     <div style="flex:1; text-align:left;">${m.teams.away.name} <span id="rank-a-${m.fixture.id}" class="rank-on-card"></span></div>
                 </div>
-                <div style="text-align:center; font-size:0.8rem; color:#666;">${m.fixture.status.elapsed}' Played</div>
                 <div id="stats-${m.fixture.id}" class="analysis-box" style="display:none; text-align:center; color:#888;">Loading Stats...</div>
                 <div class="btn-row">
                     <a href="https://www.bet365.com" class="bet365-btn">Bet365</a>
-                    <button class="mark-btn" onclick="this.classList.toggle('active')">📌</button>
+                    <button class="mark-btn ${isPlaced ? 'active' : ''}" onclick="toggleBet(${m.fixture.id}, ${m.goals.home}, ${m.goals.away})">📌</button>
                 </div>
             `;
             document.getElementById('content').appendChild(div);
@@ -169,40 +175,42 @@
 
         async function enrichEliteMatches(matches) {
             for (const m of matches) {
-                document.getElementById(`stats-${m.fixture.id}`).style.display = 'block';
-                await deepAnalyze(m.fixture.id, m.league.id, m.league.season);
-                await new Promise(r => setTimeout(r, 450));
+                const box = document.getElementById(`stats-${m.fixture.id}`);
+                if(box) { box.style.display = 'block'; await deepAnalyze(m.fixture.id, m.league.id, m.league.season); }
+                await new Promise(r => setTimeout(r, 400));
             }
         }
 
         async function deepAnalyze(id, lid, season) {
-            trackAPI(3);
-            const [sRes, stRes] = await Promise.all([
-                fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
-                fetch(`https://v3.football.api-sports.io/standings?league=${lid}&season=${season}`, { headers: { "x-rapidapi-key": API_KEY } })
-            ]);
-            const stats = await sRes.json();
-            const stand = await stRes.json();
-            const box = document.getElementById(`stats-${id}`);
-            if (!stats.response[0]) { box.innerHTML = "Stats unavailable."; return; }
+            trackAPI(2);
+            try {
+                const [sRes, stRes] = await Promise.all([
+                    fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } }),
+                    fetch(`https://v3.football.api-sports.io/standings?league=${lid}&season=${season}`, { headers: { "x-rapidapi-key": API_KEY } })
+                ]);
+                const stats = await sRes.json();
+                const stand = await stRes.json();
+                const box = document.getElementById(`stats-${id}`);
+                if (!stats.response[0]) { box.innerHTML = "Stats unavailable."; return; }
 
-            const getS = (arr, t) => parseInt(arr.find(x => x.type === t)?.value || 0);
-            const hPress = (getS(stats.response[0].statistics, "Shots on Goal") * 5) + (getS(stats.response[0].statistics, "Corner Kicks") * 2);
-            const aPress = (getS(stats.response[1].statistics, "Shots on Goal") * 5) + (getS(stats.response[1].statistics, "Corner Kicks") * 2);
-            const hPct = Math.round((hPress / (hPress + aPress || 1)) * 100);
+                const getS = (arr, t) => parseInt(arr.find(x => x.type === t)?.value || 0);
+                const hPress = (getS(stats.response[0].statistics, "Shots on Goal") * 5) + (getS(stats.response[0].statistics, "Corner Kicks") * 2);
+                const aPress = (getS(stats.response[1].statistics, "Shots on Goal") * 5) + (getS(stats.response[1].statistics, "Corner Kicks") * 2);
+                const hPct = Math.round((hPress / (hPress + aPress || 1)) * 100);
 
-            box.innerHTML = `<div style="display:flex; justify-content:space-between;"><span>Pressure: ${hPct}%</span><span>${100-hPct}%</span></div>
-                <div style="height:8px; background:#333; border-radius:4px; overflow:hidden; display:flex; margin-top:5px;">
-                    <div style="width:${hPct}%; background:var(--green)"></div><div style="width:${100-hPct}%; background:var(--purple)"></div>
-                </div>`;
-            
-            if(stand.response[0]) {
-                const table = stand.response[0].league.standings[0];
-                const hRank = table.find(t => t.team.id === allMatches.find(m => m.fixture.id === id).teams.home.id)?.rank;
-                const aRank = table.find(t => t.team.id === allMatches.find(m => m.fixture.id === id).teams.away.id)?.rank;
-                if(hRank) document.getElementById(`rank-h-${id}`).innerText = `[#${hRank}]`;
-                if(aRank) document.getElementById(`rank-a-${id}`).innerText = `[#${aRank}]`;
-            }
+                box.innerHTML = `<div style="display:flex; justify-content:space-between;"><span>Pressure: ${hPct}%</span><span>${100-hPct}%</span></div>
+                    <div style="height:8px; background:#333; border-radius:4px; overflow:hidden; display:flex; margin-top:5px;">
+                        <div style="width:${hPct}%; background:var(--green)"></div><div style="width:${100-hPct}%; background:var(--purple)"></div>
+                    </div>`;
+                
+                if(stand.response[0]) {
+                    const table = stand.response[0].league.standings[0];
+                    const hRank = table.find(t => t.team.name.includes(allMatches.find(m => m.fixture.id === id).teams.home.name))?.rank;
+                    const aRank = table.find(t => t.team.name.includes(allMatches.find(m => m.fixture.id === id).teams.away.name))?.rank;
+                    if(hRank) document.getElementById(`rank-h-${id}`).innerText = `[#${hRank}]`;
+                    if(aRank) document.getElementById(`rank-a-${id}`).innerText = `[#${aRank}]`;
+                }
+            } catch(e) {}
         }
 
         async function scanGlobalCards(btn) {
@@ -216,16 +224,16 @@
                 trackAPI(1);
                 const res = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${m.fixture.id}`, { headers: { "x-rapidapi-key": API_KEY } });
                 const data = await res.json();
-                data.response?.forEach(team => team.players.forEach(p => {
+                data.response?.forEach(teamData => teamData.players.forEach(p => {
                     const s = p.statistics[0];
-                    // Logic: Committed 2+ fouls, NO cards, and NOT subbed off (still on pitch)
-                    if (s.fouls.committed >= 2 && !s.cards.yellow && !s.cards.red && !p.substitute) {
-                        players.push({ name: p.player.name, team: team.team.name, fouls: s.fouls.committed, time: m.fixture.status.elapsed });
+                    // Updated logic: Committed 2+ fouls, 0 cards, and hasn't been subbed off
+                    const isOff = m.events?.some(e => e.type === 'Substitute' && e.player.id === p.player.id);
+                    if (s.fouls.committed >= 2 && !s.cards.yellow && !s.cards.red && !isOff) {
+                        players.push({ name: p.player.name, team: teamData.team.name, fouls: s.fouls.committed, time: m.fixture.status.elapsed });
                     }
                 }));
-                await new Promise(r => setTimeout(r, 300));
+                await new Promise(r => setTimeout(r, 400));
             }
-            
             players.sort((a,b) => b.fouls - a.fouls);
             area.innerHTML = players.length ? players.map(p => `
                 <div class="card-table-row">
@@ -235,9 +243,28 @@
             btn.innerText = "⚠️ SCAN ACTIVE CARD RISKS";
         }
 
+        function checkOutcomes() {
+            let bets = JSON.parse(localStorage.getItem('betHistory') || "[]");
+            let changed = false;
+            bets.forEach(b => {
+                const m = allMatches.find(x => x.fixture.id === b.id);
+                if(m && b.status === 'OPEN' && (m.goals.home + m.goals.away > b.goalsAtBet)) { b.status = 'WIN'; changed = true; }
+            });
+            if(changed) localStorage.setItem('betHistory', JSON.stringify(bets));
+        }
+
         function renderHistory() {
             const bets = JSON.parse(localStorage.getItem('betHistory') || "[]");
-            document.getElementById('histContent').innerHTML = bets.length ? bets.map(b => `<div class="hist-date-row"><span>${b.date}</span><span>${b.units} Units</span></div>`).join('') : "<p style='text-align:center'>No history.</p>";
+            const grouped = bets.reduce((acc, b) => {
+                acc[b.date] = (acc[b.date] || 0) + (b.status === 'WIN' ? 1 : b.status === 'LOSS' ? -1 : 0);
+                return acc;
+            }, {});
+            const sortedDates = Object.keys(grouped).sort((a,b) => new Date(b) - new Date(a));
+            document.getElementById('histContent').innerHTML = sortedDates.length ? sortedDates.map(d => `
+                <div class="hist-date-row">
+                    <span>📅 ${d}</span>
+                    <span class="${grouped[d] >= 0 ? 'unit-win' : 'unit-loss'}">${grouped[d] > 0 ? '+' : ''}${grouped[d]} Units</span>
+                </div>`).join('') : "<p style='text-align:center'>No history found.</p>";
         }
 
         function togglePilot() {
@@ -250,7 +277,12 @@
 
         function openHelp() { document.getElementById('helpModal').style.display = 'block'; }
         function closeHelp(e) { if(e.target.id === 'helpModal') e.target.style.display = 'none'; }
-        function setStrategy(s, el) { currentStrategy = s; document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); el.classList.add('active'); applyFilter(); }
+        function setStrategy(s, el) { 
+            currentStrategy = s; 
+            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active')); 
+            el.classList.add('active'); 
+            applyFilter(); 
+        }
     </script>
 </body>
 </html>
