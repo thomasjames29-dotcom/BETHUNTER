@@ -31,6 +31,7 @@
         .pilot-btn.active { background: rgba(46, 160, 67, 0.2); border-color: var(--green); color: var(--green); }
         .pilot-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; }
         .pilot-btn.active .pilot-dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .pilot-btn.paused { border-color: var(--gold); color: var(--gold); animation: none; }
 
         /* TABS */
         .nav-tabs { display: flex; gap: 10px; margin-top: 15px; overflow-x: auto; padding-bottom: 5px; }
@@ -71,7 +72,7 @@
         .sched-league { font-size: 0.75rem; color: #a371f7; text-transform: uppercase; margin-bottom: 4px; font-weight: bold; letter-spacing: 0.5px; }
 
         /* HISTORY ITEM */
-        .hist-day { margin-bottom: 10px; }
+        .hist-day { margin-bottom: 20px; }
         .hist-date-row { display: flex; justify-content: space-between; padding: 10px; background: #21262d; border-radius: 8px; font-weight: bold; margin-bottom: 10px; }
         .hist-unit-plus { color: var(--green); } .hist-unit-minus { color: var(--red); } .hist-unit-even { color: #888; }
         .hist-card { background: #161b22; border-bottom: 1px solid #30363d; padding: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
@@ -202,6 +203,7 @@
         <div class="chip-container">
             <div class="chip active" onclick="setStrategy('all', this)">🌍 All Games</div>
             <div class="chip" onclick="setStrategy('losing', this)">🩸 Fav Losing</div>
+            <div class="chip" onclick="setStrategy('drought', this)">⏳ Goal Drought</div>
             <div class="chip" onclick="setStrategy('red', this)">🟥 Red Card</div>
             <div class="chip" onclick="setStrategy('late', this)">🧨 Late (80'+)</div>
             <div class="chip" onclick="setStrategy('draw', this)">⚖️ Draw</div>
@@ -245,6 +247,7 @@
                 <p>Filter the live list instantly:</p>
                 <ul>
                     <li><b>Fav Losing:</b> Finds home teams losing.</li>
+                    <li><b>Goal Drought:</b> Games with >50 mins since the last goal (must be >0-0).</li>
                     <li><b>Red Card:</b> Isolates 10-man situations.</li>
                     <li><b>Late:</b> Only shows 80th min+ for late drama.</li>
                 </ul>
@@ -537,6 +540,21 @@
         }
 
         function togglePilot() {
+            // UNPAUSE LOGIC
+            if(pilotMode && pilotBtn.classList.contains('paused')) {
+                // Close all busy windows
+                document.querySelectorAll('.analysis-box').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.player-box').forEach(el => el.style.display = 'none');
+                
+                // Reset Button
+                pilotBtn.classList.remove('paused');
+                pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (5m)`;
+                
+                // Force Scan
+                runScan(true); 
+                return; 
+            }
+
             pilotMode = !pilotMode;
             if(pilotMode) {
                 if (Notification.permission !== "granted") { Notification.requestPermission(); }
@@ -547,6 +565,7 @@
                 pilotInterval = setInterval(() => runScan(true), 300000); 
             } else {
                 pilotBtn.classList.remove('active');
+                pilotBtn.classList.remove('paused');
                 pilotBtn.innerHTML = `<div class="pilot-dot"></div> Auto-Pilot`;
                 clearInterval(pilotInterval);
             }
@@ -622,6 +641,22 @@
                 }
                 if (currentStrategy === 'late') return (m.fixture.status.elapsed >= 80);
                 if (currentStrategy === 'draw') return (m.goals.home === m.goals.away);
+                
+                if (currentStrategy === 'drought') {
+                    if (m.goals.home + m.goals.away === 0) return false; 
+                    if (!m.events) return false;
+                    
+                    const goalTimes = m.events
+                        .filter(e => e.type === 'Goal')
+                        .map(e => e.time.elapsed + (e.time.extra || 0));
+
+                    if (goalTimes.length === 0) return false;
+
+                    const lastGoalTime = Math.max(...goalTimes);
+                    const timeSince = m.fixture.status.elapsed - lastGoalTime;
+
+                    return (timeSince > 50);
+                }
                 
                 return true;
             });
