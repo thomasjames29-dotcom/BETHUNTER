@@ -856,16 +856,32 @@
 
                 if(!statData.response || statData.response.length === 0) {
                     isSynthetic = true;
-                    const playerRes = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`, { headers: { "x-rapidapi-key": API_KEY } });
-                    const playerData = await playerRes.json();
+                    const playerRes = await fetchWithRetry(`https://v3.football.api-sports.io/fixtures/players?fixture=${id}`);
+                    const playerData = playerRes;
                     
-                    if(playerData.response && playerData.response.length > 0) {
-                        let hTotalShots = 0, aTotalShots = 0, hOnTarget = 0, aOnTarget = 0;
-                        playerData.response[0].players.forEach(p => { hTotalShots += (p.statistics[0].shots.total||0); hOnTarget += (p.statistics[0].shots.on||0); });
-                        playerData.response[1].players.forEach(p => { aTotalShots += (p.statistics[0].shots.total||0); aOnTarget += (p.statistics[0].shots.on||0); });
+                    if(playerData && playerData.response && playerData.response.length > 0) {
+                        let hTotalShots = 0, aTotalShots = 0, hOnTarget = 0, aOnTarget = 0, hCorn = 0, aCorn = 0, hFouls = 0, aFouls = 0;
                         
-                        hStats = [{type:"Total Shots",value:hTotalShots}, {type:"Shots on Goal",value:hOnTarget}, {type:"Corner Kicks",value:0}];
-                        aStats = [{type:"Total Shots",value:aTotalShots}, {type:"Shots on Goal",value:aOnTarget}, {type:"Corner Kicks",value:0}];
+                        // Home Team (First entry in response usually)
+                        playerData.response[0].players.forEach(p => { 
+                            const ps = p.statistics[0];
+                            hTotalShots += (ps.shots.total||0); 
+                            hOnTarget += (ps.shots.on||0); 
+                            hCorn += (ps.goals.assists||0); // Proxy for danger if corners missing
+                            hFouls += (ps.fouls.committed||0);
+                        });
+                        
+                        // Away Team
+                        playerData.response[1].players.forEach(p => { 
+                            const ps = p.statistics[0];
+                            aTotalShots += (ps.shots.total||0); 
+                            aOnTarget += (ps.shots.on||0); 
+                            aCorn += (ps.goals.assists||0);
+                            aFouls += (ps.fouls.committed||0);
+                        });
+                        
+                        hStats = [{type:"Total Shots",value:hTotalShots}, {type:"Shots on Goal",value:hOnTarget}, {type:"Corner Kicks",value:hCorn}, {type:"Fouls",value:hFouls}];
+                        aStats = [{type:"Total Shots",value:aTotalShots}, {type:"Shots on Goal",value:aOnTarget}, {type:"Corner Kicks",value:aCorn}, {type:"Fouls",value:aFouls}];
                     } else {
                         statBox.innerHTML = "<div class='ignore-msg'>⚠️ MATCH IGNORED: Insufficient Data</div>";
                         const card = document.getElementById(`card-${id}`);
