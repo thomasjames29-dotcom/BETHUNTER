@@ -545,21 +545,6 @@
         }
 
         function togglePilot() {
-            // UNPAUSE LOGIC
-            if(pilotMode && pilotBtn.classList.contains('paused')) {
-                // Close all busy windows
-                document.querySelectorAll('.analysis-box').forEach(el => el.style.display = 'none');
-                document.querySelectorAll('.player-box').forEach(el => el.style.display = 'none');
-                
-                // Reset Button
-                pilotBtn.classList.remove('paused');
-                pilotBtn.innerHTML = `<div class="pilot-dot"></div> ON (5m)`;
-                
-                // Force Scan
-                runScan(true); 
-                return; 
-            }
-
             pilotMode = !pilotMode;
             if(pilotMode) {
                 // Defensive check for Notification API
@@ -575,7 +560,6 @@
                 pilotInterval = setInterval(() => runScan(true), 300000); 
             } else {
                 pilotBtn.classList.remove('active');
-                pilotBtn.classList.remove('paused');
                 pilotBtn.innerHTML = `<div class="pilot-dot"></div> Auto-Pilot`;
                 clearInterval(pilotInterval);
             }
@@ -844,11 +828,6 @@
         }
 
         async function deepAnalyze(btn, id, hName, aName, hGoals, aGoals, hRed, aRed, leagueId, season) {
-            if(pilotMode) {
-                // Pause pilot to prevent race conditions during manual deep scan
-                pilotBtn.classList.add('paused');
-                pilotBtn.innerHTML = `<div class="pilot-dot"></div> PAUSED (Busy)`;
-            }
             trackAPI(3);
             const statBox = document.getElementById(`stats-${id}`);
             if(btn) btn.innerText = "Scanning..."; // Only if button exists (non-elite)
