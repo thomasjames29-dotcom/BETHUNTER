@@ -45,8 +45,8 @@
         .chip-container::-webkit-scrollbar { display: none; }
         .chip { position: relative; white-space: nowrap; padding: 6px 12px; border-radius: 20px; background: #21262d; border: 1px solid #30363d; color: #888; font-size: 0.8rem; font-weight: bold; cursor: pointer; transition: all 0.2s; }
         .chip.active { background: #d29922; color: #0d1117; border-color: #d29922; }
-        .chip-badge { position: absolute; top: -6px; right: -4px; background: var(--blue); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; border: 2px solid var(--bg); display: none; }
-        .chip-badge.active { display: block; }
+        .chip-badge { position: absolute; top: -6px; right: -4px; background: var(--blue); color: white; font-size: 0.65rem; padding: 2px 6px; border-radius: 10px; border: 2px solid var(--bg); display: none; z-index: 5; }
+        .chip-badge.active { display: block !important; }
         .chip-badge.urgent { background: var(--red); animation: pulse-red 2s infinite; }
         @keyframes pulse-red { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
@@ -306,7 +306,7 @@
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
         
         // ELITE IDS
-        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253];
+        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 203];
         const EU_COUNTRIES = ["Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Turkey", "Ukraine", "Wales"];
 
         let allMatches = [];
@@ -575,14 +575,60 @@
                 const badge = document.getElementById(`badge-${key}`);
                 if (badge) {
                     badge.innerText = strategyCounts[key];
+                    // FORCE VISIBILITY: Check if count > 0 and update display
                     if (strategyCounts[key] > 0) {
+                        badge.style.display = 'block';
                         badge.classList.add('active');
                         if (key === 'alert' || key === 'red') badge.classList.add('urgent');
                     } else {
+                        badge.style.display = 'none';
                         badge.classList.remove('active', 'urgent');
                     }
                 }
             });
+        }
+
+        function calculateStrategyCounts() {
+            strategyCounts = { all: 0, drought: 0, alert: 0, red: 0 };
+            
+            allMatches.forEach(m => {
+                const league = (m.league.name || "").toLowerCase();
+                const blocked = ["friendly", "friendlies", "club friendlies", "u19", "u20", "u21", "u23", "youth", "reserve", "reserves"];
+                if(blocked.some(word => league.includes(word))) return;
+
+                strategyCounts.all++;
+
+                // Red Card
+                if (m.events && m.events.some(e => e.type === 'Card' && e.detail === 'Red Card')) {
+                    strategyCounts.red++;
+                }
+
+                // Goal Drought
+                if (m.goals.home + m.goals.away > 0 && m.events) {
+                    const goalTimes = m.events
+                        .filter(e => e.type === 'Goal')
+                        .map(e => e.time.elapsed + (e.time.extra || 0));
+                    if (goalTimes.length > 0) {
+                        const lastGoalTime = Math.max(...goalTimes);
+                        const timeSince = m.fixture.status.elapsed - lastGoalTime;
+                        if (timeSince > 50) strategyCounts.drought++;
+                    }
+                }
+
+                // Goal Alert! (Simplified check for counts)
+                const s = m.goals;
+                const h = m.teams.home;
+                const a = m.teams.away;
+                const t = m.fixture.status.elapsed;
+                const hRed = m.events?.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === h.id);
+                const aRed = m.events?.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === a.id);
+                
+                let isAlert = false;
+                if (Math.abs(s.home - s.away) === 1 && t > 75) isAlert = true;
+                if (s.home < s.away && (s.away - s.home === 1) && ELITE_IDS.includes(m.league.id)) isAlert = true;
+                if (isAlert) strategyCounts.alert++;
+            });
+            updateChipBadges();
         }
 
         async function runScan(isAuto = false) {
@@ -593,14 +639,12 @@
             } else {
                 mainBtn.innerText = "🤖 Auto-Scanning...";
             }
-            // AUTO-PILOT SCANNING STABILITY ENHANCEMENT
             try {
                 const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", {
                     headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" }
                 });
                 const data = await res.json();
                 
-                // Basic validation for auto-scans
                 if (data.errors && data.errors.requests) {
                     console.warn("Auto-scan skipped: API Limit reached.");
                     return;
@@ -612,8 +656,8 @@
                     allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
                     allMatches.sort((a, b) => b.fixture.status.elapsed - a.fixture.status.elapsed);
                     checkBetOutcomes(allMatches);
+                    calculateStrategyCounts();
                     applyFilter(isAuto);
-                    updateBadges();
                 }
             } catch(e) { 
                 console.error("Scan Error:", e);
@@ -1036,6 +1080,9 @@
                 
                 const predText = document.getElementById(`pred-text-${id}`);
                 if(predText) { predText.innerText = verdict; predText.style.color = vColor; }
+                
+                // Recalculate counts whenever a card is enriched/updated
+                calculateStrategyCounts();
                 
             } catch(e) { 
                 console.error("Analysis Error:", e);
