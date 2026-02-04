@@ -339,7 +339,7 @@
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
         
         // ELITE IDS
-        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 203];
+        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 203, 137, 66];
         const EU_COUNTRIES = ["Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Turkey", "Ukraine", "Wales"];
 
         let allMatches = [];
@@ -910,22 +910,20 @@
                 return true;
             });
 
-            if(filtered.length === 0) {
-                content.innerHTML = `<p style='text-align:center; margin-top:50px; color:#888'>No games found for ${currentStrategy.toUpperCase()} filter.</p>`;
-            } else {
-                filtered.forEach(m => {
-                    const isElite = ELITE_IDS.includes(m.league.id);
-                    const isPlaced = placedBets.includes(m.fixture.id);
-                    createCard(m, isPlaced, isElite);
-                    if(isElite) matchesToEnrich.push(m);
-                });
-            }
+            // 1. Initial Render
+            filtered.forEach(m => {
+                const isElite = ELITE_IDS.includes(m.league.id);
+                const isPlaced = placedBets.includes(m.fixture.id);
+                createCard(m, isPlaced, isElite);
+                if(isElite) matchesToEnrich.push(m);
+            });
+            
             if(isAuto && highValueFound) playPing();
             
-            // TRIGGER AUTO ENRICHMENT FOR ELITE MATCHES
-            if(matchesToEnrich.length > 0) {
-                enrichEliteMatches(matchesToEnrich).then(() => updateBadges());
-            }
+            // AUTO-ENRICHMENT REMOVED - GOING BACK TO MANUAL MODE
+            // if(matchesToEnrich.length > 0) {
+            //     enrichEliteMatches(matchesToEnrich).then(() => updateBadges());
+            // }
         }
 
         function createCard(m, isPlaced, isElite) {
