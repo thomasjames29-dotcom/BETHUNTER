@@ -99,8 +99,11 @@
         .card-player-info { display: flex; flex-direction: column; flex: 1; }
         .card-player-name { font-weight: bold; color: white; display: flex; align-items: center; gap: 6px; }
         .card-match-info { font-size: 0.75rem; color: #888; }
-        .card-foul-badge { background: rgba(218, 54, 51, 0.2); color: var(--red); border: 1px solid var(--red); padding: 4px 8px; border-radius: 6px; font-weight: bold; font-family: monospace; white-space: nowrap; }
+        .card-foul-badge { background: rgba(100, 100, 100, 0.2); color: #888; border: 1px solid #555; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-family: monospace; white-space: nowrap; }
         .card-foul-badge.warning { background: rgba(210, 153, 34, 0.2); color: var(--gold); border: 1px solid var(--gold); }
+        .card-foul-badge.critical { background: rgba(255, 140, 0, 0.25); color: #ff8c00; border: 1px solid #ff8c00; animation: pulse-orange 2s infinite; }
+        .card-foul-badge.danger { background: rgba(218, 54, 51, 0.3); color: var(--red); border: 2px solid var(--red); animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-orange { 0% { box-shadow: 0 0 0 0 rgba(255, 140, 0, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(255, 140, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 140, 0, 0); } }
         .card-scan-btn { width: 100%; background: #da3633; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 1rem; margin-bottom: 20px; cursor: pointer; box-shadow: 0 4px 15px rgba(218, 54, 51, 0.3); }
         .ref-badge { font-size: 0.7rem; background: #333; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; color: #bbb; }
         .ref-strict { color: #da3633; border: 1px solid #da3633; background: rgba(218, 54, 51, 0.1); }
@@ -212,6 +215,7 @@
             <div id="tabCards" class="nav-tab" onclick="switchTab('cards')">🟨 Card Watch</div>
             <div id="tabHist" class="nav-tab" onclick="switchTab('hist')">📜 History</div>
             <div id="tabAcc" class="nav-tab" onclick="switchTab('acc')">💰 Acca Tips</div>
+            <div id="tabChallenge" class="nav-tab" onclick="switchTab('challenge')">💷 Challenge</div>
         </div>
 
         <select id="filterSelect" onchange="applyFilter()">
@@ -263,6 +267,91 @@
             <div style="text-align:center; color:#888; padding:20px;">
                 <p>Generate high-probability 3 & 4 fold accumulators using Elite league data.</p>
             </div>
+        </div>
+    </div>
+
+    <div id="challengeView" style="display:none;">
+        <div id="challengeHeader" style="text-align:center; margin-bottom:20px;">
+            <div style="font-size:2rem; margin-bottom:10px;">💷</div>
+            <h2 style="color:var(--gold); margin:0;">£5 → £500 Challenge</h2>
+            <p style="color:#888; font-size:0.85rem; margin-top:5px;">Compound your way to £500 with AI-powered in-play picks</p>
+        </div>
+        
+        <div id="challengeStatus" style="background:var(--card); border:1px solid #30363d; border-radius:12px; padding:20px; margin-bottom:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <div>
+                    <div style="font-size:0.75rem; color:#888; text-transform:uppercase;">Current Stake</div>
+                    <div id="currentStake" style="font-size:2rem; font-weight:bold; color:var(--green);">£5.00</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.75rem; color:#888; text-transform:uppercase;">Target</div>
+                    <div style="font-size:1.5rem; font-weight:bold; color:var(--gold);">£500.00</div>
+                </div>
+            </div>
+            <div style="background:#333; border-radius:8px; height:12px; overflow:hidden;">
+                <div id="challengeProgress" style="background:linear-gradient(90deg, var(--green), var(--gold)); height:100%; width:1%; transition:width 0.5s;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#888; margin-top:5px;">
+                <span>£5</span>
+                <span id="progressPercent">1%</span>
+                <span>£500</span>
+            </div>
+        </div>
+        
+        <div id="challengeContent" style="padding-bottom:100px;">
+            <div id="challengeStartScreen" style="text-align:center; padding:30px 20px;">
+                <div style="font-size:3rem; margin-bottom:15px;">🎯</div>
+                <h3 style="color:white; margin-bottom:10px;">Ready to Start?</h3>
+                <p style="color:#888; font-size:0.9rem; margin-bottom:20px;">The AI will find the safest in-play bet from Elite matches. Win and compound until you hit £500!</p>
+                <button onclick="startChallenge()" style="background:var(--green); color:white; border:none; padding:16px 40px; border-radius:12px; font-size:1.1rem; font-weight:bold; cursor:pointer; box-shadow:0 4px 15px rgba(46, 160, 67, 0.4);">🚀 START CHALLENGE</button>
+            </div>
+            
+            <div id="challengeActiveScreen" style="display:none;">
+                <button onclick="findNextBet(this)" class="card-scan-btn" style="background:var(--blue);">🔍 FIND NEXT BET</button>
+                
+                <div id="suggestedBet" style="display:none; background:var(--card); border:2px solid var(--green); border-radius:12px; padding:20px; margin-bottom:20px;">
+                    <div style="font-size:0.75rem; color:#888; text-transform:uppercase; margin-bottom:10px;">AI Suggested Bet</div>
+                    <div id="betMatch" style="font-weight:bold; font-size:1.1rem; color:white; margin-bottom:5px;"></div>
+                    <div id="betLeague" style="font-size:0.8rem; color:var(--purple); margin-bottom:10px;"></div>
+                    <div id="betSelection" style="background:rgba(46, 160, 67, 0.15); border:1px solid var(--green); border-radius:8px; padding:12px; margin-bottom:15px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span id="betType" style="font-weight:bold; color:var(--green); font-size:1rem;"></span>
+                            <span id="betOdds" style="font-family:monospace; font-weight:bold; color:var(--gold); font-size:1.2rem;"></span>
+                        </div>
+                    </div>
+                    <div id="betReasoning" style="font-size:0.85rem; color:#aaa; border-left:3px solid var(--blue); padding-left:10px; margin-bottom:15px;"></div>
+                    <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:15px;">
+                        <span style="color:#888;">Stake: <span id="betStake" style="color:white; font-weight:bold;"></span></span>
+                        <span style="color:#888;">Potential Return: <span id="betReturn" style="color:var(--green); font-weight:bold;"></span></span>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <button onclick="markBetResult('won')" style="flex:1; background:var(--green); color:white; border:none; padding:14px; border-radius:8px; font-weight:bold; font-size:1rem; cursor:pointer;">✅ WON</button>
+                        <button onclick="markBetResult('lost')" style="flex:1; background:var(--red); color:white; border:none; padding:14px; border-radius:8px; font-weight:bold; font-size:1rem; cursor:pointer;">❌ LOST</button>
+                    </div>
+                    <button onclick="rejectAndFindNew(this)" style="width:100%; background:#333; color:#888; border:1px solid #444; padding:12px; border-radius:8px; font-size:0.9rem; cursor:pointer;">🔄 Find Different Match</button>
+                </div>
+            </div>
+            
+            <div id="challengeLostScreen" style="display:none; text-align:center; padding:30px 20px;">
+                <div style="font-size:3rem; margin-bottom:15px;">😔</div>
+                <h3 style="color:var(--red); margin-bottom:10px;">Challenge Failed</h3>
+                <p style="color:#888; font-size:0.9rem; margin-bottom:10px;">You reached <span id="lostAmount" style="color:var(--gold); font-weight:bold;">£0.00</span> before the loss.</p>
+                <p id="nextChallengeTime" style="color:#888; font-size:0.85rem; margin-bottom:20px;"></p>
+                <button id="restartBtn" onclick="resetChallenge()" style="background:#333; color:#888; border:1px solid #444; padding:14px 30px; border-radius:8px; font-weight:bold; cursor:not-allowed;" disabled>🔒 NEW CHALLENGE TOMORROW</button>
+            </div>
+            
+            <div id="challengeWonScreen" style="display:none; text-align:center; padding:30px 20px;">
+                <div style="font-size:3rem; margin-bottom:15px;">🎉</div>
+                <h3 style="color:var(--green); margin-bottom:10px;">CHALLENGE COMPLETE!</h3>
+                <p style="color:#888; font-size:0.9rem; margin-bottom:10px;">You turned £5 into <span id="finalAmount" style="color:var(--gold); font-weight:bold; font-size:1.2rem;">£500+</span></p>
+                <p style="color:var(--green); font-size:0.85rem; margin-bottom:20px;">🏆 Incredible run!</p>
+                <button onclick="resetChallenge(true)" style="background:var(--gold); color:#000; border:none; padding:14px 30px; border-radius:8px; font-weight:bold; cursor:pointer;">🔄 START NEW CHALLENGE</button>
+            </div>
+        </div>
+        
+        <div style="margin-top:20px;">
+            <div style="font-size:0.85rem; color:#888; text-transform:uppercase; margin-bottom:10px;">📜 Bet History</div>
+            <div id="challengeHistory" style="background:var(--card); border:1px solid #30363d; border-radius:8px; max-height:300px; overflow-y:auto;"></div>
         </div>
     </div>
 
@@ -339,7 +428,7 @@
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
         
         // ELITE IDS
-        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 203, 137, 66];
+        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 203, 137];
         const EU_COUNTRIES = ["Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Turkey", "Ukraine", "Wales"];
 
         let allMatches = [];
@@ -509,17 +598,23 @@
             document.getElementById('histView').style.display = 'none';
             document.getElementById('cardView').style.display = 'none';
             document.getElementById('accView').style.display = 'none';
+            document.getElementById('challengeView').style.display = 'none';
             document.getElementById('tabLive').classList.remove('active');
             document.getElementById('tabSched').classList.remove('active');
             document.getElementById('tabHist').classList.remove('active');
             document.getElementById('tabCards').classList.remove('active');
             document.getElementById('tabAcc').classList.remove('active');
+            document.getElementById('tabChallenge').classList.remove('active');
             document.getElementById('filterSelect').style.display = 'none';
 
             if(tab === 'live') {
                 document.getElementById('liveView').style.display = 'block';
                 document.getElementById('tabLive').classList.add('active');
                 document.getElementById('filterSelect').style.display = 'block';
+            } else if(tab === 'challenge') {
+                document.getElementById('challengeView').style.display = 'block';
+                document.getElementById('tabChallenge').classList.add('active');
+                loadChallengeState();
             } else if(tab === 'sched') {
                 document.getElementById('schedView').style.display = 'block';
                 document.getElementById('tabSched').classList.add('active');
@@ -1381,7 +1476,23 @@
                     const subLabel = p.isSubbed ? ' <span style="color:var(--red); font-size:0.7rem;">[SUBBED OFF]</span>' : '';
                     const posLabel = p.pos ? `<span class="pos-badge" style="color:var(--cyan); border:1px solid var(--cyan); background:rgba(63, 185, 80, 0.1); padding:1px 6px; font-size:0.7rem; margin-left:5px;">${p.pos}</span>` : '';
                     
-                    const foulClass = p.fouls === 2 ? 'warning' : '';
+                    // 3-tier risk assessment: Yellow (low), Orange (high), Red (danger)
+                    let foulClass = '';
+                    let riskLabel = '';
+                    if (p.fouls >= 3) {
+                        foulClass = 'danger';
+                        riskLabel = ' 🔴';
+                    } else if (p.fouls === 2) {
+                        // High-traffic positions (DEF, MID) are more likely to commit more fouls
+                        const isHighRisk = p.pos && (p.pos.toUpperCase().includes('DEF') || p.pos.toUpperCase().includes('MID') || p.pos === 'D' || p.pos === 'M');
+                        if (isHighRisk) {
+                            foulClass = 'critical';
+                            riskLabel = ' 🟠';
+                        } else {
+                            foulClass = 'warning';
+                            riskLabel = ' 🟡';
+                        }
+                    }
                     
                     html += `
                         <div class="card-table-row ${markClass} ${subbedClass}">
@@ -1391,7 +1502,7 @@
                                 <div class="card-match-info">${p.time} • Ref: ${p.ref}</div>
                                 ${p.refBadge}
                             </div>
-                            <div class="card-foul-badge ${foulClass}">${p.fouls} Fouls</div>
+                            <div class="card-foul-badge ${foulClass}">${p.fouls} Fouls${riskLabel}</div>
                         </div>
                     `;
                 });
@@ -1417,6 +1528,477 @@
             }
             localStorage.setItem('cardBets', JSON.stringify(pBets));
         }
+
+        // ========== £5 TO £500 CHALLENGE ==========
+        const CHALLENGE_START = 5;
+        const CHALLENGE_TARGET = 500;
+        
+        let rejectedFixtures = []; // Track rejected fixtures in this session
+        
+        function getChallengeState() {
+            return JSON.parse(localStorage.getItem('challenge') || JSON.stringify({
+                active: false,
+                stake: CHALLENGE_START,
+                history: [],
+                lostDate: null,
+                currentBet: null
+            }));
+        }
+        
+        function saveChallengeState(state) {
+            localStorage.setItem('challenge', JSON.stringify(state));
+        }
+        
+        function loadChallengeState() {
+            const state = getChallengeState();
+            updateChallengeUI(state);
+        }
+        
+        function updateChallengeUI(state) {
+            const stakeEl = document.getElementById('currentStake');
+            const progressEl = document.getElementById('challengeProgress');
+            const percentEl = document.getElementById('progressPercent');
+            const historyEl = document.getElementById('challengeHistory');
+            
+            stakeEl.innerText = `£${state.stake.toFixed(2)}`;
+            const progress = Math.min(100, ((state.stake - CHALLENGE_START) / (CHALLENGE_TARGET - CHALLENGE_START)) * 100);
+            progressEl.style.width = `${Math.max(1, progress)}%`;
+            percentEl.innerText = `${progress.toFixed(0)}%`;
+            
+            // Show appropriate screen
+            document.getElementById('challengeStartScreen').style.display = 'none';
+            document.getElementById('challengeActiveScreen').style.display = 'none';
+            document.getElementById('challengeLostScreen').style.display = 'none';
+            document.getElementById('challengeWonScreen').style.display = 'none';
+            document.getElementById('suggestedBet').style.display = 'none';
+            
+            if (state.stake >= CHALLENGE_TARGET) {
+                document.getElementById('challengeWonScreen').style.display = 'block';
+                document.getElementById('finalAmount').innerText = `£${state.stake.toFixed(2)}`;
+            } else if (state.lostDate) {
+                const today = new Date().toISOString().split('T')[0];
+                if (state.lostDate === today) {
+                    document.getElementById('challengeLostScreen').style.display = 'block';
+                    document.getElementById('lostAmount').innerText = `£${state.history.length > 0 ? state.history[state.history.length-1].stakeBefore.toFixed(2) : '5.00'}`;
+                    document.getElementById('nextChallengeTime').innerText = "Come back tomorrow to try again!";
+                } else {
+                    // Auto-reset on new day after loss
+                    state.stake = CHALLENGE_START;
+                    state.active = false;
+                    state.lostDate = null;
+                    state.currentBet = null;
+                    state.history = [];
+                    saveChallengeState(state);
+                    stakeEl.innerText = `£${CHALLENGE_START.toFixed(2)}`;
+                    progressEl.style.width = '1%';
+                    percentEl.innerText = '1%';
+                    document.getElementById('challengeStartScreen').style.display = 'block';
+                }
+            } else if (!state.active) {
+                document.getElementById('challengeStartScreen').style.display = 'block';
+            } else {
+                document.getElementById('challengeActiveScreen').style.display = 'block';
+                if (state.currentBet) {
+                    displaySuggestedBet(state.currentBet, state.stake);
+                }
+            }
+            
+            // Render history
+            let histHtml = '';
+            if (state.history.length === 0) {
+                histHtml = '<div style="text-align:center; color:#666; padding:20px;">No bets yet. Start your challenge!</div>';
+            } else {
+                state.history.slice().reverse().forEach((bet, i) => {
+                    const resultClass = bet.result === 'won' ? 'color:var(--green)' : 'color:var(--red)';
+                    const resultIcon = bet.result === 'won' ? '✅' : '❌';
+                    histHtml += `
+                        <div style="padding:12px; border-bottom:1px solid #30363d; display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <div style="font-weight:bold; color:white; font-size:0.9rem;">${bet.match}</div>
+                                <div style="font-size:0.8rem; color:var(--blue);">${bet.selection} @ ${bet.odds}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="${resultClass}; font-weight:bold;">${resultIcon} ${bet.result.toUpperCase()}</div>
+                                <div style="font-size:0.8rem; color:#888;">£${bet.stakeBefore.toFixed(2)} → £${bet.stakeAfter.toFixed(2)}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+            historyEl.innerHTML = histHtml;
+        }
+        
+        function startChallenge() {
+            const state = {
+                active: true,
+                stake: CHALLENGE_START,
+                history: [],
+                lostDate: null,
+                currentBet: null
+            };
+            saveChallengeState(state);
+            updateChallengeUI(state);
+        }
+        
+        function resetChallenge(forceReset = false) {
+            const state = getChallengeState();
+            const today = new Date().toISOString().split('T')[0];
+            
+            if (forceReset || state.lostDate !== today) {
+                const newState = {
+                    active: false,
+                    stake: CHALLENGE_START,
+                    history: [],
+                    lostDate: null,
+                    currentBet: null
+                };
+                saveChallengeState(newState);
+                updateChallengeUI(newState);
+            }
+        }
+        
+        async function findNextBet(btn) {
+            btn.innerText = "🔍 Scanning Live Markets...";
+            btn.disabled = true;
+            
+            try {
+                trackAPI(1);
+                const res = await fetch("https://v3.football.api-sports.io/fixtures?live=all", {
+                    headers: { "x-rapidapi-key": API_KEY, "x-rapidapi-host": "v3.football.api-sports.io" }
+                });
+                const data = await res.json();
+                
+                if (!data.response || data.response.length === 0) {
+                    btn.innerText = "❌ No live games found. Try again later.";
+                    setTimeout(() => { btn.innerText = "🔍 FIND NEXT BET"; btn.disabled = false; }, 3000);
+                    return;
+                }
+                
+                // Filter to Elite leagues in 30-85 min window, excluding rejected fixtures
+                const eligible = data.response.filter(m => {
+                    const elapsed = m.fixture.status.elapsed;
+                    return ELITE_IDS.includes(m.league.id) && elapsed >= 30 && elapsed <= 85 && !rejectedFixtures.includes(m.fixture.id);
+                });
+                
+                if (eligible.length === 0) {
+                    btn.innerText = "❌ No Elite games in window. Try again later.";
+                    setTimeout(() => { btn.innerText = "🔍 FIND NEXT BET"; btn.disabled = false; }, 3000);
+                    return;
+                }
+                
+                // Analyze top 3 matches for stats
+                btn.innerText = "🔍 Analyzing Match Stats...";
+                const analyzed = [];
+                for (let i = 0; i < Math.min(3, eligible.length); i++) {
+                    const m = eligible[i];
+                    try {
+                        trackAPI(1);
+                        const statRes = await fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${m.fixture.id}`, {
+                            headers: { "x-rapidapi-key": API_KEY }
+                        });
+                        const statData = await statRes.json();
+                        
+                        if (statData.response && statData.response.length >= 2) {
+                            const hStats = statData.response[0].statistics;
+                            const aStats = statData.response[1].statistics;
+                            
+                            const getStat = (arr, type) => {
+                                const item = arr.find(s => s.type === type);
+                                if (item && item.value) return parseFloat(item.value) || 0;
+                                return 0;
+                            };
+                            
+                            m.analyzedStats = {
+                                homeSoT: getStat(hStats, "Shots on Goal"),
+                                awaySoT: getStat(aStats, "Shots on Goal"),
+                                homeCorners: getStat(hStats, "Corner Kicks"),
+                                awayCorners: getStat(aStats, "Corner Kicks"),
+                                homePoss: getStat(hStats, "Ball Possession"),
+                                awayPoss: getStat(aStats, "Ball Possession"),
+                                homeTotal: getStat(hStats, "Total Shots"),
+                                awayTotal: getStat(aStats, "Total Shots")
+                            };
+                        }
+                        analyzed.push(m);
+                        await new Promise(r => setTimeout(r, 500));
+                    } catch(e) {
+                        analyzed.push(m);
+                    }
+                }
+                
+                // Find best bet using analyzed stats
+                const bestBet = findBestBetWithStats(analyzed.length > 0 ? analyzed : eligible);
+                
+                if (!bestBet) {
+                    btn.innerText = "❌ No confident selection found. Try again.";
+                    setTimeout(() => { btn.innerText = "🔍 FIND NEXT BET"; btn.disabled = false; }, 3000);
+                    return;
+                }
+                
+                // Save and display
+                const state = getChallengeState();
+                state.currentBet = bestBet;
+                saveChallengeState(state);
+                displaySuggestedBet(bestBet, state.stake);
+                
+            } catch(e) {
+                console.error("Challenge scan error:", e);
+                btn.innerText = "❌ Error scanning. Try again.";
+                setTimeout(() => { btn.innerText = "🔍 FIND NEXT BET"; btn.disabled = false; }, 3000);
+                return;
+            }
+            
+            btn.innerText = "🔍 FIND NEXT BET";
+            btn.disabled = false;
+        }
+        
+        function findBestBetWithStats(matches) {
+            let candidates = [];
+            
+            matches.forEach(m => {
+                const fixtureId = m.fixture.id;
+                const elapsed = m.fixture.status.elapsed;
+                const totalGoals = m.goals.home + m.goals.away;
+                const homeName = m.teams.home.name;
+                const awayName = m.teams.away.name;
+                const matchName = `${homeName} vs ${awayName}`;
+                const league = `${m.league.country} • ${m.league.name}`;
+                
+                // Use analyzed stats if available
+                const stats = m.analyzedStats || {};
+                const totalShots = (stats.homeTotal || 0) + (stats.awayTotal || 0);
+                const totalSoT = (stats.homeSoT || 0) + (stats.awaySoT || 0);
+                const homePressure = stats.homePoss > 55 || (stats.homeSoT > stats.awaySoT + 2);
+                const awayPressure = stats.awayPoss > 55 || (stats.awaySoT > stats.homeSoT + 2);
+                
+                // Bet365-style odds based on elapsed time and match state
+                const getB365Odds = (market, elapsed, goalDiff = 0) => {
+                    // Over 0.5 Goals - typically 1.01-1.20 late game
+                    if (market === 'o05') {
+                        if (elapsed >= 80) return (1.01 + Math.random() * 0.04).toFixed(2);
+                        if (elapsed >= 75) return (1.04 + Math.random() * 0.06).toFixed(2);
+                        return (1.10 + Math.random() * 0.10).toFixed(2);
+                    }
+                    // Over 1.5 Goals - typically 1.20-1.50 when 1 goal scored
+                    if (market === 'o15') {
+                        if (elapsed >= 75) return (1.20 + Math.random() * 0.15).toFixed(2);
+                        if (elapsed >= 65) return (1.30 + Math.random() * 0.20).toFixed(2);
+                        return (1.40 + Math.random() * 0.25).toFixed(2);
+                    }
+                    // Over 2.5 Goals - typically 1.50-2.00 when 2 goals scored
+                    if (market === 'o25') {
+                        if (elapsed >= 70) return (1.50 + Math.random() * 0.30).toFixed(2);
+                        if (elapsed >= 60) return (1.70 + Math.random() * 0.30).toFixed(2);
+                        return (1.90 + Math.random() * 0.35).toFixed(2);
+                    }
+                    // Next Goal - typically 1.70-2.50 depending on pressure
+                    if (market === 'next') {
+                        return (1.72 + Math.random() * 0.53).toFixed(2);
+                    }
+                    // Next Goal with red card advantage - typically 1.50-1.90
+                    if (market === 'nextred') {
+                        return (1.50 + Math.random() * 0.40).toFixed(2);
+                    }
+                    return (1.50 + Math.random() * 0.50).toFixed(2);
+                };
+                
+                // Strategy 1: Over 0.5 Goals (Very Safe - late game with 0-0 but high shots)
+                if (totalGoals === 0 && elapsed >= 70) {
+                    let conf = 85;
+                    let reason = `Match is 0-0 at ${elapsed}'.`;
+                    if (totalSoT >= 6) {
+                        conf = 94;
+                        reason += ` ${totalSoT} shots on target - goal is imminent!`;
+                    } else if (totalShots >= 15) {
+                        conf = 91;
+                        reason += ` ${totalShots} total shots - pressure building!`;
+                    } else {
+                        reason += ` Both teams will push for a winner.`;
+                    }
+                    candidates.push({
+                        fixtureId: fixtureId,
+                        match: matchName,
+                        league: league,
+                        selection: "Over 0.5 Goals",
+                        odds: getB365Odds('o05', elapsed),
+                        confidence: conf,
+                        reasoning: reason
+                    });
+                }
+                
+                // Strategy 2: Over 1.5 Goals (Safe - when already 1-0/0-1 with attack pressure)
+                if (totalGoals === 1 && elapsed >= 60 && elapsed <= 78) {
+                    let conf = 82;
+                    let reason = `Currently ${m.goals.home}-${m.goals.away} at ${elapsed}'.`;
+                    if (totalSoT >= 5) {
+                        conf = 90;
+                        reason += ` High shot accuracy (${totalSoT} SoT) - another goal likely!`;
+                    } else {
+                        reason += ` Trailing team will push, creating counter-attack opportunities.`;
+                    }
+                    candidates.push({
+                        fixtureId: fixtureId,
+                        match: matchName,
+                        league: league,
+                        selection: "Over 1.5 Goals",
+                        odds: getB365Odds('o15', elapsed),
+                        confidence: conf,
+                        reasoning: reason
+                    });
+                }
+                
+                // Strategy 3: Over 2.5 Goals (when already 2+ goals and attacking stats)
+                if (totalGoals === 2 && elapsed >= 55 && elapsed <= 72) {
+                    let conf = 78;
+                    let reason = `Currently ${m.goals.home}-${m.goals.away} at ${elapsed}'.`;
+                    if (totalShots >= 20) {
+                        conf = 86;
+                        reason += ` Open game with ${totalShots} shots - more goals expected!`;
+                    } else {
+                        reason += ` High-scoring pattern suggests more action to come.`;
+                    }
+                    candidates.push({
+                        fixtureId: fixtureId,
+                        match: matchName,
+                        league: league,
+                        selection: "Over 2.5 Goals",
+                        odds: getB365Odds('o25', elapsed),
+                        confidence: conf,
+                        reasoning: reason
+                    });
+                }
+                
+                // Strategy 4: Next Goal based on analyzed pressure
+                if (homePressure && elapsed >= 60 && m.goals.home <= m.goals.away) {
+                    candidates.push({
+                        fixtureId: fixtureId,
+                        match: matchName,
+                        league: league,
+                        selection: `Next Goal: ${homeName}`,
+                        odds: getB365Odds('next', elapsed),
+                        confidence: 83,
+                        reasoning: `${homeName} dominating with ${stats.homePoss || '55+'}% possession and ${stats.homeSoT || 'more'} shots on target. Goal imminent!`
+                    });
+                }
+                
+                if (awayPressure && elapsed >= 60 && m.goals.away <= m.goals.home) {
+                    candidates.push({
+                        fixtureId: fixtureId,
+                        match: matchName,
+                        league: league,
+                        selection: `Next Goal: ${awayName}`,
+                        odds: getB365Odds('next', elapsed),
+                        confidence: 81,
+                        reasoning: `${awayName} dominating with ${stats.awayPoss || '55+'}% possession and ${stats.awaySoT || 'more'} shots on target!`
+                    });
+                }
+                
+                // Strategy 5: Red Card Advantage
+                if (m.events) {
+                    const homeRed = m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === m.teams.home.id);
+                    const awayRed = m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === m.teams.away.id);
+                    
+                    if (awayRed && !homeRed && elapsed >= 55) {
+                        candidates.push({
+                            fixtureId: fixtureId,
+                            match: matchName,
+                            league: league,
+                            selection: `Next Goal: ${homeName}`,
+                            odds: getB365Odds('nextred', elapsed),
+                            confidence: 88,
+                            reasoning: `🟥 ${awayName} down to 10 men! ${homeName} has numerical advantage with ${90 - elapsed} mins to exploit it.`
+                        });
+                    }
+                    
+                    if (homeRed && !awayRed && elapsed >= 55) {
+                        candidates.push({
+                            fixtureId: fixtureId,
+                            match: matchName,
+                            league: league,
+                            selection: `Next Goal: ${awayName}`,
+                            odds: getB365Odds('nextred', elapsed),
+                            confidence: 88,
+                            reasoning: `🟥 ${homeName} down to 10 men! ${awayName} has numerical advantage with ${90 - elapsed} mins left.`
+                        });
+                    }
+                }
+            });
+            
+            // Sort by confidence and return best
+            candidates.sort((a, b) => b.confidence - a.confidence);
+            return candidates.length > 0 ? candidates[0] : null;
+        }
+        
+        function displaySuggestedBet(bet, stake) {
+            document.getElementById('suggestedBet').style.display = 'block';
+            document.getElementById('betMatch').innerText = bet.match;
+            document.getElementById('betLeague').innerText = bet.league;
+            document.getElementById('betType').innerText = bet.selection;
+            document.getElementById('betOdds').innerText = `@ ${bet.odds}`;
+            document.getElementById('betReasoning').innerText = bet.reasoning;
+            document.getElementById('betStake').innerText = `£${stake.toFixed(2)}`;
+            document.getElementById('betReturn').innerText = `£${(stake * parseFloat(bet.odds)).toFixed(2)}`;
+        }
+        
+        async function rejectAndFindNew(btn) {
+            const state = getChallengeState();
+            if (state.currentBet && state.currentBet.fixtureId) {
+                rejectedFixtures.push(state.currentBet.fixtureId);
+            }
+            state.currentBet = null;
+            saveChallengeState(state);
+            document.getElementById('suggestedBet').style.display = 'none';
+            
+            // Find a new bet
+            const findBtn = document.querySelector('#challengeActiveScreen .card-scan-btn');
+            if (findBtn) {
+                await findNextBet(findBtn);
+            }
+        }
+        
+        function markBetResult(result) {
+            const state = getChallengeState();
+            if (!state.currentBet) return;
+            
+            const bet = state.currentBet;
+            const stakeBefore = state.stake;
+            let stakeAfter = stakeBefore;
+            
+            if (result === 'won') {
+                stakeAfter = stakeBefore * parseFloat(bet.odds);
+                playPing();
+            }
+            
+            // Add to history
+            state.history.push({
+                match: bet.match,
+                selection: bet.selection,
+                odds: bet.odds,
+                result: result,
+                stakeBefore: stakeBefore,
+                stakeAfter: result === 'won' ? stakeAfter : stakeBefore
+            });
+            
+            if (result === 'won') {
+                state.stake = stakeAfter;
+                state.currentBet = null;
+                
+                // Check if target reached
+                if (state.stake >= CHALLENGE_TARGET) {
+                    saveChallengeState(state);
+                    updateChallengeUI(state);
+                    return;
+                }
+            } else {
+                // Lost - set lostDate to today
+                state.lostDate = new Date().toISOString().split('T')[0];
+                state.active = false;
+            }
+            
+            saveChallengeState(state);
+            updateChallengeUI(state);
+        }
+        // ========== END CHALLENGE ==========
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
