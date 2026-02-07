@@ -428,8 +428,8 @@
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
         
         // ELITE IDS
-        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 203, 137];
-        const EU_COUNTRIES = ["Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Turkey", "Ukraine", "Wales"];
+        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 137, 188];
+        const EU_COUNTRIES = ["Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Ukraine", "Wales"];
 
         let allMatches = [];
         let pilotMode = false;
@@ -641,7 +641,7 @@
             
             try {
                 const today = new Date().toISOString().split('T')[0];
-                const eliteIds = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 203];
+                const eliteIds = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 137, 188];
                 
                 let allEliteFixtures = [];
                 // Query top 10 elite leagues for better coverage
@@ -683,10 +683,11 @@
                     
                     games.forEach(g => {
                         const marketOptions = [
-                            { name: "Over 1.5 Goals", min: 1.15, max: 1.35, weight: 50 },
+                            { name: "Over 1.5 Goals", min: 1.15, max: 1.35, weight: 35 },
                             { name: "Over 2.5 Goals", min: 1.55, max: 1.95, weight: 15 },
                             { name: "Both Teams to Score", min: 1.60, max: 1.90, weight: 15 },
-                            { name: "Double Chance (Home/Draw)", min: 1.20, max: 1.50, weight: 20 }
+                            { name: "Over 8.5 Corners", min: 1.70, max: 2.10, weight: 15 },
+                            { name: "Over 3.5 Cards", min: 1.65, max: 2.00, weight: 20 }
                         ];
 
                         // Weighted random selection
@@ -1273,6 +1274,35 @@
                 let aTotal = getStat(aStats, "Total Shots");
                 let hCorn = getStat(hStats, "Corner Kicks");
                 let aCorn = getStat(aStats, "Corner Kicks");
+                let hFouls = getStat(hStats, "Fouls");
+                let aFouls = getStat(aStats, "Fouls");
+                let hPass = getStat(hStats, "Passes %");
+                let aPass = getStat(aStats, "Passes %");
+                
+                // Calculate pressure percentage
+                const hPressure = hSoT * 3 + hTotal * 1.5 + hCorn * 2;
+                const aPressure = aSoT * 3 + aTotal * 1.5 + aCorn * 2;
+                const totalPressure = hPressure + aPressure || 1;
+                const hPercent = Math.round((hPressure / totalPressure) * 100);
+                const aPercent = 100 - hPercent;
+                
+                // Calculate xG
+                const hxG = hSoT * 0.32 + (hTotal - hSoT) * 0.05 + hCorn * 0.03;
+                const axG = aSoT * 0.32 + (aTotal - aSoT) * 0.05 + aCorn * 0.03;
+                
+                // H2H summary
+                let h2hHtml = '';
+                if (h2hData && h2hData.response && h2hData.response.length > 0) {
+                    let hWins = 0, aWins = 0, draws = 0;
+                    h2hData.response.forEach(fix => {
+                        if (fix.teams.home.winner === true || fix.teams.away.winner === true) {
+                            const winnerId = fix.teams.home.winner ? fix.teams.home.id : fix.teams.away.id;
+                            if (winnerId === hId) hWins++;
+                            else aWins++;
+                        } else draws++;
+                    });
+                    h2hHtml = `<div class="stat-bar"><span>H2H (Last ${h2hData.response.length})</span><span class="stat-val">${hWins}W - ${draws}D - ${aWins}W</span></div>`;
+                }
                 
                 // --- NEW IMPROVED METRICS ---
                 const vColor = hPercent > 65 ? "var(--green)" : (aPercent > 65 ? "var(--purple)" : "var(--gold)");
