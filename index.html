@@ -122,7 +122,7 @@
         .export-btn { width:100%; background: #21262d; border: 1px solid var(--gold); color: var(--gold); padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-bottom: 20px; }
         
         /* SCAN BUTTON - BLUE */
-        .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--blue); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 100; }
+        .scan-btn { position: fixed; bottom: 30px; left: 5%; width: 90%; background: var(--blue); color: white; border: none; padding: 16px; border-radius: 16px; font-size: 1.1rem; font-weight: bold; box-shadow: 0 5px 20px rgba(0,0,0,0.5); z-index: 999999; }
 
         /* ANALYSIS & PLAYER BOX */
         .analysis-box.is-synthetic { border: 2px solid var(--gold) !important; box-shadow: 0 0 10px rgba(210, 153, 34, 0.3); }
@@ -233,7 +233,7 @@
             <div class="chip" onclick="setStrategy('red', this)">🟥 Red Card <span id="badge-red" class="chip-badge">0</span></div>
         </div>
 
-        <div id="content">
+        <div id="content" style="padding-bottom:80px;">
             <div style="text-align:center; padding-top:50px; color:#888;">
                 <p style="font-size:2rem; margin-bottom:10px;">🔭</p>
                 <p>Ready to Hunt (60'-85').</p>
@@ -683,11 +683,13 @@
                     
                     games.forEach(g => {
                         const marketOptions = [
-                            { name: "Over 1.5 Goals", min: 1.15, max: 1.35, weight: 35 },
-                            { name: "Over 2.5 Goals", min: 1.55, max: 1.95, weight: 15 },
-                            { name: "Both Teams to Score", min: 1.60, max: 1.90, weight: 15 },
-                            { name: "Over 8.5 Corners", min: 1.70, max: 2.10, weight: 15 },
-                            { name: "Over 3.5 Cards", min: 1.65, max: 2.00, weight: 20 }
+                            { name: "Over 1.5 Goals", min: 1.15, max: 1.35, weight: 25 },
+                            { name: "Over 2.5 Goals", min: 1.55, max: 1.95, weight: 10 },
+                            { name: "Both Teams to Score", min: 1.60, max: 1.90, weight: 10 },
+                            { name: "Over 8.5 Corners", min: 1.70, max: 2.10, weight: 10 },
+                            { name: "Over 3.5 Cards", min: 1.65, max: 2.00, weight: 15 },
+                            { name: "Home Win", min: 1.30, max: 2.20, weight: 15 },
+                            { name: "Away Win", min: 1.50, max: 2.80, weight: 15 }
                         ];
 
                         // Weighted random selection
@@ -1086,7 +1088,7 @@
                 <div id="stats-${m.fixture.id}" class="analysis-box" style="text-align:center; color:#888; margin-bottom:15px; min-height: 20px; display: block !important;">
                     <span style="color:var(--gold)">Ready for Analysis</span>
                 </div>
-                <div class="btn-container-main" style="display: flex !important; flex-direction: column !important; gap: 10px !important; width: 100% !important; margin-top: 15px !important; position: relative !important; z-index: 99999 !important;">
+                <div class="btn-container-main" style="display: flex !important; flex-direction: column !important; gap: 10px !important; width: 100% !important; margin-top: 15px !important; position: relative !important;">
                     <button class="analyze-btn" id="an-btn-${m.fixture.id}" 
                             style="width: 100% !important; background: var(--blue) !important; border: 2px solid #388bfd !important; color: white !important; padding: 18px 10px !important; font-weight: 900 !important; border-radius: 10px !important; cursor: pointer !important; display: block !important; visibility: visible !important; -webkit-appearance: none; appearance: none; font-size: 1.1rem !important; box-shadow: 0 4px 12px rgba(31, 111, 235, 0.4) !important;" 
                             onclick="deepAnalyze(this, ${m.fixture.id}, '${h.name.replace(/'/g, "\\'")}', '${a.name.replace(/'/g, "\\'")}', ${s.home}, ${s.away}, ${hRed}, ${aRed}, ${lid}, ${sid}, ${h.id}, ${a.id})">
@@ -1096,7 +1098,7 @@
                     <div style="display: flex !important; gap: 10px !important; width: 100% !important;">
                         <button class="player-btn" id="pl-btn-${m.fixture.id}" style="flex: 1 !important; padding: 14px !important; border-radius: 8px !important; background: #21262d !important; border: 1px solid #30363d !important; color: #ccc !important; font-weight: bold !important; cursor: pointer !important; display: block !important; -webkit-appearance: none; appearance: none;" onclick="checkPlayers(this, ${m.fixture.id})">🕵️ Players</button>
                         <a class="bet365-btn" href="https://www.bet365.com/#/IP/B1" target="_blank" style="flex: 1 !important; background: #00703c !important; color: white !important; padding: 14px !important; border-radius: 8px !important; text-decoration: none !important; text-align: center !important; font-weight: bold !important; display: block !important; border: 1px solid #005c31 !important;">Bet365</a>
-                        <button class="mark-btn ${isPlaced ? 'active' : ''}" style="width: 50px !important; background: #21262d !important; border: 1px solid #30363d !important; border-radius: 8px !important; font-size: 1.2rem !important; cursor: pointer !important; display: flex !important; align-items: center !important; justify-content: center !important; -webkit-appearance: none; appearance: none;" onclick="toggleMark(${m.fixture.id}, this, '${h.name.replace(/'/g, "\\'")}', '${a.name.replace(/'/g, "\\'")}', ${s.home}, ${s.away})">📌</button>
+                        <button class="mark-btn ${isPlaced ? 'active' : ''}" style="width: 50px !important; background: #21262d !important; border: 1px solid #30363d !important; border-radius: 8px !important; font-size: 1.2rem !important; cursor: pointer !important; display: flex !important; align-items: center !important; justify-content: center !important; -webkit-appearance: none; appearance: none;" onclick="toggleBet(${m.fixture.id}, ${s.home}, ${s.away}, '${h.name.replace(/'/g, "\\'")} vs ${a.name.replace(/'/g, "\\'")}'); this.classList.toggle('active')">📌</button>
                     </div>
                 </div>`;
 
@@ -1704,14 +1706,14 @@
                     return;
                 }
                 
-                // Filter to Elite leagues in 30-85 min window, excluding rejected fixtures
+                // Filter to all leagues in 30-85 min window, excluding rejected fixtures
                 const eligible = data.response.filter(m => {
                     const elapsed = m.fixture.status.elapsed;
-                    return ELITE_IDS.includes(m.league.id) && elapsed >= 30 && elapsed <= 85 && !rejectedFixtures.includes(m.fixture.id);
+                    return elapsed >= 30 && elapsed <= 85 && !rejectedFixtures.includes(m.fixture.id);
                 });
                 
                 if (eligible.length === 0) {
-                    btn.innerText = "❌ No Elite games in window. Try again later.";
+                    btn.innerText = "❌ No live games in window. Try again later.";
                     setTimeout(() => { btn.innerText = "🔍 FIND NEXT BET"; btn.disabled = false; }, 3000);
                     return;
                 }
