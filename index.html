@@ -448,6 +448,262 @@
         const pilotBtn = document.getElementById('pilotBtn');
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+        // =============================================
+        // ANALYTICS ENGINE v2 - SMART PREDICTION SYSTEM
+        // =============================================
+
+        const LEAGUE_PROFILES = {
+            39: { name: "Premier League", lateGoalRate: 0.34, avgGoals: 2.85, tempo: "high" },
+            40: { name: "Championship", lateGoalRate: 0.30, avgGoals: 2.65, tempo: "high" },
+            45: { name: "FA Cup", lateGoalRate: 0.32, avgGoals: 2.70, tempo: "high" },
+            48: { name: "League Cup", lateGoalRate: 0.31, avgGoals: 2.75, tempo: "high" },
+            61: { name: "Ligue 1", lateGoalRate: 0.28, avgGoals: 2.60, tempo: "medium" },
+            78: { name: "Bundesliga", lateGoalRate: 0.33, avgGoals: 3.10, tempo: "high" },
+            88: { name: "Eredivisie", lateGoalRate: 0.35, avgGoals: 3.20, tempo: "high" },
+            94: { name: "Primeira Liga", lateGoalRate: 0.29, avgGoals: 2.50, tempo: "medium" },
+            135: { name: "Serie A", lateGoalRate: 0.26, avgGoals: 2.55, tempo: "low" },
+            137: { name: "Coppa Italia", lateGoalRate: 0.28, avgGoals: 2.45, tempo: "low" },
+            140: { name: "La Liga", lateGoalRate: 0.29, avgGoals: 2.65, tempo: "medium" },
+            143: { name: "Copa del Rey", lateGoalRate: 0.30, avgGoals: 2.70, tempo: "medium" },
+            144: { name: "Jupiler Pro", lateGoalRate: 0.31, avgGoals: 2.80, tempo: "medium" },
+            179: { name: "SPL", lateGoalRate: 0.32, avgGoals: 2.75, tempo: "high" },
+            180: { name: "Scottish Cup", lateGoalRate: 0.33, avgGoals: 2.80, tempo: "high" },
+            188: { name: "A-League", lateGoalRate: 0.33, avgGoals: 2.90, tempo: "high" },
+            253: { name: "MLS", lateGoalRate: 0.34, avgGoals: 3.00, tempo: "high" },
+            307: { name: "Saudi Pro", lateGoalRate: 0.30, avgGoals: 2.70, tempo: "medium" },
+            529: { name: "DFB Pokal", lateGoalRate: 0.34, avgGoals: 3.05, tempo: "high" },
+            556: { name: "Super Lig", lateGoalRate: 0.29, avgGoals: 2.65, tempo: "medium" },
+            2: { name: "Champions League", lateGoalRate: 0.31, avgGoals: 2.95, tempo: "high" },
+            3: { name: "Europa League", lateGoalRate: 0.30, avgGoals: 2.80, tempo: "medium" },
+            81: { name: "DFB Pokal", lateGoalRate: 0.33, avgGoals: 3.00, tempo: "high" }
+        };
+        const DEFAULT_LEAGUE = { name: "Unknown", lateGoalRate: 0.28, avgGoals: 2.50, tempo: "medium" };
+
+        const SCORE_STATE_MAP = {
+            "0-0": { goalProb: 0.72, overProb: 0.68, bttsProb: 0.45, desc: "Deadlock - pressure mounts late" },
+            "1-0": { goalProb: 0.65, overProb: 0.80, bttsProb: 0.52, desc: "Trailing team pushes forward" },
+            "0-1": { goalProb: 0.67, overProb: 0.82, bttsProb: 0.55, desc: "Home crowd drives comeback" },
+            "1-1": { goalProb: 0.58, overProb: 0.75, bttsProb: 0.90, desc: "Both teams chasing winner" },
+            "2-0": { goalProb: 0.48, overProb: 0.92, bttsProb: 0.38, desc: "Comfortable lead, may ease off" },
+            "0-2": { goalProb: 0.52, overProb: 0.94, bttsProb: 0.42, desc: "Home desperation attacks" },
+            "2-1": { goalProb: 0.62, overProb: 0.95, bttsProb: 0.92, desc: "Open game, more goals likely" },
+            "1-2": { goalProb: 0.64, overProb: 0.96, bttsProb: 0.93, desc: "Home pushing for equalizer" },
+            "2-2": { goalProb: 0.55, overProb: 0.98, bttsProb: 0.98, desc: "Wide open, anyone's game" },
+            "3-0": { goalProb: 0.35, overProb: 0.98, bttsProb: 0.30, desc: "Game over, low intensity" },
+            "0-3": { goalProb: 0.38, overProb: 0.99, bttsProb: 0.32, desc: "Capitulation, low intensity" },
+            "3-1": { goalProb: 0.45, overProb: 0.99, bttsProb: 0.85, desc: "Still lively but decided" },
+            "1-3": { goalProb: 0.47, overProb: 0.99, bttsProb: 0.87, desc: "Home pride, away comfort" }
+        };
+        const DEFAULT_SCORE_STATE = { goalProb: 0.50, overProb: 0.70, bttsProb: 0.50, desc: "Unpredictable match state" };
+
+        function getLeagueProfile(leagueId) {
+            return LEAGUE_PROFILES[leagueId] || DEFAULT_LEAGUE;
+        }
+
+        function getScoreState(homeGoals, awayGoals) {
+            const key = `${homeGoals}-${awayGoals}`;
+            return SCORE_STATE_MAP[key] || DEFAULT_SCORE_STATE;
+        }
+
+        function calculateMomentum(match, stats) {
+            const elapsed = match.fixture.status.elapsed || 0;
+            const fid = match.fixture.id;
+            const totalSoT = (stats.homeSoT || 0) + (stats.awaySoT || 0);
+            const totalCorners = (stats.homeCorners || 0) + (stats.awayCorners || 0);
+            const totalShots = (stats.homeTotal || 0) + (stats.awayTotal || 0);
+
+            const currentPressure = totalSoT * 3 + totalShots * 1.5 + totalCorners * 2;
+
+            if (!momentumHistory[fid]) {
+                momentumHistory[fid] = { lastPressure: currentPressure, lastTime: elapsed, surgeCount: 0 };
+            }
+
+            const prev = momentumHistory[fid];
+            const timeDiff = elapsed - prev.lastTime;
+            const pressureDiff = currentPressure - prev.lastPressure;
+
+            let surgeDetected = false;
+            let surgeTeam = "none";
+            let momentumScore = 50;
+
+            if (timeDiff > 0 && timeDiff <= 15) {
+                const rateOfChange = pressureDiff / timeDiff;
+                if (rateOfChange > 1.5) {
+                    surgeDetected = true;
+                    prev.surgeCount++;
+                }
+            }
+
+            const homePressure = (stats.homeSoT || 0) * 3 + (stats.homeTotal || 0) * 1.5 + (stats.homeCorners || 0) * 2;
+            const awayPressure = (stats.awaySoT || 0) * 3 + (stats.awayTotal || 0) * 1.5 + (stats.awayCorners || 0) * 2;
+            const total = homePressure + awayPressure || 1;
+
+            momentumScore = Math.round((homePressure / total) * 100);
+
+            if ((stats.homeSoT || 0) >= (stats.awaySoT || 0) + 3) surgeTeam = "home";
+            else if ((stats.awaySoT || 0) >= (stats.homeSoT || 0) + 3) surgeTeam = "away";
+            else if ((stats.homeCorners || 0) >= (stats.awayCorners || 0) + 4) surgeTeam = "home";
+            else if ((stats.awayCorners || 0) >= (stats.homeCorners || 0) + 4) surgeTeam = "away";
+
+            prev.lastPressure = currentPressure;
+            prev.lastTime = elapsed;
+
+            return {
+                surgeDetected,
+                surgeTeam,
+                surgeCount: prev.surgeCount,
+                momentumScore,
+                homePressure,
+                awayPressure,
+                rateOfChange: timeDiff > 0 ? (pressureDiff / timeDiff) : 0
+            };
+        }
+
+        function calculateSmartPressure(stats) {
+            const hSoT = stats.homeSoT || 0;
+            const aSoT = stats.awaySoT || 0;
+            const hTotal = stats.homeTotal || 0;
+            const aTotal = stats.awayTotal || 0;
+            const hCorners = stats.homeCorners || 0;
+            const aCorners = stats.awayCorners || 0;
+            const hPoss = stats.homePoss || 50;
+            const aPoss = stats.awayPoss || 50;
+
+            const hScore = (hSoT * 4) + (hTotal * 1.5) + (hCorners * 2.5) + ((hPoss - 50) * 0.3);
+            const aScore = (aSoT * 4) + (aTotal * 1.5) + (aCorners * 2.5) + ((aPoss - 50) * 0.3);
+            const total = hScore + aScore || 1;
+            
+            const hPercent = Math.round((hScore / total) * 100);
+            const aPercent = 100 - hPercent;
+
+            const hxG = hSoT * 0.32 + (hTotal - hSoT) * 0.05 + hCorners * 0.03;
+            const axG = aSoT * 0.32 + (aTotal - aSoT) * 0.05 + aCorners * 0.03;
+
+            let dominance = "balanced";
+            if (hPercent >= 68) dominance = "home_siege";
+            else if (hPercent >= 58) dominance = "home_edge";
+            else if (aPercent >= 68) dominance = "away_siege";
+            else if (aPercent >= 58) dominance = "away_edge";
+
+            return { hPercent, aPercent, hxG, axG, hScore, aScore, dominance };
+        }
+
+        function analyzeH2H(h2hData, homeId) {
+            if (!h2hData || !h2hData.response || h2hData.response.length === 0) {
+                return { available: false, hWins: 0, aWins: 0, draws: 0, avgGoals: 2.5, bttsRate: 0.5, homeWinRate: 0.4 };
+            }
+            let hWins = 0, aWins = 0, draws = 0, totalGoals = 0, bttsCount = 0;
+            h2hData.response.forEach(fix => {
+                const hg = fix.score.fulltime.home || 0;
+                const ag = fix.score.fulltime.away || 0;
+                totalGoals += hg + ag;
+                if (hg > 0 && ag > 0) bttsCount++;
+                if (fix.teams.home.winner === true || fix.teams.away.winner === true) {
+                    const winnerId = fix.teams.home.winner ? fix.teams.home.id : fix.teams.away.id;
+                    if (winnerId === homeId) hWins++;
+                    else aWins++;
+                } else draws++;
+            });
+            const total = h2hData.response.length;
+            return {
+                available: true,
+                hWins, aWins, draws,
+                avgGoals: totalGoals / total,
+                bttsRate: bttsCount / total,
+                homeWinRate: hWins / total,
+                totalMatches: total
+            };
+        }
+
+        function generateSmartVerdict(match, pressure, momentum, scoreState, leagueProfile, h2h) {
+            const elapsed = match.fixture.status.elapsed || 0;
+            const hGoals = match.goals.home;
+            const aGoals = match.goals.away;
+            const totalGoals = hGoals + aGoals;
+            const goalDiff = Math.abs(hGoals - aGoals);
+
+            let verdict = "";
+            let confidence = 50;
+            let betTip = "";
+            let tipConfidence = 0;
+            const tips = [];
+
+            const timeMultiplier = elapsed >= 75 ? 1.15 : (elapsed >= 70 ? 1.08 : 1.0);
+            const leagueBoost = leagueProfile.tempo === "high" ? 1.10 : (leagueProfile.tempo === "low" ? 0.90 : 1.0);
+            const lateGoalBoost = leagueProfile.lateGoalRate > 0.30 ? 1.12 : 1.0;
+
+            if (totalGoals === 0) {
+                if (pressure.hPercent >= 68 || pressure.aPercent >= 68) {
+                    const dominant = pressure.hPercent >= 68 ? match.teams.home.name : match.teams.away.name;
+                    verdict = `🔥 ${dominant} Siege (0-0)`;
+                    confidence = Math.min(95, Math.round(72 * timeMultiplier * leagueBoost));
+                    const goalConf = Math.min(95, Math.round(scoreState.goalProb * 100 * timeMultiplier * lateGoalBoost));
+                    tips.push({ tip: "Over 0.5 Goals", conf: goalConf, reason: `${dominant} dominating with ${Math.max(pressure.hPercent, pressure.aPercent)}% pressure but can't break through. Breakthrough imminent in ${leagueProfile.name}.` });
+                    if (momentum.surgeDetected) {
+                        tips.push({ tip: `Next Goal: ${dominant}`, conf: Math.min(92, goalConf + 5), reason: `Momentum surge detected! ${dominant} creating chances at increasing rate.` });
+                    }
+                } else {
+                    verdict = "🛡️ 0-0 Stalemate";
+                    confidence = Math.round(65 * timeMultiplier);
+                    if (elapsed >= 75) {
+                        tips.push({ tip: "Over 0.5 Goals", conf: Math.min(90, Math.round(68 * timeMultiplier * lateGoalBoost)), reason: `0-0 at ${elapsed}' - both teams will gamble late. ${leagueProfile.name} has ${Math.round(leagueProfile.lateGoalRate * 100)}% late goal rate.` });
+                    }
+                }
+            } else if (goalDiff === 0) {
+                verdict = totalGoals >= 4 ? "⚔️ Goal Fest Draw" : "⚠️ Tight Match";
+                confidence = Math.round(70 * timeMultiplier);
+                if (totalGoals >= 2) {
+                    tips.push({ tip: `Over ${totalGoals + 0.5} Goals`, conf: Math.min(88, Math.round(scoreState.goalProb * 100 * leagueBoost)), reason: `Already ${hGoals}-${aGoals}. Open game, both teams chasing the winner.` });
+                }
+                tips.push({ tip: "Both Teams to Score", conf: Math.min(92, Math.round(scoreState.bttsProb * 100)), reason: `Level at ${hGoals}-${aGoals}. ${scoreState.desc}` });
+            } else if (goalDiff === 1) {
+                const chasingTeam = hGoals < aGoals ? match.teams.home.name : match.teams.away.name;
+                const leadTeam = hGoals > aGoals ? match.teams.home.name : match.teams.away.name;
+                verdict = `⚽ ${chasingTeam} Chasing`;
+                confidence = Math.min(93, Math.round(82 * timeMultiplier * leagueBoost));
+                const nextGoalConf = Math.min(93, Math.round(scoreState.goalProb * 100 * timeMultiplier * lateGoalBoost));
+                tips.push({ tip: `Over ${totalGoals + 0.5} Goals`, conf: nextGoalConf, reason: `${chasingTeam} trailing ${hGoals}-${aGoals} at ${elapsed}'. Will push hard for equalizer. ${leagueProfile.name} late goal rate: ${Math.round(leagueProfile.lateGoalRate * 100)}%.` });
+                if (momentum.surgeTeam !== "none") {
+                    const surgeTeamName = momentum.surgeTeam === "home" ? match.teams.home.name : match.teams.away.name;
+                    tips.push({ tip: `Next Goal: ${surgeTeamName}`, conf: Math.min(90, nextGoalConf + 3), reason: `${surgeTeamName} building momentum with sustained pressure surge.` });
+                }
+            } else {
+                verdict = `🔒 ${goalDiff >= 3 ? 'Game Over' : 'Result Likely Safe'}`;
+                confidence = Math.min(96, 85 + goalDiff * 3);
+                if (totalGoals >= 3 && elapsed <= 75) {
+                    tips.push({ tip: `Over ${totalGoals + 0.5} Goals`, conf: Math.min(80, Math.round(45 * leagueBoost)), reason: `${hGoals}-${aGoals} with time remaining. High-scoring game may produce more.` });
+                }
+            }
+
+            if (h2h.available && h2h.avgGoals > 3.0) {
+                tips.forEach(t => {
+                    if (t.tip.startsWith("Over")) {
+                        t.conf = Math.min(96, t.conf + 5);
+                        t.reason += ` H2H avg: ${h2h.avgGoals.toFixed(1)} goals/game.`;
+                    }
+                });
+            }
+            if (h2h.available && h2h.bttsRate > 0.6) {
+                tips.forEach(t => {
+                    if (t.tip === "Both Teams to Score") {
+                        t.conf = Math.min(96, t.conf + 6);
+                        t.reason += ` H2H BTTS rate: ${Math.round(h2h.bttsRate * 100)}%.`;
+                    }
+                });
+            }
+
+            if (momentum.surgeDetected) {
+                confidence = Math.min(96, confidence + 5);
+                verdict += " ⚡";
+            }
+
+            tips.sort((a, b) => b.conf - a.conf);
+            const bestTip = tips.length > 0 ? tips[0] : null;
+            const filteredTips = tips.filter(t => t.conf >= 75);
+
+            return { verdict, confidence, bestTip, allTips: filteredTips, scoreState, momentum };
+        }
+
         // --- HELP MODAL ---
         function openHelp() { document.getElementById('helpModal').style.display = 'block'; }
         function closeHelp(e) { if(e.target.id === 'helpModal') document.getElementById('helpModal').style.display = 'none'; }
@@ -1251,17 +1507,17 @@
 
                 let hRank = "", aRank = "";
                 let hForm = "", aForm = "";
-                if(standData.response && standData.response.length > 0) {
+                if(standData && standData.response && standData.response.length > 0 && standData.response[0].league && standData.response[0].league.standings && standData.response[0].league.standings.length > 0) {
                     const table = standData.response[0].league.standings[0];
                     const hTeam = table.find(t => t.team.name === hName);
                     const aTeam = table.find(t => t.team.name === aName);
-                    const formatForm = (f) => f.split('').map(c => `<span class="form-${c.toLowerCase()}">${c}</span>`).join('');
-                    if(hTeam) { hRank = `<span class="rank-badge">[${hTeam.rank}]</span>`; hForm = `<span class="form-badge">${formatForm(hTeam.form.slice(-5))}</span>`; }
-                    if(aTeam) { aRank = `<span class="rank-badge">[${aTeam.rank}]</span>`; aForm = `<span class="form-badge">${formatForm(aTeam.form.slice(-5))}</span>`; }
+                    const formatForm = (f) => f ? f.split('').map(c => `<span class="form-${c.toLowerCase()}">${c}</span>`).join('') : '';
+                    if(hTeam) { hRank = `<span class="rank-badge">[${hTeam.rank}]</span>`; if(hTeam.form) hForm = `<span class="form-badge">${formatForm(hTeam.form.slice(-5))}</span>`; }
+                    if(aTeam) { aRank = `<span class="rank-badge">[${aTeam.rank}]</span>`; if(aTeam.form) aForm = `<span class="form-badge">${formatForm(aTeam.form.slice(-5))}</span>`; }
                     
                     // UPDATE CARD RANKS
-                    if(hTeam) document.getElementById(`rank-h-${id}`).innerText = `[#${hTeam.rank}]`;
-                    if(aTeam) document.getElementById(`rank-a-${id}`).innerText = `[#${aTeam.rank}]`;
+                    if(hTeam) { const el = document.getElementById(`rank-h-${id}`); if(el) el.innerText = `[#${hTeam.rank}]`; }
+                    if(aTeam) { const el = document.getElementById(`rank-a-${id}`); if(el) el.innerText = `[#${aTeam.rank}]`; }
                 }
 
                 const getStat = (arr, type) => { 
@@ -1278,53 +1534,60 @@
                 let aCorn = getStat(aStats, "Corner Kicks");
                 let hFouls = getStat(hStats, "Fouls");
                 let aFouls = getStat(aStats, "Fouls");
-                let hPass = getStat(hStats, "Passes %");
-                let aPass = getStat(aStats, "Passes %");
+                let hPass = getStat(hStats, "Passes %") || getStat(hStats, "Ball Possession");
+                let aPass = getStat(aStats, "Passes %") || getStat(aStats, "Ball Possession");
+                if (typeof hPass === 'string') hPass = parseFloat(hPass) || 50;
+                if (typeof aPass === 'string') aPass = parseFloat(aPass) || 50;
+                if (isNaN(hPass)) hPass = 50;
+                if (isNaN(aPass)) aPass = 50;
                 
-                // Calculate pressure percentage
-                const hPressure = hSoT * 3 + hTotal * 1.5 + hCorn * 2;
-                const aPressure = aSoT * 3 + aTotal * 1.5 + aCorn * 2;
-                const totalPressure = hPressure + aPressure || 1;
-                const hPercent = Math.round((hPressure / totalPressure) * 100);
-                const aPercent = 100 - hPercent;
-                
-                // Calculate xG
-                const hxG = hSoT * 0.32 + (hTotal - hSoT) * 0.05 + hCorn * 0.03;
-                const axG = aSoT * 0.32 + (aTotal - aSoT) * 0.05 + aCorn * 0.03;
-                
-                // H2H summary
-                let h2hHtml = '';
-                if (h2hData && h2hData.response && h2hData.response.length > 0) {
-                    let hWins = 0, aWins = 0, draws = 0;
-                    h2hData.response.forEach(fix => {
-                        if (fix.teams.home.winner === true || fix.teams.away.winner === true) {
-                            const winnerId = fix.teams.home.winner ? fix.teams.home.id : fix.teams.away.id;
-                            if (winnerId === hId) hWins++;
-                            else aWins++;
-                        } else draws++;
-                    });
-                    h2hHtml = `<div class="stat-bar"><span>H2H (Last ${h2hData.response.length})</span><span class="stat-val">${hWins}W - ${draws}D - ${aWins}W</span></div>`;
-                }
-                
-                // --- NEW IMPROVED METRICS ---
-                const vColor = hPercent > 65 ? "var(--green)" : (aPercent > 65 ? "var(--purple)" : "var(--gold)");
-                const verdict = hPercent > 65 ? "Home Siege" : (aPercent > 65 ? "Away Siege" : "0-0 Stalemate");
-                const trendBadge = ""; 
-                const synthBadge = isSynthetic ? "<span class='synth-badge'>[SYNTH]</span>" : "";
-                const neighborHtml = "";
-                const weatherHtml = "";
-                const subImpactHtml = "";
-                const cornerWatch = "";
-                const timeWarning = "";
-                const xgHTML = hxG > 0 ? `<div class="stat-bar"><span>xG</span><span class="stat-val">${hxG.toFixed(2)} - ${axG.toFixed(2)}</span></div>` : "";
-                const tipsHTML = "";
-                const oddsHTML = "";
-                const newConf = Math.max(hPercent, aPercent);
+                // ANALYTICS ENGINE v2
+                const matchStats = { homeSoT: hSoT, awaySoT: aSoT, homeTotal: hTotal, awayTotal: aTotal, homeCorners: hCorn, awayCorners: aCorn, homePoss: hPass, awayPoss: aPass };
+                const pressure = calculateSmartPressure(matchStats);
+                const leagueProfile = getLeagueProfile(leagueId);
+                const scoreState = getScoreState(hGoals, aGoals);
+                const momentum = calculateMomentum(allMatches.find(mm => mm.fixture.id === id) || { fixture: { id, status: { elapsed: 70 } }, goals: { home: hGoals, away: aGoals } }, matchStats);
+                const h2h = analyzeH2H(h2hData, hId);
+                const smartResult = generateSmartVerdict(allMatches.find(mm => mm.fixture.id === id) || { fixture: { id, status: { elapsed: 70 } }, goals: { home: hGoals, away: aGoals }, teams: { home: { name: hName }, away: { name: aName } }, league: { id: leagueId } }, pressure, momentum, scoreState, leagueProfile, h2h);
 
-                // Final assembly with Corner Watch
+                const hPercent = pressure.hPercent;
+                const aPercent = pressure.aPercent;
+                const hxG = pressure.hxG;
+                const axG = pressure.axG;
+
+                let h2hHtml = '';
+                if (h2h.available) {
+                    h2hHtml = `<div class="stat-bar"><span>H2H (Last ${h2h.totalMatches})</span><span class="stat-val">${h2h.hWins}W - ${h2h.draws}D - ${h2h.aWins}W | Avg ${h2h.avgGoals.toFixed(1)} goals</span></div>`;
+                }
+
+                const vColor = smartResult.confidence >= 85 ? "var(--green)" : (smartResult.confidence >= 70 ? "var(--gold)" : "#da3633");
+                const synthBadge = isSynthetic ? "<span class='synth-badge'>[SYNTH]</span>" : "";
+                const leagueBadge = `<span style="font-size:0.7rem; background:rgba(56,139,253,0.15); color:var(--blue); padding:2px 6px; border-radius:4px; margin-left:5px;">${leagueProfile.name} • ${leagueProfile.tempo.toUpperCase()} tempo</span>`;
+                const momentumBadge = momentum.surgeDetected ? `<div style="text-align:center; margin:5px 0; padding:4px 8px; background:rgba(210,153,34,0.15); border:1px solid var(--gold); border-radius:6px; font-size:0.75rem; color:var(--gold);">⚡ MOMENTUM SURGE DETECTED${momentum.surgeTeam !== 'none' ? ` (${momentum.surgeTeam === 'home' ? hName : aName})` : ''}</div>` : '';
+                const scoreStateHtml = `<div class="stat-bar"><span>Score State</span><span class="stat-val" style="font-size:0.75rem;">${scoreState.desc}</span></div>`;
+                const xgHTML = hxG > 0 ? `<div class="stat-bar"><span>xG</span><span class="stat-val">${hxG.toFixed(2)} - ${axG.toFixed(2)}</span></div>` : "";
+
+                let tipsHtml = '';
+                if (smartResult.allTips.length > 0) {
+                    tipsHtml = `<div style="margin-top:8px; padding:8px; background:rgba(46,160,67,0.08); border:1px solid rgba(46,160,67,0.3); border-radius:8px;">
+                        <div style="font-size:0.7rem; color:var(--green); text-transform:uppercase; margin-bottom:5px; font-weight:bold;">AI Bet Tips (75%+ confidence)</div>`;
+                    smartResult.allTips.forEach(t => {
+                        const tipColor = t.conf >= 90 ? "var(--green)" : (t.conf >= 80 ? "var(--gold)" : "#ccc");
+                        tipsHtml += `<div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                            <span style="font-size:0.8rem; font-weight:bold;">${t.tip}</span>
+                            <span style="font-size:0.75rem; color:${tipColor}; font-weight:bold;">${t.conf}%</span>
+                        </div>
+                        <div style="font-size:0.7rem; color:#888; margin-bottom:4px;">${t.reason}</div>`;
+                    });
+                    tipsHtml += `</div>`;
+                }
+
                 statBox.innerHTML = `
-                    <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${verdict}${trendBadge} ${synthBadge}</div>
+                    <div style="text-align:center; margin-bottom:5px; font-weight:bold; color:${vColor}; font-size:1rem;">${smartResult.verdict} ${synthBadge}</div>
+                    <div style="text-align:center; margin-bottom:8px;">${leagueBadge}</div>
+                    ${momentumBadge}
                     ${h2hHtml}
+                    ${scoreStateHtml}
                     <div class="gauge-labels">
                         <span>${hName} ${hRank} ${hForm} (${hPercent}%)</span>
                         <span>${aName} ${aRank} ${aForm} (${aPercent}%)</span>
@@ -1333,11 +1596,13 @@
                     ${xgHTML}
                     <div class="stat-bar"><span>Shots (Total)</span><span class="stat-val">${hTotal} (${hSoT}) - ${aTotal} (${aSoT})</span></div>
                     <div class="stat-bar"><span>Corners</span><span class="stat-val">${hCorn} - ${aCorn}</span></div>
-                    <button class="copy-btn" onclick="copyTip('${hName}', '${aName}', '${verdict}', ${newConf})">📋 Copy Report</button>
+                    ${tipsHtml}
+                    <button class="copy-btn" onclick="copyTip('${hName}', '${aName}', '${smartResult.verdict}', ${smartResult.confidence})">📋 Copy Report</button>
                 `;
+                const newConf = smartResult.confidence;
                 
                 const predText = document.getElementById(`pred-text-${id}`);
-                if(predText) { predText.innerText = verdict; predText.style.color = vColor; }
+                if(predText) { predText.innerText = smartResult.verdict; predText.style.color = vColor; }
                 
                 // Recalculate counts whenever a card is enriched/updated
                 calculateStrategyCounts();
@@ -1718,10 +1983,10 @@
                     return;
                 }
                 
-                // Analyze top 3 matches for stats
+                // Analyze top 5 matches for stats
                 btn.innerText = "🔍 Analyzing Match Stats...";
                 const analyzed = [];
-                for (let i = 0; i < Math.min(3, eligible.length); i++) {
+                for (let i = 0; i < Math.min(5, eligible.length); i++) {
                     const m = eligible[i];
                     try {
                         trackAPI(1);
@@ -1796,169 +2061,124 @@
                 const matchName = `${homeName} vs ${awayName}`;
                 const league = `${m.league.country} • ${m.league.name}`;
                 
-                // Use analyzed stats if available
                 const stats = m.analyzedStats || {};
-                const totalShots = (stats.homeTotal || 0) + (stats.awayTotal || 0);
-                const totalSoT = (stats.homeSoT || 0) + (stats.awaySoT || 0);
-                const homePressure = stats.homePoss > 55 || (stats.homeSoT > stats.awaySoT + 2);
-                const awayPressure = stats.awayPoss > 55 || (stats.awaySoT > stats.homeSoT + 2);
+                const leagueProfile = getLeagueProfile(m.league.id);
+                const scoreState = getScoreState(m.goals.home, m.goals.away);
+                const pressure = calculateSmartPressure(stats);
+                const momentum = calculateMomentum(m, stats);
+
+                const timeMultiplier = elapsed >= 75 ? 1.15 : (elapsed >= 70 ? 1.08 : 1.0);
+                const leagueBoost = leagueProfile.tempo === "high" ? 1.10 : (leagueProfile.tempo === "low" ? 0.90 : 1.0);
+                const lateGoalBoost = leagueProfile.lateGoalRate > 0.30 ? 1.12 : 1.0;
                 
-                // Bet365-style odds based on elapsed time and match state
-                const getB365Odds = (market, elapsed, goalDiff = 0) => {
-                    // Over 0.5 Goals - typically 1.01-1.20 late game
+                const getB365Odds = (market, elapsed) => {
                     if (market === 'o05') {
                         if (elapsed >= 80) return (1.01 + Math.random() * 0.04).toFixed(2);
                         if (elapsed >= 75) return (1.04 + Math.random() * 0.06).toFixed(2);
                         return (1.10 + Math.random() * 0.10).toFixed(2);
                     }
-                    // Over 1.5 Goals - typically 1.20-1.50 when 1 goal scored
                     if (market === 'o15') {
                         if (elapsed >= 75) return (1.20 + Math.random() * 0.15).toFixed(2);
                         if (elapsed >= 65) return (1.30 + Math.random() * 0.20).toFixed(2);
                         return (1.40 + Math.random() * 0.25).toFixed(2);
                     }
-                    // Over 2.5 Goals - typically 1.50-2.00 when 2 goals scored
                     if (market === 'o25') {
                         if (elapsed >= 70) return (1.50 + Math.random() * 0.30).toFixed(2);
                         if (elapsed >= 60) return (1.70 + Math.random() * 0.30).toFixed(2);
                         return (1.90 + Math.random() * 0.35).toFixed(2);
                     }
-                    // Next Goal - typically 1.70-2.50 depending on pressure
-                    if (market === 'next') {
-                        return (1.72 + Math.random() * 0.53).toFixed(2);
-                    }
-                    // Next Goal with red card advantage - typically 1.50-1.90
-                    if (market === 'nextred') {
-                        return (1.50 + Math.random() * 0.40).toFixed(2);
-                    }
+                    if (market === 'next') return (1.72 + Math.random() * 0.53).toFixed(2);
+                    if (market === 'nextred') return (1.50 + Math.random() * 0.40).toFixed(2);
+                    if (market === 'btts') return (1.55 + Math.random() * 0.35).toFixed(2);
                     return (1.50 + Math.random() * 0.50).toFixed(2);
                 };
                 
-                // Strategy 1: Over 0.5 Goals (Very Safe - late game with 0-0 but high shots)
-                if (totalGoals === 0 && elapsed >= 70) {
-                    let conf = 85;
-                    let reason = `Match is 0-0 at ${elapsed}'.`;
+                const totalSoT = (stats.homeSoT || 0) + (stats.awaySoT || 0);
+                const totalShots = (stats.homeTotal || 0) + (stats.awayTotal || 0);
+                
+                if (totalGoals === 0 && elapsed >= 65) {
+                    let conf = Math.min(95, Math.round(scoreState.goalProb * 100 * timeMultiplier * lateGoalBoost));
+                    let reason = `Match is 0-0 at ${elapsed}' in ${leagueProfile.name} (${Math.round(leagueProfile.lateGoalRate * 100)}% late goal rate).`;
                     if (totalSoT >= 6) {
-                        conf = 94;
-                        reason += ` ${totalSoT} shots on target - goal is imminent!`;
+                        conf = Math.min(96, conf + 8);
+                        reason += ` ${totalSoT} shots on target - breakthrough imminent!`;
                     } else if (totalShots >= 15) {
-                        conf = 91;
-                        reason += ` ${totalShots} total shots - pressure building!`;
-                    } else {
-                        reason += ` Both teams will push for a winner.`;
+                        conf = Math.min(95, conf + 5);
+                        reason += ` ${totalShots} total shots - pressure mounting!`;
                     }
-                    candidates.push({
-                        fixtureId: fixtureId,
-                        match: matchName,
-                        league: league,
-                        selection: "Over 0.5 Goals",
-                        odds: getB365Odds('o05', elapsed),
-                        confidence: conf,
-                        reasoning: reason
-                    });
-                }
-                
-                // Strategy 2: Over 1.5 Goals (Safe - when already 1-0/0-1 with attack pressure)
-                if (totalGoals === 1 && elapsed >= 60 && elapsed <= 78) {
-                    let conf = 82;
-                    let reason = `Currently ${m.goals.home}-${m.goals.away} at ${elapsed}'.`;
-                    if (totalSoT >= 5) {
-                        conf = 90;
-                        reason += ` High shot accuracy (${totalSoT} SoT) - another goal likely!`;
-                    } else {
-                        reason += ` Trailing team will push, creating counter-attack opportunities.`;
+                    if (momentum.surgeDetected) {
+                        conf = Math.min(96, conf + 4);
+                        reason += ` ⚡ Momentum surge detected!`;
                     }
-                    candidates.push({
-                        fixtureId: fixtureId,
-                        match: matchName,
-                        league: league,
-                        selection: "Over 1.5 Goals",
-                        odds: getB365Odds('o15', elapsed),
-                        confidence: conf,
-                        reasoning: reason
-                    });
-                }
-                
-                // Strategy 3: Over 2.5 Goals (when already 2+ goals and attacking stats)
-                if (totalGoals === 2 && elapsed >= 55 && elapsed <= 72) {
-                    let conf = 78;
-                    let reason = `Currently ${m.goals.home}-${m.goals.away} at ${elapsed}'.`;
-                    if (totalShots >= 20) {
-                        conf = 86;
-                        reason += ` Open game with ${totalShots} shots - more goals expected!`;
-                    } else {
-                        reason += ` High-scoring pattern suggests more action to come.`;
+                    if (pressure.dominance === "home_siege" || pressure.dominance === "away_siege") {
+                        conf = Math.min(96, conf + 3);
+                        const dominant = pressure.dominance === "home_siege" ? homeName : awayName;
+                        reason += ` ${dominant} laying siege (${Math.max(pressure.hPercent, pressure.aPercent)}% pressure).`;
                     }
-                    candidates.push({
-                        fixtureId: fixtureId,
-                        match: matchName,
-                        league: league,
-                        selection: "Over 2.5 Goals",
-                        odds: getB365Odds('o25', elapsed),
-                        confidence: conf,
-                        reasoning: reason
-                    });
+                    candidates.push({ fixtureId, match: matchName, league, selection: "Over 0.5 Goals", odds: getB365Odds('o05', elapsed), confidence: conf, reasoning: reason });
                 }
                 
-                // Strategy 4: Next Goal based on analyzed pressure
-                if (homePressure && elapsed >= 60 && m.goals.home <= m.goals.away) {
-                    candidates.push({
-                        fixtureId: fixtureId,
-                        match: matchName,
-                        league: league,
-                        selection: `Next Goal: ${homeName}`,
-                        odds: getB365Odds('next', elapsed),
-                        confidence: 83,
-                        reasoning: `${homeName} dominating with ${stats.homePoss || '55+'}% possession and ${stats.homeSoT || 'more'} shots on target. Goal imminent!`
-                    });
+                if (totalGoals === 1 && elapsed >= 55 && elapsed <= 80) {
+                    let conf = Math.min(93, Math.round(scoreState.goalProb * 100 * timeMultiplier * leagueBoost));
+                    let reason = `Currently ${m.goals.home}-${m.goals.away} at ${elapsed}' (${leagueProfile.name}).`;
+                    const chasingTeam = m.goals.home < m.goals.away ? homeName : awayName;
+                    reason += ` ${chasingTeam} will push for equalizer.`;
+                    if (totalSoT >= 5) { conf = Math.min(95, conf + 5); reason += ` High shot accuracy (${totalSoT} SoT).`; }
+                    if (momentum.surgeDetected) { conf = Math.min(95, conf + 3); reason += ` ⚡ Momentum surge!`; }
+                    candidates.push({ fixtureId, match: matchName, league, selection: "Over 1.5 Goals", odds: getB365Odds('o15', elapsed), confidence: conf, reasoning: reason });
                 }
                 
-                if (awayPressure && elapsed >= 60 && m.goals.away <= m.goals.home) {
-                    candidates.push({
-                        fixtureId: fixtureId,
-                        match: matchName,
-                        league: league,
-                        selection: `Next Goal: ${awayName}`,
-                        odds: getB365Odds('next', elapsed),
-                        confidence: 81,
-                        reasoning: `${awayName} dominating with ${stats.awayPoss || '55+'}% possession and ${stats.awaySoT || 'more'} shots on target!`
-                    });
+                if (totalGoals === 2 && elapsed >= 50 && elapsed <= 75) {
+                    let conf = Math.min(90, Math.round(scoreState.goalProb * 100 * leagueBoost));
+                    let reason = `Currently ${m.goals.home}-${m.goals.away} at ${elapsed}'. ${scoreState.desc}`;
+                    if (totalShots >= 20) { conf = Math.min(92, conf + 5); reason += ` Open game with ${totalShots} shots.`; }
+                    candidates.push({ fixtureId, match: matchName, league, selection: "Over 2.5 Goals", odds: getB365Odds('o25', elapsed), confidence: conf, reasoning: reason });
+                }
+
+                if (totalGoals >= 1 && m.goals.home === 0 && elapsed >= 60 && elapsed <= 78) {
+                    let conf = Math.min(88, Math.round(scoreState.bttsProb * 100 * timeMultiplier));
+                    if (pressure.dominance === "home_siege" || pressure.dominance === "home_edge") { conf = Math.min(90, conf + 5); }
+                    if (conf >= 75) {
+                        candidates.push({ fixtureId, match: matchName, league, selection: "Both Teams to Score", odds: getB365Odds('btts', elapsed), confidence: conf, reasoning: `${homeName} yet to score at ${elapsed}'. Home crowd pressure + ${scoreState.desc}` });
+                    }
+                } else if (totalGoals >= 1 && m.goals.away === 0 && elapsed >= 60 && elapsed <= 78) {
+                    let conf = Math.min(85, Math.round(scoreState.bttsProb * 100 * timeMultiplier));
+                    if (pressure.dominance === "away_siege" || pressure.dominance === "away_edge") { conf = Math.min(88, conf + 5); }
+                    if (conf >= 75) {
+                        candidates.push({ fixtureId, match: matchName, league, selection: "Both Teams to Score", odds: getB365Odds('btts', elapsed), confidence: conf, reasoning: `${awayName} yet to score at ${elapsed}'. Counter-attack danger + ${scoreState.desc}` });
+                    }
+                }
+
+                if ((pressure.dominance === "home_siege" || pressure.dominance === "home_edge") && elapsed >= 55 && m.goals.home <= m.goals.away) {
+                    let conf = Math.min(90, Math.round(80 * timeMultiplier * leagueBoost));
+                    if (momentum.surgeTeam === "home") conf = Math.min(93, conf + 5);
+                    candidates.push({ fixtureId, match: matchName, league, selection: `Next Goal: ${homeName}`, odds: getB365Odds('next', elapsed), confidence: conf, reasoning: `${homeName} dominating with ${pressure.hPercent}% pressure, ${stats.homeSoT || 0} SoT. ${momentum.surgeTeam === 'home' ? '⚡ Momentum surge!' : ''}` });
                 }
                 
-                // Strategy 5: Red Card Advantage
+                if ((pressure.dominance === "away_siege" || pressure.dominance === "away_edge") && elapsed >= 55 && m.goals.away <= m.goals.home) {
+                    let conf = Math.min(88, Math.round(78 * timeMultiplier * leagueBoost));
+                    if (momentum.surgeTeam === "away") conf = Math.min(91, conf + 5);
+                    candidates.push({ fixtureId, match: matchName, league, selection: `Next Goal: ${awayName}`, odds: getB365Odds('next', elapsed), confidence: conf, reasoning: `${awayName} dominating with ${pressure.aPercent}% pressure, ${stats.awaySoT || 0} SoT. ${momentum.surgeTeam === 'away' ? '⚡ Momentum surge!' : ''}` });
+                }
+                
                 if (m.events) {
                     const homeRed = m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === m.teams.home.id);
                     const awayRed = m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === m.teams.away.id);
                     
-                    if (awayRed && !homeRed && elapsed >= 55) {
-                        candidates.push({
-                            fixtureId: fixtureId,
-                            match: matchName,
-                            league: league,
-                            selection: `Next Goal: ${homeName}`,
-                            odds: getB365Odds('nextred', elapsed),
-                            confidence: 88,
-                            reasoning: `🟥 ${awayName} down to 10 men! ${homeName} has numerical advantage with ${90 - elapsed} mins to exploit it.`
-                        });
+                    if (awayRed && !homeRed && elapsed >= 50) {
+                        let conf = Math.min(93, Math.round(88 * timeMultiplier));
+                        candidates.push({ fixtureId, match: matchName, league, selection: `Next Goal: ${homeName}`, odds: getB365Odds('nextred', elapsed), confidence: conf, reasoning: `🟥 ${awayName} down to 10 men! ${homeName} has man advantage with ${90 - elapsed} mins to exploit.` });
                     }
-                    
-                    if (homeRed && !awayRed && elapsed >= 55) {
-                        candidates.push({
-                            fixtureId: fixtureId,
-                            match: matchName,
-                            league: league,
-                            selection: `Next Goal: ${awayName}`,
-                            odds: getB365Odds('nextred', elapsed),
-                            confidence: 88,
-                            reasoning: `🟥 ${homeName} down to 10 men! ${awayName} has numerical advantage with ${90 - elapsed} mins left.`
-                        });
+                    if (homeRed && !awayRed && elapsed >= 50) {
+                        let conf = Math.min(93, Math.round(88 * timeMultiplier));
+                        candidates.push({ fixtureId, match: matchName, league, selection: `Next Goal: ${awayName}`, odds: getB365Odds('nextred', elapsed), confidence: conf, reasoning: `🟥 ${homeName} down to 10 men! ${awayName} has man advantage with ${90 - elapsed} mins left.` });
                     }
                 }
             });
             
-            // Sort by confidence and return best
-            candidates.sort((a, b) => b.confidence - a.confidence);
-            return candidates.length > 0 ? candidates[0] : null;
+            const filtered = candidates.filter(c => c.confidence >= 75);
+            filtered.sort((a, b) => b.confidence - a.confidence);
+            return filtered.length > 0 ? filtered[0] : null;
         }
         
         function displaySuggestedBet(bet, stake) {
