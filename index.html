@@ -1591,8 +1591,38 @@
             startChallengeAutoRefresh();
         }
 
+        function getRecentGoalMinutes(match) {
+            if (!match.events) return null;
+            const goals = match.events.filter(e => e.type === 'Goal');
+            if (goals.length === 0) return null;
+            const lastGoal = goals.reduce((latest, g) => {
+                const t = ((g.time && g.time.elapsed) || 0) + ((g.time && g.time.extra) || 0);
+                return t > latest ? t : latest;
+            }, 0);
+            return lastGoal;
+        }
+
+        function getTimeCurve(elapsed) {
+            if (elapsed >= 82) return 1.18;
+            if (elapsed >= 80) return 1.16;
+            if (elapsed >= 78) return 1.14;
+            if (elapsed >= 76) return 1.12;
+            if (elapsed >= 74) return 1.10;
+            if (elapsed >= 72) return 1.08;
+            if (elapsed >= 70) return 1.06;
+            if (elapsed >= 68) return 1.03;
+            if (elapsed >= 66) return 1.01;
+            return 1.0;
+        }
+
+        function getSoTFloor(elapsed) {
+            if (elapsed >= 78) return 5;
+            if (elapsed >= 73) return 4;
+            return 3;
+        }
+
         function getAllChallengeCandidates(matches) {
-            let candidates = [];
+            let allCandidates = [];
             
             matches.forEach(m => {
                 const stats = m.analyzedStats;
@@ -1615,9 +1645,25 @@
                 const totalShots = stats.homeTotal + stats.awayTotal;
                 const totalCorners = stats.homeCorners + stats.awayCorners;
 
-                const timeMultiplier = elapsed >= 75 ? 1.12 : (elapsed >= 70 ? 1.06 : 1.0);
+                const timeMultiplier = getTimeCurve(elapsed);
                 const leagueBoost = leagueProfile.tempo === "high" ? 1.06 : (leagueProfile.tempo === "low" ? 0.92 : 1.0);
                 const lateGoalBoost = leagueProfile.lateGoalRate > 0.30 ? 1.08 : 1.0;
+
+                const lastGoalMin = getRecentGoalMinutes(m);
+                const recentGoalBoost = (lastGoalMin !== null && (elapsed - lastGoalMin) <= 5) ? 1.06 : 1.0;
+                const recentGoalNote = (lastGoalMin !== null && (elapsed - lastGoalMin) <= 5) ? ` ⚡ Goal at ${lastGoalMin}' — game is open!` : '';
+
+                const homeRed = m.events ? m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === m.teams.home.id) : false;
+                const awayRed = m.events ? m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === m.teams.away.id) : false;
+
+                const redCardPenalty = (selection) => {
+                    if (!selection.startsWith("Over") && selection !== "Both Teams to Score") return 0;
+                    if (homeRed && m.goals.home > m.goals.away && stats.homePoss < 42) return -6;
+                    if (awayRed && m.goals.away > m.goals.home && stats.awayPoss < 42) return -6;
+                    if (homeRed && m.goals.home > m.goals.away) return -3;
+                    if (awayRed && m.goals.away > m.goals.home) return -3;
+                    return 0;
+                };
 
                 const fixtureLiveOdds = liveOddsCache[fixtureId] || {};
 
@@ -1651,12 +1697,21 @@
                     return { odds: getRealisticOdds(market, elapsed), source: 'estimated' };
                 };
 
+                let matchCandidates = [];
+
                 const addCandidate = (selection, oddsInfo, confidence, reasoning) => {
-                    candidates.push({ fixtureId, match: matchName, league, selection, odds: oddsInfo.odds, oddsSource: oddsInfo.source, confidence, reasoning, totalSoT, totalShots, homeSoT: stats.homeSoT, awaySoT: stats.awaySoT, homeTotal: stats.homeTotal, awayTotal: stats.awayTotal, homeCorners: stats.homeCorners, awayCorners: stats.awayCorners, homePoss: Math.round(stats.homePoss), awayPoss: Math.round(stats.awayPoss) });
+                    const rcPenalty = redCardPenalty(selection);
+                    if (rcPenalty < 0) {
+                        confidence = Math.max(50, confidence + rcPenalty);
+                        const busTeam = homeRed ? homeName : awayName;
+                        reasoning += ` 🟥 ${busTeam} down to 10 men and leading — likely parking the bus (−${Math.abs(rcPenalty)}%).`;
+                    }
+                    matchCandidates.push({ fixtureId, match: matchName, league, selection, odds: oddsInfo.odds, oddsSource: oddsInfo.source, confidence, reasoning, totalSoT, totalShots, homeSoT: stats.homeSoT, awaySoT: stats.awaySoT, homeTotal: stats.homeTotal, awayTotal: stats.awayTotal, homeCorners: stats.homeCorners, awayCorners: stats.awayCorners, homePoss: Math.round(stats.homePoss), awayPoss: Math.round(stats.awayPoss) });
                 };
 
-                if (totalGoals === 0 && elapsed >= 65 && totalSoT >= 3) {
-                    let conf = Math.min(92, Math.round(scoreState.goalProb * 100 * timeMultiplier * lateGoalBoost));
+                const sotFloor = getSoTFloor(elapsed);
+                if (totalGoals === 0 && elapsed >= 65 && totalSoT >= sotFloor) {
+                    let conf = Math.min(92, Math.round(scoreState.goalProb * 100 * timeMultiplier * lateGoalBoost * recentGoalBoost));
                     let reason = `0-0 at ${elapsed}' in ${leagueProfile.name} (${Math.round(leagueProfile.lateGoalRate * 100)}% late goal rate).`;
                     if (totalSoT >= 8) { conf = Math.min(94, conf + 6); reason += ` ${totalSoT} SoT - breakthrough imminent!`; }
                     else if (totalSoT >= 5) { conf = Math.min(93, conf + 4); reason += ` ${totalSoT} shots on target already.`; }
@@ -1666,62 +1721,74 @@
                 }
                 
                 if (totalGoals === 1 && elapsed >= 50 && elapsed <= 80 && totalSoT >= 4) {
-                    let conf = Math.min(90, Math.round(scoreState.goalProb * 100 * timeMultiplier * leagueBoost));
+                    let conf = Math.min(90, Math.round(scoreState.goalProb * 100 * timeMultiplier * leagueBoost * recentGoalBoost));
                     const chasingTeam = m.goals.home < m.goals.away ? homeName : awayName;
                     const chasingStats = m.goals.home < m.goals.away ? `${stats.homeSoT} SoT` : `${stats.awaySoT} SoT`;
                     let reason = `${m.goals.home}-${m.goals.away} at ${elapsed}'. ${chasingTeam} chasing (${chasingStats}).`;
                     if (totalSoT >= 7) { conf = Math.min(92, conf + 4); reason += ` Open game, ${totalSoT} SoT total.`; }
                     if (totalShots >= 18) { conf = Math.min(92, conf + 3); reason += ` ${totalShots} total shots.`; }
                     if (momentum.surgeDetected) { conf = Math.min(92, conf + 3); reason += ` ⚡ Momentum surge!`; }
+                    if (recentGoalNote) reason += recentGoalNote;
                     addCandidate("Over 1.5 Goals", getOddsWithSource('o15', elapsed), conf, reason);
                 }
                 
                 if (totalGoals === 2 && elapsed >= 45 && elapsed <= 75 && totalSoT >= 6 && totalShots >= 14) {
-                    let conf = Math.min(88, Math.round(scoreState.goalProb * 100 * leagueBoost));
+                    let conf = Math.min(88, Math.round(scoreState.goalProb * 100 * leagueBoost * recentGoalBoost));
                     let reason = `${m.goals.home}-${m.goals.away} at ${elapsed}'. ${scoreState.desc}`;
                     if (totalShots >= 22) { conf = Math.min(90, conf + 4); reason += ` Very open - ${totalShots} shots, ${totalSoT} on target.`; }
                     else { reason += ` ${totalShots} shots, ${totalSoT} SoT.`; }
                     if (totalCorners >= 8) { conf = Math.min(90, conf + 2); reason += ` ${totalCorners} corners.`; }
+                    if (recentGoalNote) reason += recentGoalNote;
                     addCandidate("Over 2.5 Goals", getOddsWithSource('o25', elapsed), conf, reason);
                 }
 
                 if (totalGoals >= 1 && m.goals.home === 0 && elapsed >= 55 && elapsed <= 78) {
-                    if (stats.homeSoT >= 2 && stats.homeTotal >= 4) {
-                        let conf = Math.min(85, Math.round(scoreState.bttsProb * 100 * timeMultiplier));
+                    const leadingSoT = stats.awaySoT;
+                    const leadingShots = stats.awayTotal;
+                    const leaderParked = (leadingSoT <= 1 && leadingShots <= 3 && stats.awayPoss < 40);
+                    if (stats.homeSoT >= 2 && stats.homeTotal >= 4 && !leaderParked) {
+                        let conf = Math.min(85, Math.round(scoreState.bttsProb * 100 * timeMultiplier * recentGoalBoost));
                         let reason = `${homeName} 0 goals but ${stats.homeSoT} SoT and ${stats.homeTotal} shots.`;
+                        if (leadingSoT >= 3) { reason += ` ${awayName} still attacking (${leadingSoT} SoT).`; }
                         if (pressure.dominance === "home_siege" || pressure.dominance === "home_edge") { conf = Math.min(88, conf + 4); reason += ` Home pressure ${pressure.hPercent}%.`; }
                         if (momentum.surgeTeam === "home") { conf = Math.min(88, conf + 3); reason += ` ⚡ Home momentum surge!`; }
+                        if (recentGoalNote) reason += recentGoalNote;
                         if (conf >= 78) addCandidate("Both Teams to Score", getOddsWithSource('btts', elapsed), conf, reason);
                     }
                 } else if (totalGoals >= 1 && m.goals.away === 0 && elapsed >= 55 && elapsed <= 78) {
-                    if (stats.awaySoT >= 2 && stats.awayTotal >= 4) {
-                        let conf = Math.min(83, Math.round(scoreState.bttsProb * 100 * timeMultiplier));
+                    const leadingSoT = stats.homeSoT;
+                    const leadingShots = stats.homeTotal;
+                    const leaderParked = (leadingSoT <= 1 && leadingShots <= 3 && stats.homePoss < 40);
+                    if (stats.awaySoT >= 2 && stats.awayTotal >= 4 && !leaderParked) {
+                        let conf = Math.min(83, Math.round(scoreState.bttsProb * 100 * timeMultiplier * recentGoalBoost));
                         let reason = `${awayName} 0 goals but ${stats.awaySoT} SoT and ${stats.awayTotal} shots.`;
+                        if (leadingSoT >= 3) { reason += ` ${homeName} still attacking (${leadingSoT} SoT).`; }
                         if (pressure.dominance === "away_siege" || pressure.dominance === "away_edge") { conf = Math.min(86, conf + 4); reason += ` Away pressure ${pressure.aPercent}%.`; }
                         if (momentum.surgeTeam === "away") { conf = Math.min(86, conf + 3); reason += ` ⚡ Away momentum surge!`; }
+                        if (recentGoalNote) reason += recentGoalNote;
                         if (conf >= 78) addCandidate("Both Teams to Score", getOddsWithSource('btts', elapsed), conf, reason);
                     }
                 }
 
                 if (pressure.dominance === "home_siege" && stats.homeSoT >= 3 && elapsed >= 55 && m.goals.home <= m.goals.away) {
-                    let conf = Math.min(87, Math.round(76 * timeMultiplier * leagueBoost));
+                    let conf = Math.min(87, Math.round(76 * timeMultiplier * leagueBoost * recentGoalBoost));
                     let reason = `${homeName} siege: ${stats.homeSoT} SoT, ${stats.homeTotal} shots, ${stats.homeCorners} corners (${pressure.hPercent}% pressure).`;
                     if (momentum.surgeTeam === "home") { conf = Math.min(90, conf + 4); reason += ` ⚡ Home momentum surge!`; }
                     if (stats.homePoss >= 60) { conf = Math.min(90, conf + 2); reason += ` ${Math.round(stats.homePoss)}% possession.`; }
+                    if (recentGoalNote) reason += recentGoalNote;
                     addCandidate(`Next Goal: ${homeName}`, getOddsWithSource('next', elapsed, true), conf, reason);
                 }
                 
                 if (pressure.dominance === "away_siege" && stats.awaySoT >= 3 && elapsed >= 55 && m.goals.away <= m.goals.home) {
-                    let conf = Math.min(85, Math.round(74 * timeMultiplier * leagueBoost));
+                    let conf = Math.min(85, Math.round(74 * timeMultiplier * leagueBoost * recentGoalBoost));
                     let reason = `${awayName} siege: ${stats.awaySoT} SoT, ${stats.awayTotal} shots, ${stats.awayCorners} corners (${pressure.aPercent}% pressure).`;
                     if (momentum.surgeTeam === "away") { conf = Math.min(88, conf + 4); reason += ` ⚡ Away momentum surge!`; }
                     if (stats.awayPoss >= 60) { conf = Math.min(88, conf + 2); reason += ` ${Math.round(stats.awayPoss)}% possession.`; }
+                    if (recentGoalNote) reason += recentGoalNote;
                     addCandidate(`Next Goal: ${awayName}`, getOddsWithSource('next', elapsed, false), conf, reason);
                 }
                 
                 if (m.events && totalSoT >= 2) {
-                    const homeRed = m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === m.teams.home.id);
-                    const awayRed = m.events.some(e => e.type === 'Card' && e.detail === 'Red Card' && e.team.id === m.teams.away.id);
                     if (awayRed && !homeRed && elapsed >= 50 && stats.homeSoT >= 2) {
                         let conf = Math.min(90, Math.round(84 * timeMultiplier));
                         addCandidate(`Next Goal: ${homeName}`, getOddsWithSource('next', elapsed, true), conf, `🟥 ${awayName} 10 men! ${homeName}: ${stats.homeSoT} SoT, ${stats.homeTotal} shots. ${90 - elapsed} mins with man advantage.`);
@@ -1731,9 +1798,14 @@
                         addCandidate(`Next Goal: ${awayName}`, getOddsWithSource('next', elapsed, false), conf, `🟥 ${homeName} 10 men! ${awayName}: ${stats.awaySoT} SoT, ${stats.awayTotal} shots. ${90 - elapsed} mins with man advantage.`);
                     }
                 }
+
+                if (matchCandidates.length > 0) {
+                    matchCandidates.sort((a, b) => b.confidence - a.confidence);
+                    allCandidates.push(matchCandidates[0]);
+                }
             });
             
-            const filtered = candidates.filter(c => c.confidence >= 78);
+            const filtered = allCandidates.filter(c => c.confidence >= 78);
             filtered.sort((a, b) => {
                 if (b.confidence !== a.confidence) return b.confidence - a.confidence;
                 return (b.totalSoT + b.totalShots) - (a.totalSoT + a.totalShots);
