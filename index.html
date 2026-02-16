@@ -211,11 +211,11 @@
         
         <div class="nav-tabs">
             <div id="tabLive" class="nav-tab active" onclick="switchTab('live')">🔴 Live Hunt</div>
-            <div id="tabSched" class="nav-tab" onclick="switchTab('sched')">📅 Elite Schedule</div>
             <div id="tabCards" class="nav-tab" onclick="switchTab('cards')">🟨 Card Watch</div>
-            <div id="tabHist" class="nav-tab" onclick="switchTab('hist')">📜 History</div>
-            <div id="tabAcc" class="nav-tab" onclick="switchTab('acc')">💰 Acca Tips</div>
             <div id="tabChallenge" class="nav-tab" onclick="switchTab('challenge')">💷 Challenge</div>
+            <div id="tabSched" class="nav-tab" onclick="switchTab('sched')">📅 Elite Schedule</div>
+            <div id="tabAcc" class="nav-tab" onclick="switchTab('acc')">💰 Acca Tips</div>
+            <div id="tabHist" class="nav-tab" onclick="switchTab('hist')">📜 History</div>
         </div>
 
         <select id="filterSelect" onchange="applyFilter()">
@@ -1066,6 +1066,46 @@
             return { boost, note };
         }
 
+        function analyzeShotAccuracy(stats) {
+            const homeAcc = stats.homeTotal > 0 ? (stats.homeSoT / stats.homeTotal) : 0;
+            const awayAcc = stats.awayTotal > 0 ? (stats.awaySoT / stats.awayTotal) : 0;
+            const combinedAcc = (stats.homeTotal + stats.awayTotal) > 0 ? ((stats.homeSoT + stats.awaySoT) / (stats.homeTotal + stats.awayTotal)) : 0;
+            let boost = 0;
+            let note = '';
+            if (combinedAcc >= 0.45 && (stats.homeSoT + stats.awaySoT) >= 6) {
+                boost = 3;
+                note = `🎯 High shot accuracy (${Math.round(combinedAcc*100)}% on target) — clinical finishing.`;
+            } else if (combinedAcc >= 0.38 && (stats.homeSoT + stats.awaySoT) >= 5) {
+                boost = 2;
+                note = `🎯 Good accuracy (${Math.round(combinedAcc*100)}% on target).`;
+            } else if (combinedAcc <= 0.20 && (stats.homeTotal + stats.awayTotal) >= 12) {
+                boost = -2;
+                note = `❌ Poor accuracy (${Math.round(combinedAcc*100)}% on target) — wasteful.`;
+            }
+            return { boost, note, homeAcc, awayAcc, combinedAcc };
+        }
+
+        function analyzeSecondHalfMomentum(stats, elapsed, totalGoals, events) {
+            if (elapsed < 50) return { boost: 0, note: '' };
+            let boost = 0;
+            let note = '';
+            if (events && events.length > 0) {
+                const firstHalfGoals = events.filter(e => e.type === 'Goal' && e.time && e.time.elapsed <= 45).length;
+                const secondHalfGoals = totalGoals - firstHalfGoals;
+                if (secondHalfGoals > firstHalfGoals && secondHalfGoals >= 2) {
+                    boost = 3;
+                    note = `⚡ 2nd half explosion: ${secondHalfGoals} goals vs ${firstHalfGoals} in 1st half!`;
+                } else if (secondHalfGoals > firstHalfGoals && secondHalfGoals >= 1) {
+                    boost = 1;
+                    note = `📈 More goals in 2nd half (${secondHalfGoals} vs ${firstHalfGoals}).`;
+                } else if (firstHalfGoals >= 2 && secondHalfGoals === 0 && elapsed >= 60) {
+                    boost = -2;
+                    note = `📉 All ${firstHalfGoals} goals in 1st half — game may have settled.`;
+                }
+            }
+            return { boost, note };
+        }
+
         async function fetchStandingsForLeague(leagueId, season) {
             const cacheKey = `${leagueId}_${season}`;
             if (standingsCache[cacheKey]) return standingsCache[cacheKey];
@@ -1733,6 +1773,10 @@
                 won = totalGoals > 1;
             } else if (sel === 'Over 2.5 Goals') {
                 won = totalGoals > 2;
+            } else if (sel === 'Over 3.5 Goals') {
+                won = totalGoals > 3;
+            } else if (sel === 'Over 8.5 Corners') {
+                return bet;
             } else if (sel === 'Both Teams to Score') {
                 won = finalHome > 0 && finalAway > 0;
             } else if (sel.startsWith('Next Goal:')) {
@@ -1795,6 +1839,7 @@
                 if (!data.response) return;
 
                 let anyResolved = false;
+                const cornerBetFixtures = [];
                 data.response.forEach(fix => {
                     const status = fix.fixture.status.short;
                     if (['FT', 'AET', 'PEN'].includes(status)) {
@@ -1802,12 +1847,35 @@
                         const fAway = fix.goals.away;
                         bets.forEach(b => {
                             if (b.fixtureId === fix.fixture.id && b.status === 'pending') {
-                                resolveChallengeBet(b, fHome, fAway, fix.events);
-                                anyResolved = true;
+                                if (b.selection === 'Over 8.5 Corners') {
+                                    cornerBetFixtures.push({ bet: b, fix });
+                                } else {
+                                    resolveChallengeBet(b, fHome, fAway, fix.events);
+                                    anyResolved = true;
+                                }
                             }
                         });
                     }
                 });
+                for (const cb of cornerBetFixtures) {
+                    try {
+                        trackAPI(1);
+                        const sRes = await fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${cb.fix.fixture.id}`, { headers: { "x-rapidapi-key": API_KEY } });
+                        const sData = await sRes.json();
+                        if (sData.response && sData.response.length >= 2) {
+                            let totalCorners = 0;
+                            sData.response.forEach(team => {
+                                const cStat = team.statistics.find(s => s.type === 'Corner Kicks');
+                                if (cStat) totalCorners += parseInt(cStat.value) || 0;
+                            });
+                            cb.bet.status = 'resolved';
+                            cb.bet.result = totalCorners > 8;
+                            cb.bet.finalScore = `${cb.fix.goals.home}-${cb.fix.goals.away} (${totalCorners} corners)`;
+                            recordChallengeResult(cb.bet.selection, cb.bet.match, cb.bet.result, cb.bet.leagueId, cb.bet.confidence);
+                            anyResolved = true;
+                        }
+                    } catch(e) {}
+                }
 
                 savePlacedChallenges(bets);
                 if (anyResolved && currentStrategy === 'challenge') {
@@ -2262,8 +2330,9 @@
                 const refStr = m.fixture.referee;
                 if (refStr && m.events) {
                     const cards = m.events.filter(e => e.type === 'Card').length;
-                    const fouls = m.events.filter(e => e.type === 'Foul').length || (cards * 4);
-                    learnRefProfile(refStr.split(',')[0].trim(), cards, fouls);
+                    const elapsed = m.fixture.status.elapsed || 45;
+                    const estFouls = Math.max(cards * 4, Math.round((elapsed / 90) * 22));
+                    learnRefProfile(refStr.split(',')[0].trim(), cards, estFouls);
                 }
             });
 
@@ -2327,38 +2396,59 @@
                     <span style="color:#666; font-size:0.75rem; margin-left:8px;">(${analyzed.length}/${eligible.length} matches had stats)</span>
                 </div>`;
 
-            allCandidates.forEach((c, idx) => {
-                const confColor = c.confidence >= 88 ? "var(--green)" : (c.confidence >= 82 ? "var(--gold)" : "#ccc");
-                const tierLabel = c.confidence >= 88 ? "STRONG" : (c.confidence >= 82 ? "SOLID" : "FAIR");
-                const tierBg = c.confidence >= 88 ? "rgba(46,160,67,0.12)" : (c.confidence >= 82 ? "rgba(210,153,34,0.12)" : "rgba(255,255,255,0.05)");
-                const isLiveOdds = c.oddsSource === 'live';
-                const oddsLabel = isLiveOdds ? `<span style="color:var(--green); font-size:0.6rem; margin-left:4px;">LIVE</span>` : `<span style="color:#666; font-size:0.6rem; margin-left:4px;">EST</span>`;
-                
-                html += `<div style="background:var(--card); border:1px solid ${c.confidence >= 85 ? 'var(--green)' : 'rgba(255,255,255,0.08)'}; border-radius:12px; padding:12px 14px; margin:0 10px 10px;">
+            const grouped = {};
+            allCandidates.forEach(c => {
+                if (!grouped[c.fixtureId]) grouped[c.fixtureId] = [];
+                grouped[c.fixtureId].push(c);
+            });
+
+            Object.values(grouped).forEach(tips => {
+                tips.sort((a, b) => b.confidence - a.confidence);
+                const first = tips[0];
+                const borderColor = first.confidence >= 85 ? 'var(--green)' : 'rgba(255,255,255,0.08)';
+
+                html += `<div style="background:var(--card); border:1px solid ${borderColor}; border-radius:12px; padding:12px 14px; margin:0 10px 10px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                        <span style="font-size:0.7rem; color:#888;">${c.league}</span>
-                        <span style="font-size:0.7rem; background:${tierBg}; color:${confColor}; padding:2px 8px; border-radius:10px; font-weight:bold;">${tierLabel} ${c.confidence}%</span>
+                        <span style="font-size:0.7rem; color:#888;">${first.league}</span>
+                        <span style="font-size:0.65rem; color:#555;">${tips.length > 1 ? '2 tips' : '1 tip'}</span>
                     </div>
-                    <div style="font-weight:bold; font-size:0.95rem; margin-bottom:4px;">${c.match}</div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin:8px 0;">
-                        <div style="background:rgba(46,160,67,0.1); border:1px solid rgba(46,160,67,0.3); padding:5px 12px; border-radius:8px;">
-                            <span style="color:var(--green); font-weight:bold; font-size:0.9rem;">✅ ${c.selection}</span>
+                    <div style="font-weight:bold; font-size:0.95rem; margin-bottom:4px;">${first.match}</div>
+                    <div style="display:flex; gap:6px; margin-top:4px; font-size:0.7rem; color:#666; flex-wrap:wrap;">
+                        <span style="background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px;">SoT: ${first.homeSoT}-${first.awaySoT}</span>
+                        <span style="background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px;">Shots: ${first.homeTotal}-${first.awayTotal}</span>
+                        <span style="background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px;">Corners: ${first.homeCorners}-${first.awayCorners}</span>
+                        <span style="background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px;">Poss: ${first.homePoss}%-${first.awayPoss}%</span>
+                    </div>`;
+
+                tips.forEach((c, tipIdx) => {
+                    const confColor = c.confidence >= 88 ? "var(--green)" : (c.confidence >= 82 ? "var(--gold)" : "#ccc");
+                    const tierLabel = c.confidence >= 88 ? "STRONG" : (c.confidence >= 82 ? "SOLID" : "FAIR");
+                    const tierBg = c.confidence >= 88 ? "rgba(46,160,67,0.12)" : (c.confidence >= 82 ? "rgba(210,153,34,0.12)" : "rgba(255,255,255,0.05)");
+                    const isLiveOdds = c.oddsSource === 'live';
+                    const oddsLabel = isLiveOdds ? `<span style="color:var(--green); font-size:0.6rem; margin-left:4px;">LIVE</span>` : `<span style="color:#666; font-size:0.6rem; margin-left:4px;">EST</span>`;
+                    const tipLabel = tips.length > 1 ? `<span style="font-size:0.6rem; color:#555; text-transform:uppercase; font-weight:600;">${tipIdx === 0 ? 'Primary Pick' : 'Alternative Pick'}</span>` : '';
+
+                    html += `<div style="margin-top:10px; padding-top:${tipIdx > 0 ? '10px' : '6px'}; ${tipIdx > 0 ? 'border-top:1px dashed rgba(255,255,255,0.08);' : ''}">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            ${tipLabel}
+                            <span style="font-size:0.7rem; background:${tierBg}; color:${confColor}; padding:2px 8px; border-radius:10px; font-weight:bold;">${tierLabel} ${c.confidence}%</span>
                         </div>
-                        <span style="color:var(--gold); font-weight:bold; font-size:0.95rem;">@ ${c.odds}${oddsLabel}</span>
-                    </div>
-                    <div style="font-size:0.75rem; color:#aaa; line-height:1.4;">${c.reasoning}</div>
-                    <div style="display:flex; gap:6px; margin-top:8px; font-size:0.7rem; color:#666; flex-wrap:wrap;">
-                        <span style="background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px;">SoT: ${c.homeSoT}-${c.awaySoT}</span>
-                        <span style="background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px;">Shots: ${c.homeTotal}-${c.awayTotal}</span>
-                        <span style="background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px;">Corners: ${c.homeCorners}-${c.awayCorners}</span>
-                        <span style="background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px;">Poss: ${c.homePoss}%-${c.awayPoss}%</span>
-                    </div>
-                    <div style="display:flex; gap:6px; margin-top:8px;">
-                        ${getPlacedChallenges().some(b => b.fixtureId === c.fixtureId && b.selection === c.selection) ?
-                        `<button disabled style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--gold); background:rgba(210,153,34,0.15); color:var(--gold); font-size:0.75rem; font-weight:bold; cursor:default;">📌 Bet Placed — Tracking</button>` :
-                        `<button data-fid="${c.fixtureId}" data-sel="${encodeURIComponent(c.selection)}" data-match="${encodeURIComponent(c.match)}" data-league="${encodeURIComponent(c.league)}" data-odds="${c.odds}" data-osrc="${c.oddsSource}" data-hg="${c.homeGoals}" data-ag="${c.awayGoals}" data-conf="${c.confidence}" data-lid="${c.leagueId || 0}" onclick="placeChallengebet(parseInt(this.dataset.fid), decodeURIComponent(this.dataset.sel), decodeURIComponent(this.dataset.match), decodeURIComponent(this.dataset.league), this.dataset.odds, this.dataset.osrc, parseInt(this.dataset.hg), parseInt(this.dataset.ag), parseInt(this.dataset.conf), parseInt(this.dataset.lid)||null); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)'; startChallengeCheckInterval();" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.75rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`}
-                    </div>
-                </div>`;
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin:6px 0;">
+                            <div style="background:rgba(46,160,67,0.1); border:1px solid rgba(46,160,67,0.3); padding:5px 12px; border-radius:8px;">
+                                <span style="color:var(--green); font-weight:bold; font-size:0.9rem;">✅ ${c.selection}</span>
+                            </div>
+                            <span style="color:var(--gold); font-weight:bold; font-size:0.95rem;">@ ${c.odds}${oddsLabel}</span>
+                        </div>
+                        <div style="font-size:0.75rem; color:#aaa; line-height:1.4;">${c.reasoning}</div>
+                        <div style="display:flex; gap:6px; margin-top:8px;">
+                            ${getPlacedChallenges().some(b => b.fixtureId === c.fixtureId && b.selection === c.selection) ?
+                            `<button disabled style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--gold); background:rgba(210,153,34,0.15); color:var(--gold); font-size:0.75rem; font-weight:bold; cursor:default;">📌 Bet Placed — Tracking</button>` :
+                            `<button data-fid="${c.fixtureId}" data-sel="${encodeURIComponent(c.selection)}" data-match="${encodeURIComponent(c.match)}" data-league="${encodeURIComponent(c.league)}" data-odds="${c.odds}" data-osrc="${c.oddsSource}" data-hg="${c.homeGoals}" data-ag="${c.awayGoals}" data-conf="${c.confidence}" data-lid="${c.leagueId || 0}" onclick="placeChallengebet(parseInt(this.dataset.fid), decodeURIComponent(this.dataset.sel), decodeURIComponent(this.dataset.match), decodeURIComponent(this.dataset.league), this.dataset.odds, this.dataset.osrc, parseInt(this.dataset.hg), parseInt(this.dataset.ag), parseInt(this.dataset.conf), parseInt(this.dataset.lid)||null); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)'; startChallengeCheckInterval();" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.75rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`}
+                        </div>
+                    </div>`;
+                });
+
+                html += `</div>`;
             });
 
             const placedBetsAll = getPlacedChallenges();
@@ -2472,6 +2562,8 @@
                 const homeCongestion = analyzeFixtureCongestion(homeForm);
                 const awayCongestion = analyzeFixtureCongestion(awayForm);
                 const possTrend = analyzePossessionTrend(stats, momentum);
+                const shotAcc = analyzeShotAccuracy(stats);
+                const h2Momentum = analyzeSecondHalfMomentum(stats, elapsed, totalGoals, m.events);
 
                 const totalSoT = stats.homeSoT + stats.awaySoT;
                 const totalShots = stats.homeTotal + stats.awayTotal;
@@ -2517,6 +2609,11 @@
                     }
                     if (market === 'btts') return (1.50 + Math.random() * 0.25).toFixed(2);
                     if (market === 'next') return (1.60 + Math.random() * 0.30).toFixed(2);
+                    if (market === 'corners') {
+                        if (elapsed >= 75) return (1.25 + Math.random() * 0.15).toFixed(2);
+                        if (elapsed >= 65) return (1.40 + Math.random() * 0.20).toFixed(2);
+                        return (1.55 + Math.random() * 0.25).toFixed(2);
+                    }
                     return (1.40 + Math.random() * 0.30).toFixed(2);
                 };
 
@@ -2545,7 +2642,7 @@
                     const calibAdj = getCalibrationAdjustment(confidence);
                     const congestionBoost = Math.max(homeCongestion.boost, awayCongestion.boost);
                     const congestionNote = homeCongestion.boost >= awayCongestion.boost ? homeCongestion.note : awayCongestion.note;
-                    confidence = Math.max(50, Math.min(96, confidence + formAdj.boost + defAdj.boost + histAdj.boost + xgGap.boost + subImpact.boost + scoreFlow.boost + congestionBoost + possTrend.boost + calibAdj.boost));
+                    confidence = Math.max(50, Math.min(96, confidence + formAdj.boost + defAdj.boost + histAdj.boost + xgGap.boost + subImpact.boost + scoreFlow.boost + congestionBoost + possTrend.boost + shotAcc.boost + h2Momentum.boost + calibAdj.boost));
                     if (formAdj.note) reasoning += ` ${formAdj.note}`;
                     if (defAdj.note) reasoning += ` ${defAdj.note}`;
                     if (histAdj.note) reasoning += ` ${histAdj.note}`;
@@ -2554,6 +2651,8 @@
                     if (scoreFlow.note) reasoning += ` ${scoreFlow.note}`;
                     if (congestionNote) reasoning += ` ${congestionNote}`;
                     if (possTrend.note) reasoning += ` ${possTrend.note}`;
+                    if (shotAcc.note) reasoning += ` ${shotAcc.note}`;
+                    if (h2Momentum.note) reasoning += ` ${h2Momentum.note}`;
                     if (calibAdj.note) reasoning += ` ${calibAdj.note}`;
                     if (weatherImpact.note && weatherImpact.boost !== 0) reasoning += ` ${weatherImpact.note}`;
                     matchCandidates.push({ fixtureId, match: matchName, league, selection, odds: oddsInfo.odds, oddsSource: oddsInfo.source, confidence, reasoning, totalSoT, totalShots, homeSoT: stats.homeSoT, awaySoT: stats.awaySoT, homeTotal: stats.homeTotal, awayTotal: stats.awayTotal, homeCorners: stats.homeCorners, awayCorners: stats.awayCorners, homePoss: Math.round(stats.homePoss), awayPoss: Math.round(stats.awayPoss), homeGoals: m.goals.home, awayGoals: m.goals.away, leagueId: m.league.id });
@@ -2649,6 +2748,17 @@
                     }
                 }
 
+                if (totalCorners >= 7 && elapsed >= 50 && elapsed <= 78) {
+                    const cornerPace = (totalCorners / Math.max(1, elapsed)) * 90;
+                    if (cornerPace >= 10.5) {
+                        let conf = Math.min(90, Math.round(78 + (cornerPace - 10.5) * 3));
+                        let reason = `${totalCorners} corners at ${elapsed}' (pace: ${cornerPace.toFixed(1)}/game).`;
+                        if (totalShots >= 16) { conf = Math.min(92, conf + 2); reason += ` ${totalShots} shots driving corners.`; }
+                        if (pressure.dominance && (pressure.dominance.includes('siege') || pressure.dominance.includes('edge'))) { conf = Math.min(92, conf + 2); reason += ` Sustained pressure.`; }
+                        addCandidate("Over 8.5 Corners", getOddsWithSource('corners', elapsed), conf, reason);
+                    }
+                }
+
                 const topCandidate = matchCandidates.length > 0 ? matchCandidates.sort((a, b) => b.confidence - a.confidence)[0] : null;
                 if (topCandidate && topCandidate.selection.startsWith('Over')) {
                     const chain = suggestMarketChain(totalGoals, elapsed, topCandidate.confidence, stats);
@@ -2660,6 +2770,9 @@
                 if (matchCandidates.length > 0) {
                     matchCandidates.sort((a, b) => b.confidence - a.confidence);
                     allCandidates.push(matchCandidates[0]);
+                    if (matchCandidates.length >= 2 && matchCandidates[1].confidence >= 78 && matchCandidates[1].selection !== matchCandidates[0].selection) {
+                        allCandidates.push(matchCandidates[1]);
+                    }
                 }
             });
             
@@ -3109,49 +3222,75 @@
                 
                 results.forEach(data => {
                     if(data && data.response) {
-                        // FIND MATCH & REF INFO
                         const match = allMatches.find(m => m.fixture.id === data.parameters.fixture);
                         let refName = match && match.fixture.referee ? match.fixture.referee.split(',')[0] : "Unknown Ref";
                         let refStrict = "";
-                        
+
+                        let liveFouls = 0;
+                        let liveCards = 0;
+                        data.response.forEach(t => t.players.forEach(p => {
+                            const s = p.statistics[0];
+                            liveFouls += (s.fouls && s.fouls.committed) || 0;
+                            if (s.cards && s.cards.yellow) liveCards++;
+                            if (s.cards && s.cards.red) liveCards++;
+                        }));
+
                         const knownRef = getRefProfile(match ? match.fixture.referee : null);
                         if (knownRef) {
                             if (knownRef.strictness === 'strict') refStrict = `<div class="ref-badge ref-strict">👮 STRICT — avg ${knownRef.avgCards.toFixed(1)} cards/game${knownRef.learned ? ' (learned)' : ''}</div>`;
                             else if (knownRef.strictness === 'lenient') refStrict = `<div class="ref-badge ref-lenient">💤 LENIENT — avg ${knownRef.avgCards.toFixed(1)} cards/game${knownRef.learned ? ' (learned)' : ''}</div>`;
                             else refStrict = `<div class="ref-badge">⚖️ MODERATE — avg ${knownRef.avgCards.toFixed(1)} cards/game${knownRef.learned ? ' (learned)' : ''}</div>`;
-                        } else if(match && match.events) {
-                            const fouls = match.events.filter(e => e.type === "Foul").length || 1;
-                            const cards = match.events.filter(e => e.type === "Card").length || 0;
-                            const ratio = cards / fouls;
-                            if (ratio > 0.25) refStrict = `<div class="ref-badge ref-strict">👮 STRICT (${Math.round(ratio*100)}% Card Rate)</div>`;
-                            else if (ratio < 0.1) refStrict = `<div class="ref-badge ref-lenient">💤 LENIENT (${Math.round(ratio*100)}% Card Rate)</div>`;
-                            else refStrict = `<div class="ref-badge">⚖️ NORMAL (${Math.round(ratio*100)}% Card Rate)</div>`;
                         }
-                        if (match && match.events) {
-                            const cards = match.events.filter(e => e.type === "Card").length || 0;
-                            const fouls = match.events.filter(e => e.type === "Foul").length || (cards * 4);
-                            learnRefProfile(refName, cards, fouls);
+                        if (liveFouls > 0) {
+                            const liveRatio = liveCards / Math.max(1, liveFouls);
+                            const elapsed = match ? (match.fixture.status.elapsed || 45) : 45;
+                            const projCards = Math.round((liveCards / Math.max(1, elapsed)) * 90 * 10) / 10;
+                            let liveBadge = '';
+                            if (liveRatio > 0.25 || projCards >= 5) liveBadge = `<div class="ref-badge ref-strict">⚡ LIVE: ${liveCards} cards from ${liveFouls} fouls (${Math.round(liveRatio*100)}%) — pace: ~${projCards.toFixed(1)} cards/game</div>`;
+                            else if (liveRatio < 0.10 && liveFouls >= 8) liveBadge = `<div class="ref-badge ref-lenient">⚡ LIVE: ${liveCards} cards from ${liveFouls} fouls (${Math.round(liveRatio*100)}%) — lenient today</div>`;
+                            else if (liveFouls >= 4) liveBadge = `<div class="ref-badge">⚡ LIVE: ${liveCards} cards / ${liveFouls} fouls (${Math.round(liveRatio*100)}%)</div>`;
+                            refStrict += liveBadge;
                         }
+                        if (liveFouls > 0) {
+                            learnRefProfile(refName, liveCards, liveFouls);
+                        }
+
+                        const liveRatioVal = liveFouls > 0 ? (liveCards / Math.max(1, liveFouls)) : 0;
+                        const elapsedMin = match ? (match.fixture.status.elapsed || 45) : 45;
+                        const projCardsVal = liveFouls > 0 ? Math.round((liveCards / Math.max(1, elapsedMin)) * 90 * 10) / 10 : 0;
+                        const meterPct = Math.min(100, Math.round(liveRatioVal * 300));
+                        const meterColor = meterPct >= 75 ? '#da3633' : (meterPct >= 40 ? '#d29922' : '#3fb950');
+                        const meterLabel = meterPct >= 75 ? 'HOT' : (meterPct >= 40 ? 'WARM' : 'COOL');
+                        const matchHeader = match ? `${match.teams.home.name} vs ${match.teams.away.name}` : 'Unknown Match';
+                        const matchId = data.parameters.fixture;
 
                         data.response.forEach(t => t.players.forEach(p => {
                             const s = p.statistics[0];
                             if (s.fouls.committed >= 2 && !s.cards.yellow && !s.cards.red) {
                                 const time = match ? match.fixture.status.elapsed + "'" : "Live";
-                                const uid = `${data.parameters.fixture}-${p.player.id}`;
+                                const uid = `${matchId}-${p.player.id}`;
                                 const isMarked = pBets.includes(uid);
                                 
-                                p.statistics[0].subbed_off = p.player.subbed_off || (s.sub === "out"); // Defensive check
+                                const playerFouls = s.fouls.committed || 0;
+                                const cardProb = Math.min(95, Math.round(playerFouls * (liveRatioVal > 0 ? liveRatioVal : 0.18) * 100 + (playerFouls >= 3 ? 15 : 0) + (elapsedMin >= 70 ? 10 : 0)));
+
                                 riskPlayers.push({
                                     uid: uid,
                                     name: p.player.name,
                                     team: t.team.name,
                                     time: time,
-                                    fouls: s.fouls.committed,
+                                    fouls: playerFouls,
                                     ref: refName,
                                     refBadge: refStrict,
                                     isMarked: isMarked,
                                     isSubbed: s.games.minutes === null || (s.games.sub && s.games.sub === "out") || false,
-                                    pos: s.games.position || ""
+                                    pos: s.games.position || "",
+                                    cardProb: cardProb,
+                                    matchHeader: matchHeader,
+                                    matchId: matchId,
+                                    meterPct: meterPct,
+                                    meterColor: meterColor,
+                                    meterLabel: meterLabel
                                 });
                             }
                         }));
@@ -3159,12 +3298,16 @@
                 });
             }
 
-            riskPlayers.sort((a, b) => b.fouls - a.fouls);
+            riskPlayers.sort((a, b) => {
+                if (a.matchId !== b.matchId) return a.matchId - b.matchId;
+                return b.fouls - a.fouls;
+            });
 
             let html = "";
             if(riskPlayers.length === 0) {
                 html = "<div style='text-align:center; padding:20px; color:#888'>No high-risk players found in Elite leagues yet.</div>";
             } else {
+                let lastMatchId = null;
                 riskPlayers.forEach(p => {
                     const activeClass = p.isMarked ? 'active' : '';
                     const markClass = p.isMarked ? 'marked' : '';
@@ -3172,15 +3315,32 @@
                     const tick = p.isMarked ? '✓' : '';
                     const subLabel = p.isSubbed ? ' <span style="color:var(--red); font-size:0.7rem;">[SUBBED OFF]</span>' : '';
                     const posLabel = p.pos ? `<span class="pos-badge" style="color:var(--cyan); border:1px solid var(--cyan); background:rgba(63, 185, 80, 0.1); padding:1px 6px; font-size:0.7rem; margin-left:5px;">${p.pos}</span>` : '';
-                    
-                    // 3-tier risk assessment: Yellow (low), Orange (high), Red (danger)
+
+                    if (p.matchId !== lastMatchId) {
+                        lastMatchId = p.matchId;
+                        html += `
+                            <div style="padding:10px 12px 6px; margin-top:8px; border-bottom:1px solid #333;">
+                                <div style="font-size:0.85rem; font-weight:600; color:#e6edf3;">${p.matchHeader} <span style="color:#888; font-weight:normal">${p.time}</span></div>
+                                <div style="font-size:0.7rem; color:#888; margin:2px 0;">Ref: ${p.ref}</div>
+                                ${p.refBadge}
+                                <div style="margin-top:6px;">
+                                    <div style="display:flex; justify-content:space-between; font-size:0.65rem; color:#888; margin-bottom:2px;">
+                                        <span>Temperament</span>
+                                        <span style="color:${p.meterColor}; font-weight:600;">${p.meterLabel}</span>
+                                    </div>
+                                    <div style="height:6px; background:#222; border-radius:3px; overflow:hidden;">
+                                        <div style="height:100%; width:${p.meterPct}%; background:${p.meterColor}; border-radius:3px; transition:width 0.5s;"></div>
+                                    </div>
+                                </div>
+                            </div>`;
+                    }
+
                     let foulClass = '';
                     let riskLabel = '';
                     if (p.fouls >= 3) {
                         foulClass = 'danger';
                         riskLabel = ' 🔴';
                     } else if (p.fouls === 2) {
-                        // High-traffic positions (DEF, MID) are more likely to commit more fouls
                         const isHighRisk = p.pos && (p.pos.toUpperCase().includes('DEF') || p.pos.toUpperCase().includes('MID') || p.pos === 'D' || p.pos === 'M');
                         if (isHighRisk) {
                             foulClass = 'critical';
@@ -3191,15 +3351,17 @@
                         }
                     }
                     
+                    const probColor = p.cardProb >= 60 ? '#da3633' : (p.cardProb >= 35 ? '#d29922' : '#3fb950');
                     html += `
                         <div class="card-table-row ${markClass} ${subbedClass}">
                             <div class="card-check-btn ${activeClass}" onclick="togglePlayerBet('${p.uid}', this)">${tick}</div>
                             <div class="card-player-info">
                                 <div class="card-player-name">${p.name}${subLabel} ${posLabel} <span style="font-weight:normal; color:#666">(${p.team})</span></div>
-                                <div class="card-match-info">${p.time} • Ref: ${p.ref}</div>
-                                ${p.refBadge}
+                                <div style="display:flex; align-items:center; gap:8px; margin-top:3px;">
+                                    <div class="card-foul-badge ${foulClass}" style="margin:0;">${p.fouls} Fouls${riskLabel}</div>
+                                    <div style="font-size:0.65rem; color:${probColor}; font-weight:600;">🃏 ${p.cardProb}% card risk</div>
+                                </div>
                             </div>
-                            <div class="card-foul-badge ${foulClass}">${p.fouls} Fouls${riskLabel}</div>
                         </div>
                     `;
                 });
@@ -3520,6 +3682,11 @@
                     }
                     if (market === 'btts') return (1.50 + Math.random() * 0.25).toFixed(2);
                     if (market === 'next') return (1.60 + Math.random() * 0.30).toFixed(2);
+                    if (market === 'corners') {
+                        if (elapsed >= 75) return (1.25 + Math.random() * 0.15).toFixed(2);
+                        if (elapsed >= 65) return (1.40 + Math.random() * 0.20).toFixed(2);
+                        return (1.55 + Math.random() * 0.25).toFixed(2);
+                    }
                     return (1.40 + Math.random() * 0.30).toFixed(2);
                 };
 
