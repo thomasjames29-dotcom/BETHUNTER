@@ -150,6 +150,44 @@
         }
         .ignore-msg { color: var(--red); font-weight: bold; text-align: center; border: 1px solid var(--red); padding: 8px; border-radius: 6px; background: rgba(218, 54, 51, 0.1); margin-bottom: 10px; }
         .ref-name { font-size: 0.75rem; color: #888; display: block; text-align: center; margin-top: 4px; font-style: italic; }
+
+        /* BANKROLL MILESTONES */
+        .milestone-track { position: relative; height: 24px; margin-top: 8px; }
+        .milestone-dot { position: absolute; top: 0; width: 8px; height: 8px; border-radius: 50%; background: #555; border: 2px solid #333; transform: translateX(-50%); z-index: 2; }
+        .milestone-dot.reached { background: var(--gold); border-color: var(--gold); box-shadow: 0 0 6px var(--gold); }
+        .milestone-label { position: absolute; top: 12px; font-size: 0.6rem; color: #666; transform: translateX(-50%); white-space: nowrap; }
+
+        /* STATS DASHBOARD */
+        .stats-card { background: var(--card); border: 1px solid #30363d; border-radius: 12px; padding: 15px; margin-bottom: 15px; }
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .stat-tile { background: #21262d; border-radius: 8px; padding: 12px; text-align: center; }
+        .stat-tile-value { font-size: 1.4rem; font-weight: bold; }
+        .stat-tile-label { font-size: 0.7rem; color: #888; text-transform: uppercase; margin-top: 4px; }
+        .stats-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .stats-bar-label { width: 90px; font-size: 0.75rem; color: #aaa; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .stats-bar-track { flex: 1; height: 14px; background: #21262d; border-radius: 4px; overflow: hidden; }
+        .stats-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; min-width: 2px; }
+        .stats-bar-val { width: 40px; font-size: 0.75rem; color: #ccc; font-weight: bold; }
+
+        /* MATCH TIMELINE */
+        .match-timeline { display: flex; align-items: center; height: 20px; background: #21262d; border-radius: 4px; margin: 8px 0; position: relative; overflow: hidden; }
+        .timeline-marker { position: absolute; width: 3px; height: 100%; border-radius: 1px; }
+        .timeline-half { position: absolute; left: 50%; width: 1px; height: 100%; background: #444; }
+        .timeline-tooltip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #333; color: white; font-size: 0.65rem; padding: 2px 5px; border-radius: 3px; white-space: nowrap; display: none; z-index: 10; }
+        .timeline-marker:hover .timeline-tooltip { display: block; }
+
+        /* CONFIDENCE SLIDER */
+        .conf-slider-container { padding: 10px 12px; margin-bottom: 10px; }
+        .conf-slider { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #da3633, #d29922, #2ea043); outline: none; }
+        .conf-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: white; border: 2px solid var(--blue); cursor: pointer; }
+        .conf-slider::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: white; border: 2px solid var(--blue); cursor: pointer; }
+
+        /* FAVOURITE LEAGUE STAR */
+        .fav-star { cursor: pointer; font-size: 0.9rem; margin-right: 4px; opacity: 0.4; transition: opacity 0.2s; }
+        .fav-star.active { opacity: 1; }
+
+        /* BET NOTE */
+        .bet-note-input { width: calc(100% - 16px); background: #0d1117; border: 1px solid #30363d; color: #ccc; padding: 6px 8px; border-radius: 6px; font-size: 0.75rem; margin-top: 6px; resize: none; font-family: inherit; }
         
         .form-badge { font-family: monospace; font-size: 0.7rem; letter-spacing: 1px; margin-left: 5px; }
         .form-w { color: var(--green); } .form-l { color: var(--red); } .form-d { color: #888; }
@@ -215,6 +253,7 @@
             <div id="tabChallenge" class="nav-tab" onclick="switchTab('challenge')">💷 Challenge</div>
             <div id="tabSched" class="nav-tab" onclick="switchTab('sched')">📅 Elite Schedule</div>
             <div id="tabAcc" class="nav-tab" onclick="switchTab('acc')">💰 Acca Tips</div>
+            <div id="tabStats" class="nav-tab" onclick="switchTab('stats')">📈 Stats</div>
             <div id="tabHist" class="nav-tab" onclick="switchTab('hist')">📜 History</div>
         </div>
 
@@ -231,6 +270,15 @@
             <div class="chip" onclick="setStrategy('drought', this)">⏳ Goal Drought <span id="badge-drought" class="chip-badge">0</span></div>
             <div class="chip" onclick="setStrategy('alert', this)">🔥 Goal Alert! <span id="badge-alert" class="chip-badge">0</span></div>
             <div class="chip" onclick="setStrategy('red', this)">🟥 Red Card <span id="badge-red" class="chip-badge">0</span></div>
+        </div>
+
+        <div class="conf-slider-container" style="background:var(--card); border:1px solid #30363d; border-radius:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:0.75rem; color:#888;">Min Confidence</span>
+                <span id="confThresholdLabel" style="font-size:0.85rem; font-weight:bold; color:var(--green);">75%</span>
+            </div>
+            <input type="range" class="conf-slider" id="confThreshold" min="50" max="95" value="75" step="5" oninput="updateConfThreshold(this.value)">
+            <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#555;"><span>50%</span><span>Riskier</span><span>Safer</span><span>95%</span></div>
         </div>
 
         <div id="content" style="padding-bottom:80px;">
@@ -259,6 +307,10 @@
 
     <div id="histView" style="display:none;">
         <div id="histContent" style="padding-bottom:100px;"></div>
+    </div>
+
+    <div id="statsView" style="display:none;">
+        <div id="statsContent" style="padding-bottom:100px;"></div>
     </div>
 
     <div id="accView" style="display:none;">
@@ -296,6 +348,7 @@
                 <span id="progressPercent">1%</span>
                 <span>£500</span>
             </div>
+            <div class="milestone-track" id="milestoneTrack"></div>
         </div>
         
         <div id="challengeContent" style="padding-bottom:100px;">
@@ -1326,7 +1379,8 @@
 
             tips.sort((a, b) => b.conf - a.conf);
             const bestTip = tips.length > 0 ? tips[0] : null;
-            const filteredTips = tips.filter(t => t.conf >= 75);
+            const threshold = (typeof userConfThreshold !== 'undefined') ? userConfThreshold : 75;
+            const filteredTips = tips.filter(t => t.conf >= threshold);
 
             return { verdict, confidence, bestTip, allTips: filteredTips, scoreState, momentum };
         }
@@ -1477,18 +1531,10 @@
 
         function switchTab(tab) {
             stopChallengeAutoRefresh();
-            document.getElementById('liveView').style.display = 'none';
-            document.getElementById('schedView').style.display = 'none';
-            document.getElementById('histView').style.display = 'none';
-            document.getElementById('cardView').style.display = 'none';
-            document.getElementById('accView').style.display = 'none';
-            document.getElementById('challengeView').style.display = 'none';
-            document.getElementById('tabLive').classList.remove('active');
-            document.getElementById('tabSched').classList.remove('active');
-            document.getElementById('tabHist').classList.remove('active');
-            document.getElementById('tabCards').classList.remove('active');
-            document.getElementById('tabAcc').classList.remove('active');
-            document.getElementById('tabChallenge').classList.remove('active');
+            const views = ['liveView','schedView','histView','cardView','accView','challengeView','statsView'];
+            const tabs = ['tabLive','tabSched','tabHist','tabCards','tabAcc','tabChallenge','tabStats'];
+            views.forEach(v => document.getElementById(v).style.display = 'none');
+            tabs.forEach(t => document.getElementById(t).classList.remove('active'));
             document.getElementById('filterSelect').style.display = 'none';
 
             if(tab === 'live') {
@@ -1509,6 +1555,10 @@
             } else if(tab === 'acc') {
                 document.getElementById('accView').style.display = 'block';
                 document.getElementById('tabAcc').classList.add('active');
+            } else if(tab === 'stats') {
+                document.getElementById('statsView').style.display = 'block';
+                document.getElementById('tabStats').classList.add('active');
+                renderStatsDashboard();
             } else {
                 document.getElementById('histView').style.display = 'block';
                 document.getElementById('tabHist').classList.add('active');
@@ -1757,12 +1807,16 @@
                 html += `<div style="margin-bottom:6px;">`;
                 pendingBets.forEach(b => {
                     const ago = Math.round((Date.now() - b.placedAt) / 60000);
-                    html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
-                        <div>
-                            <div style="font-size:0.75rem; font-weight:bold; color:#ddd;">${b.selection}</div>
-                            <div style="font-size:0.65rem; color:#888;">${b.match} (${b.homeGoalsAtPlace}-${b.awayGoalsAtPlace} when placed)</div>
+                    const noteVal = (b.note || '').replace(/"/g, '&quot;');
+                    html += `<div style="padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div>
+                                <div style="font-size:0.75rem; font-weight:bold; color:#ddd;">${b.selection}</div>
+                                <div style="font-size:0.65rem; color:#888;">${b.match} (${b.homeGoalsAtPlace}-${b.awayGoalsAtPlace} when placed)</div>
+                            </div>
+                            <span style="font-size:0.65rem; padding:3px 8px; border-radius:8px; background:rgba(210,153,34,0.15); color:var(--gold); font-weight:bold;">⏳ ${ago}m ago</span>
                         </div>
-                        <span style="font-size:0.65rem; padding:3px 8px; border-radius:8px; background:rgba(210,153,34,0.15); color:var(--gold); font-weight:bold;">⏳ ${ago}m ago</span>
+                        <textarea class="bet-note-input" placeholder="Add a note..." rows="1" onfocus="this.rows=2" onblur="this.rows=1; saveBetNote(${b.fixtureId}, decodeURIComponent('${encodeURIComponent(b.selection)}'), this.value)">${noteVal}</textarea>
                     </div>`;
                 });
                 html += `</div>`;
@@ -2168,12 +2222,16 @@
 
             });
 
-            // Play audio if any count increased
             let increased = false;
             Object.keys(strategyCounts).forEach(key => {
                 if (strategyCounts[key] > oldCounts[key]) increased = true;
             });
-            if (increased && pilotMode) playPing();
+            if (increased && pilotMode) {
+                if (strategyCounts.red > oldCounts.red) playAlertSound('card');
+                else if (strategyCounts.alert > oldCounts.alert) playAlertSound('goal');
+                else if (strategyCounts.drought > oldCounts.drought) playAlertSound('corner');
+                else playAlertSound('goal');
+            }
 
             updateChipBadges();
         }
@@ -2237,7 +2295,13 @@
                     allMatches = [];
                 } else {
                     allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
-                    allMatches.sort((a, b) => b.fixture.status.elapsed - a.fixture.status.elapsed);
+                    const favs = getFavLeagues();
+                    allMatches.sort((a, b) => {
+                        const aFav = favs.includes(a.league.id) ? 1 : 0;
+                        const bFav = favs.includes(b.league.id) ? 1 : 0;
+                        if (bFav !== aFav) return bFav - aFav;
+                        return b.fixture.status.elapsed - a.fixture.status.elapsed;
+                    });
                     checkBetOutcomes(allMatches);
                     await checkStatsAvailability(allMatches);
                     calculateStrategyCounts();
@@ -2984,7 +3048,7 @@
                 ${placedBadge}
                 ${limitedBadge}
                 <div class="league-name" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>${m.league.country} • ${m.league.name}</span>
+                    <span><span class="fav-star ${isFavLeague(m.league.id) ? 'active' : ''}" onclick="event.stopPropagation(); toggleFavLeague(${m.league.id}); this.classList.toggle('active');">★</span>${m.league.country} • ${m.league.name}</span>
                     <span style="font-family:monospace; color:var(--gold); font-weight:bold;">${t}'</span>
                 </div>
                 <div class="score-row">
@@ -3006,6 +3070,7 @@
                         ${aRedBadge}
                     </div>
                 </div>
+                ${m.events && m.events.length > 0 ? renderTimeline(m.events) : ''}
                 <div style="text-align:center; color:#888; font-size:0.8rem; margin-top:5px;">${t}' Played ${refName}</div>
                 ${upsetHtml}
                 <div class="pred-row">
@@ -3193,7 +3258,7 @@
                 let tipsHtml = '';
                 if (smartResult.allTips.length > 0) {
                     tipsHtml = `<div style="margin-top:8px; padding:8px; background:rgba(46,160,67,0.08); border:1px solid rgba(46,160,67,0.3); border-radius:8px;">
-                        <div style="font-size:0.7rem; color:var(--green); text-transform:uppercase; margin-bottom:5px; font-weight:bold;">AI Bet Tips (75%+ confidence)</div>`;
+                        <div style="font-size:0.7rem; color:var(--green); text-transform:uppercase; margin-bottom:5px; font-weight:bold;">AI Bet Tips (${(typeof userConfThreshold !== 'undefined' ? userConfThreshold : 75)}%+ confidence)</div>`;
                     smartResult.allTips.forEach(t => {
                         const tipColor = t.conf >= 90 ? "var(--green)" : (t.conf >= 80 ? "var(--gold)" : "#ccc");
                         tipsHtml += `<div style="display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
@@ -3542,6 +3607,7 @@
             const progress = Math.min(100, ((state.stake - CHALLENGE_START) / (CHALLENGE_TARGET - CHALLENGE_START)) * 100);
             progressEl.style.width = `${Math.max(1, progress)}%`;
             percentEl.innerText = `${progress.toFixed(0)}%`;
+            renderMilestones(state.stake);
             
             // Show appropriate screen
             document.getElementById('challengeStartScreen').style.display = 'none';
@@ -4015,6 +4081,258 @@
             updateChallengeUI(state);
         }
         // ========== END CHALLENGE ==========
+
+        // ========== CONFIDENCE THRESHOLD ==========
+        let userConfThreshold = parseInt(localStorage.getItem('confThreshold') || '75');
+        (function initSlider() {
+            const sl = document.getElementById('confThreshold');
+            const lb = document.getElementById('confThresholdLabel');
+            if (sl) { sl.value = userConfThreshold; }
+            if (lb) { lb.textContent = userConfThreshold + '%'; }
+        })();
+        function updateConfThreshold(val) {
+            userConfThreshold = parseInt(val);
+            localStorage.setItem('confThreshold', val);
+            const lb = document.getElementById('confThresholdLabel');
+            if (lb) lb.textContent = val + '%';
+        }
+
+        // ========== FAVOURITE LEAGUES ==========
+        function getFavLeagues() {
+            try { return JSON.parse(localStorage.getItem('favLeagues') || '[]'); } catch(e) { return []; }
+        }
+        function toggleFavLeague(leagueId) {
+            let favs = getFavLeagues();
+            if (favs.includes(leagueId)) { favs = favs.filter(l => l !== leagueId); }
+            else { favs.push(leagueId); }
+            localStorage.setItem('favLeagues', JSON.stringify(favs));
+        }
+        function isFavLeague(leagueId) { return getFavLeagues().includes(leagueId); }
+
+        // ========== BET NOTES ==========
+        function saveBetNote(fixtureId, selection, note) {
+            const bets = getPlacedChallenges();
+            const bet = bets.find(b => b.fixtureId === fixtureId && b.selection === selection);
+            if (bet) { bet.note = note; savePlacedChallenges(bets); }
+        }
+
+        // ========== ALERT SOUNDS ==========
+        function playAlertSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            if (type === 'goal') {
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'corner') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(900, audioCtx.currentTime + 0.1);
+                osc.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+            } else if (type === 'card') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(500, audioCtx.currentTime + 0.1);
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+            } else {
+                playPing();
+            }
+        }
+
+        // ========== MATCH TIMELINE ==========
+        function renderTimeline(events) {
+            if (!events || events.length === 0) return '';
+            let markers = '';
+            events.forEach(e => {
+                if (!e.time || !e.time.elapsed) return;
+                const min = e.time.elapsed + (e.time.extra || 0);
+                const pct = Math.min(100, (min / 90) * 100);
+                let color = '#888'; let icon = '';
+                if (e.type === 'Goal') { color = '#2ea043'; icon = 'Goal'; }
+                else if (e.type === 'Card' && e.detail === 'Yellow Card') { color = '#d29922'; icon = 'Yellow'; }
+                else if (e.type === 'Card' && e.detail === 'Red Card') { color = '#da3633'; icon = 'Red'; }
+                else if (e.type === 'subst') { color = '#1f6feb'; icon = 'Sub'; }
+                else return;
+                const team = e.team ? e.team.name : '';
+                const player = e.player ? e.player.name : '';
+                markers += `<div class="timeline-marker" style="left:${pct}%; background:${color};" title="${min}' ${icon} ${player} (${team})"><div class="timeline-tooltip">${min}' ${icon} ${player}</div></div>`;
+            });
+            return `<div class="match-timeline"><div class="timeline-half"></div>${markers}</div>`;
+        }
+
+        // ========== BANKROLL MILESTONES ==========
+        function renderMilestones(currentStake) {
+            const milestones = [
+                { amount: 5, label: '£5' },
+                { amount: 25, label: '£25' },
+                { amount: 50, label: '£50' },
+                { amount: 100, label: '£100' },
+                { amount: 250, label: '£250' },
+                { amount: 500, label: '£500' }
+            ];
+            const track = document.getElementById('milestoneTrack');
+            if (!track) return;
+            let html = '';
+            milestones.forEach(m => {
+                const pct = ((m.amount - 5) / (500 - 5)) * 100;
+                const reached = currentStake >= m.amount ? 'reached' : '';
+                html += `<div class="milestone-dot ${reached}" style="left:${pct}%;"></div>`;
+                html += `<div class="milestone-label" style="left:${pct}%; ${reached ? 'color:var(--gold);' : ''}">${m.label}</div>`;
+            });
+            track.innerHTML = html;
+        }
+
+        // ========== EXPORT HISTORY ==========
+        function exportCSV() {
+            const bets = getHistory();
+            const challenges = getPlacedChallenges();
+            if (bets.length === 0 && challenges.length === 0) { alert('No betting history to export.'); return; }
+            let csv = 'Date,Type,Match,Selection,Odds,Status,Note\n';
+            bets.forEach(b => {
+                csv += `"${b.date || ''}","Live Hunt","${(b.teams || '').replace(/"/g, '')}","${(b.selection || '').replace(/"/g, '')}","${b.odds || ''}","${b.status || 'OPEN'}",""\n`;
+            });
+            challenges.forEach(b => {
+                const date = b.placedAt ? new Date(b.placedAt).toISOString().split('T')[0] : '';
+                const status = b.status === 'resolved' ? (b.result ? 'WIN' : 'LOSS') : 'PENDING';
+                const note = (b.note || '').replace(/"/g, '');
+                csv += `"${date}","Challenge","${(b.match || '').replace(/"/g, '')}","${(b.selection || '').replace(/"/g, '')}","${b.odds || ''}","${status}","${note}"\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = `final-third-bets-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ========== STATS DASHBOARD ==========
+        function renderStatsDashboard() {
+            const container = document.getElementById('statsContent');
+            const challenges = getPlacedChallenges();
+            const streak = getChallengeStreak();
+            const historyBets = getHistory();
+
+            const resolved = challenges.filter(b => b.status === 'resolved');
+            const totalBets = resolved.length + historyBets.filter(b => b.status === 'WIN' || b.status === 'LOSS').length;
+            const totalWins = resolved.filter(b => b.result === true).length + historyBets.filter(b => b.status === 'WIN').length;
+            const totalLosses = resolved.filter(b => b.result === false).length + historyBets.filter(b => b.status === 'LOSS').length;
+            const winRate = totalBets > 0 ? Math.round((totalWins / totalBets) * 100) : 0;
+            const winColor = winRate >= 60 ? 'var(--green)' : (winRate >= 45 ? 'var(--gold)' : 'var(--red)');
+
+            let html = `<h3 style="color:var(--blue); margin:0 0 15px;">📈 Performance Dashboard</h3>`;
+
+            html += `<div class="stats-grid">
+                <div class="stat-tile"><div class="stat-tile-value" style="color:var(--blue);">${totalBets}</div><div class="stat-tile-label">Total Bets</div></div>
+                <div class="stat-tile"><div class="stat-tile-value" style="color:${winColor};">${winRate}%</div><div class="stat-tile-label">Win Rate</div></div>
+                <div class="stat-tile"><div class="stat-tile-value" style="color:var(--green);">${totalWins}</div><div class="stat-tile-label">Wins</div></div>
+                <div class="stat-tile"><div class="stat-tile-value" style="color:var(--red);">${totalLosses}</div><div class="stat-tile-label">Losses</div></div>
+            </div>`;
+
+            html += `<div class="stats-grid">
+                <div class="stat-tile"><div class="stat-tile-value" style="color:var(--gold);">${streak.currentStreak}</div><div class="stat-tile-label">Current Streak</div></div>
+                <div class="stat-tile"><div class="stat-tile-value" style="color:var(--green);">${streak.bestStreak}</div><div class="stat-tile-label">Best Streak</div></div>
+            </div>`;
+
+            // Market performance
+            const marketStats = {};
+            resolved.forEach(b => {
+                const key = getMarketLabel(b.selection);
+                if (!marketStats[key]) marketStats[key] = { wins: 0, total: 0 };
+                marketStats[key].total++;
+                if (b.result) marketStats[key].wins++;
+            });
+            historyBets.forEach(b => {
+                if (b.status !== 'WIN' && b.status !== 'LOSS') return;
+                const key = getMarketLabel(b.selection || 'Unknown');
+                if (!marketStats[key]) marketStats[key] = { wins: 0, total: 0 };
+                marketStats[key].total++;
+                if (b.status === 'WIN') marketStats[key].wins++;
+            });
+
+            if (Object.keys(marketStats).length > 0) {
+                html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:var(--gold); margin-bottom:12px;">By Market Type</div>`;
+                const sorted = Object.entries(marketStats).sort((a, b) => b[1].total - a[1].total);
+                sorted.forEach(([market, data]) => {
+                    const rate = Math.round((data.wins / data.total) * 100);
+                    const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
+                    html += `<div class="stats-bar">
+                        <div class="stats-bar-label">${market}</div>
+                        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
+                        <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.total})</span></div>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+
+            // League performance
+            const leagueStats = {};
+            resolved.forEach(b => {
+                const key = b.league || 'Unknown';
+                if (!leagueStats[key]) leagueStats[key] = { wins: 0, total: 0 };
+                leagueStats[key].total++;
+                if (b.result) leagueStats[key].wins++;
+            });
+
+            if (Object.keys(leagueStats).length > 0) {
+                html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:var(--purple); margin-bottom:12px;">By League</div>`;
+                const sortedL = Object.entries(leagueStats).sort((a, b) => b[1].total - a[1].total);
+                sortedL.forEach(([league, data]) => {
+                    const rate = Math.round((data.wins / data.total) * 100);
+                    const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
+                    html += `<div class="stats-bar">
+                        <div class="stats-bar-label">${league}</div>
+                        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
+                        <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.total})</span></div>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+
+            // Recent results timeline
+            const recentBets = resolved.sort((a, b) => b.placedAt - a.placedAt).slice(0, 20);
+            if (recentBets.length > 0) {
+                html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:var(--blue); margin-bottom:12px;">Recent Form (Last ${recentBets.length})</div>`;
+                html += `<div style="display:flex; gap:3px; flex-wrap:wrap;">`;
+                recentBets.forEach(b => {
+                    const color = b.result ? 'var(--green)' : 'var(--red)';
+                    const letter = b.result ? 'W' : 'L';
+                    html += `<div style="width:22px; height:22px; border-radius:4px; background:${color}; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:bold; color:white;" title="${b.match}: ${b.selection}">${letter}</div>`;
+                });
+                html += `</div></div>`;
+            }
+
+            if (totalBets === 0) {
+                html += `<div style="text-align:center; color:#666; padding:30px;">
+                    <p style="font-size:1.5rem;">📊</p>
+                    <p>No betting data yet. Start placing bets to see your performance stats here.</p>
+                </div>`;
+            }
+
+            html += `<button class="export-btn" onclick="exportCSV()" style="margin-top:10px;">📥 Export All History (CSV)</button>`;
+
+            container.innerHTML = html;
+        }
+
+        function getMarketLabel(selection) {
+            if (!selection) return 'Unknown';
+            if (selection.startsWith('Over')) return selection.split(' ').slice(0, 2).join(' ');
+            if (selection.startsWith('Next Goal:')) return 'Next Goal';
+            if (selection.startsWith('Next Corner:')) return 'Next Corner';
+            if (selection === 'Both Teams to Score') return 'BTTS';
+            if (selection === 'Home Win' || selection === 'Away Win') return selection;
+            return selection;
+        }
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
