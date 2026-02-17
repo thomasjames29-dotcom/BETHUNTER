@@ -219,9 +219,8 @@
         </div>
 
         <select id="filterSelect" onchange="applyFilter()">
-            <option value="elite">🇬🇧 UK & Elite (Full Stats)</option>
-            <option value="europe">🇪🇺 Rest of Europe</option>
-            <option value="world">🌎 World Scan</option>
+            <option value="full">📊 Full Analysis</option>
+            <option value="limited">⚠️ Limited Data</option>
         </select>
     </header>
 
@@ -433,6 +432,7 @@
         const EU_COUNTRIES = ["Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Ukraine", "Wales"];
 
         let allMatches = [];
+        let matchStatsMap = {};
         let pilotMode = false;
         let pilotInterval;
         let cardPilotInterval;
@@ -2043,11 +2043,17 @@
         function calculateStrategyCounts() {
             const oldCounts = { ...strategyCounts };
             strategyCounts = { all: 0, drought: 0, alert: 0, red: 0, challenge: 0 };
+            const mode = document.getElementById('filterSelect').value;
             
             allMatches.forEach(m => {
                 const league = (m.league.name || "").toLowerCase();
                 const blocked = ["friendly", "friendlies", "club friendlies", "u19", "u20", "u21", "u23", "youth", "reserve", "reserves"];
                 if(blocked.some(word => league.includes(word))) return;
+
+                const fid = m.fixture.id;
+                const statsStatus = matchStatsMap[fid] || 'limited';
+                if (mode === 'full' && statsStatus !== 'full') return;
+                if (mode === 'limited' && statsStatus !== 'limited') return;
 
                 strategyCounts.all++;
 
@@ -2083,11 +2089,47 @@
             updateChipBadges();
         }
 
+        async function checkStatsAvailability(matches) {
+            const blocked = ["friendly", "friendlies", "club friendlies", "u19", "u20", "u21", "u23", "youth", "reserve", "reserves"];
+            const validMatches = matches.filter(m => {
+                const league = (m.league.name || "").toLowerCase();
+                return !blocked.some(word => league.includes(word));
+            });
+
+            const unchecked = validMatches.filter(m => !(m.fixture.id in matchStatsMap));
+            
+            const batchSize = 5;
+            for (let i = 0; i < unchecked.length; i += batchSize) {
+                const batch = unchecked.slice(i, i + batchSize);
+                await Promise.all(batch.map(async m => {
+                    const fid = m.fixture.id;
+                    try {
+                        const res = await fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${fid}`, {
+                            headers: { "x-rapidapi-key": API_KEY }
+                        });
+                        const data = await res.json();
+                        if (data.response && data.response.length >= 2) {
+                            matchStatsMap[fid] = 'full';
+                        } else {
+                            const pRes = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${fid}`, {
+                                headers: { "x-rapidapi-key": API_KEY }
+                            });
+                            const pData = await pRes.json();
+                            matchStatsMap[fid] = (pData.response && pData.response.length >= 2) ? 'full' : 'limited';
+                        }
+                    } catch(e) {
+                        matchStatsMap[fid] = 'limited';
+                    }
+                }));
+                if (i + batchSize < unchecked.length) await new Promise(r => setTimeout(r, 500));
+            }
+        }
+
         async function runScan(isAuto = false) {
             trackAPI(1);
             if(!isAuto) {
                 mainBtn.innerText = "Scanning Global Feeds..."; mainBtn.disabled = true;
-                content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data...</p>";
+                content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#666'>Fetching live data & checking stats availability...</p>";
             } else {
                 mainBtn.innerText = "🤖 Auto-Scanning...";
             }
@@ -2108,6 +2150,7 @@
                     allMatches = data.response.filter(m => m.fixture.status.elapsed >= 60 && m.fixture.status.elapsed <= 85);
                     allMatches.sort((a, b) => b.fixture.status.elapsed - a.fixture.status.elapsed);
                     checkBetOutcomes(allMatches);
+                    await checkStatsAvailability(allMatches);
                     calculateStrategyCounts();
                     applyFilter(isAuto);
                 }
@@ -2137,7 +2180,7 @@
             content.innerHTML = "";
             let highValueFound = false;
             const placedBets = getHistory().map(b => b.id);
-            let matchesToEnrich = [];
+            calculateStrategyCounts();
 
             if(allMatches.length === 0) { content.innerHTML = "<p style='text-align:center; margin-top:50px; color:#888'>No games in 60-85min window.</p>"; return; }
 
@@ -2151,13 +2194,10 @@
                 const blocked = ["friendly", "friendlies", "club friendlies", "u19", "u20", "u21", "u23", "youth", "reserve", "reserves"];
                 if(blocked.some(word => league.includes(word))) return false; 
                 
-                const lid = m.league.id;
-                const country = m.league.country;
-                let leagueMatch = true;
-                if (mode === 'elite') leagueMatch = ELITE_IDS.includes(lid); 
-                else if (mode === 'europe') leagueMatch = (EU_COUNTRIES.includes(country) || ELITE_IDS.includes(lid)); 
-                
-                if (!leagueMatch) return false;
+                const fid = m.fixture.id;
+                const statsStatus = matchStatsMap[fid] || 'limited';
+                if (mode === 'full' && statsStatus !== 'full') return false;
+                if (mode === 'limited' && statsStatus !== 'limited') return false;
 
                 if (currentStrategy === 'challenge') return false;
                 if (currentStrategy === 'all') return true;
@@ -2190,10 +2230,9 @@
 
             // 1. Initial Render
             filtered.forEach(m => {
-                const isElite = ELITE_IDS.includes(m.league.id);
+                const hasFullStats = matchStatsMap[m.fixture.id] === 'full';
                 const isPlaced = placedBets.includes(m.fixture.id);
-                createCard(m, isPlaced, isElite);
-                if(isElite) matchesToEnrich.push(m);
+                createCard(m, isPlaced, hasFullStats);
             });
             
             if(isAuto && highValueFound) playPing();
@@ -2784,7 +2823,7 @@
             return filtered;
         }
 
-        function createCard(m, isPlaced, isElite) {
+        function createCard(m, isPlaced, hasFullStats) {
             const div = document.createElement('div');
             div.className = `match-card ${isPlaced ? 'placed' : ''}`;
             div.id = `card-${m.fixture.id}`;
@@ -2815,9 +2854,10 @@
             const hRedBadge = hRed ? "<div class='red-card-badge'>🟥 RED CARD</div>" : "";
             const aRedBadge = aRed ? "<div class='red-card-badge'>🟥 RED CARD</div>" : "";
             const placedBadge = isPlaced ? "<div class='placed-badge'>✅ BET PLACED</div>" : "";
+            const limitedBadge = !hasFullStats ? "<div style='text-align:center; padding:4px 8px; background:rgba(210,163,34,0.15); border:1px solid rgba(210,163,34,0.3); border-radius:6px; color:var(--gold); font-size:0.75rem; margin-bottom:8px;'>⚠️ Limited Data — Analysis may be unavailable</div>" : "";
 
             let upsetHtml = "";
-            if (ELITE_IDS.includes(lid) && s.home < s.away && (s.away - s.home === 1)) {
+            if (s.home < s.away && (s.away - s.home === 1)) {
                 upsetHtml = `<div class="upset-badge">🔥 UPSET ALERT: ${h.name} Chasing!</div>`;
             }
 
@@ -2864,6 +2904,7 @@
 
             div.innerHTML = `
                 ${placedBadge}
+                ${limitedBadge}
                 <div class="league-name" style="display:flex; justify-content:space-between; align-items:center;">
                     <span>${m.league.country} • ${m.league.name}</span>
                     <span style="font-family:monospace; color:var(--gold); font-weight:bold;">${t}'</span>
