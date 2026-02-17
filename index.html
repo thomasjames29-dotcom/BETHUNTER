@@ -1570,7 +1570,7 @@
                             { name: "Over 1.5 Goals", min: 1.15, max: 1.35, weight: 25 },
                             { name: "Over 2.5 Goals", min: 1.55, max: 1.95, weight: 10 },
                             { name: "Both Teams to Score", min: 1.60, max: 1.90, weight: 10 },
-                            { name: "Over 8.5 Corners", min: 1.70, max: 2.10, weight: 10 },
+                            { name: "Over 10.5 Corners", min: 1.90, max: 2.50, weight: 10 },
                             { name: "Over 3.5 Cards", min: 1.65, max: 2.00, weight: 15 },
                             { name: "Home Win", min: 1.30, max: 2.20, weight: 15 },
                             { name: "Away Win", min: 1.50, max: 2.80, weight: 15 }
@@ -1821,15 +1821,17 @@
             return html;
         }
 
-        function placeChallengebet(fixtureId, selection, match, league, odds, oddsSource, homeGoals, awayGoals, confidence, leagueId) {
+        function placeChallengebet(fixtureId, selection, match, league, odds, oddsSource, homeGoals, awayGoals, confidence, leagueId, cornersAtPlace) {
             const bets = getPlacedChallenges();
             if (bets.some(b => b.fixtureId === fixtureId && b.selection === selection)) return;
-            bets.push({
+            const betObj = {
                 fixtureId, selection, match, league, odds, oddsSource, confidence,
                 homeGoalsAtPlace: homeGoals, awayGoalsAtPlace: awayGoals,
                 placedAt: Date.now(), status: 'pending', result: null,
                 leagueId: leagueId || null
-            });
+            };
+            if (cornersAtPlace !== undefined && cornersAtPlace !== null) betObj.cornersAtPlace = cornersAtPlace;
+            bets.push(betObj);
             savePlacedChallenges(bets);
         }
 
@@ -1847,7 +1849,9 @@
                 won = totalGoals > 2;
             } else if (sel === 'Over 3.5 Goals') {
                 won = totalGoals > 3;
-            } else if (sel === 'Over 8.5 Corners') {
+            } else if (sel === 'Over 10.5 Corners') {
+                return bet;
+            } else if (sel.startsWith('Next Corner:')) {
                 return bet;
             } else if (sel === 'Both Teams to Score') {
                 won = finalHome > 0 && finalAway > 0;
@@ -1919,7 +1923,7 @@
                         const fAway = fix.goals.away;
                         bets.forEach(b => {
                             if (b.fixtureId === fix.fixture.id && b.status === 'pending') {
-                                if (b.selection === 'Over 8.5 Corners') {
+                                if (b.selection === 'Over 10.5 Corners' || b.selection.startsWith('Next Corner:')) {
                                     cornerBetFixtures.push({ bet: b, fix });
                                 } else {
                                     resolveChallengeBet(b, fHome, fAway, fix.events);
@@ -1941,7 +1945,20 @@
                                 if (cStat) totalCorners += parseInt(cStat.value) || 0;
                             });
                             cb.bet.status = 'resolved';
-                            cb.bet.result = totalCorners > 8;
+                            if (cb.bet.selection === 'Over 10.5 Corners') {
+                                cb.bet.result = totalCorners > 10;
+                            } else if (cb.bet.selection.startsWith('Next Corner:')) {
+                                const teamName = cb.bet.selection.replace('Next Corner: ', '').trim();
+                                let teamCorners = 0;
+                                sData.response.forEach(team => {
+                                    if (team.team.name === teamName) {
+                                        const cStat = team.statistics.find(s => s.type === 'Corner Kicks');
+                                        if (cStat) teamCorners = parseInt(cStat.value) || 0;
+                                    }
+                                });
+                                const cornersAtPlace = cb.bet.cornersAtPlace || 0;
+                                cb.bet.result = teamCorners > cornersAtPlace;
+                            }
                             cb.bet.finalScore = `${cb.fix.goals.home}-${cb.fix.goals.away} (${totalCorners} corners)`;
                             recordChallengeResult(cb.bet.selection, cb.bet.match, cb.bet.result, cb.bet.leagueId, cb.bet.confidence);
                             anyResolved = true;
@@ -2545,7 +2562,7 @@
                         <div style="display:flex; gap:6px; margin-top:8px;">
                             ${getPlacedChallenges().some(b => b.fixtureId === c.fixtureId && b.selection === c.selection) ?
                             `<button disabled style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--gold); background:rgba(210,153,34,0.15); color:var(--gold); font-size:0.75rem; font-weight:bold; cursor:default;">📌 Bet Placed — Tracking</button>` :
-                            `<button data-fid="${c.fixtureId}" data-sel="${encodeURIComponent(c.selection)}" data-match="${encodeURIComponent(c.match)}" data-league="${encodeURIComponent(c.league)}" data-odds="${c.odds}" data-osrc="${c.oddsSource}" data-hg="${c.homeGoals}" data-ag="${c.awayGoals}" data-conf="${c.confidence}" data-lid="${c.leagueId || 0}" onclick="placeChallengebet(parseInt(this.dataset.fid), decodeURIComponent(this.dataset.sel), decodeURIComponent(this.dataset.match), decodeURIComponent(this.dataset.league), this.dataset.odds, this.dataset.osrc, parseInt(this.dataset.hg), parseInt(this.dataset.ag), parseInt(this.dataset.conf), parseInt(this.dataset.lid)||null); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)'; startChallengeCheckInterval();" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.75rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`}
+                            `<button data-fid="${c.fixtureId}" data-sel="${encodeURIComponent(c.selection)}" data-match="${encodeURIComponent(c.match)}" data-league="${encodeURIComponent(c.league)}" data-odds="${c.odds}" data-osrc="${c.oddsSource}" data-hg="${c.homeGoals}" data-ag="${c.awayGoals}" data-conf="${c.confidence}" data-lid="${c.leagueId || 0}" data-cap="${c.cornersAtPlace || 0}" onclick="placeChallengebet(parseInt(this.dataset.fid), decodeURIComponent(this.dataset.sel), decodeURIComponent(this.dataset.match), decodeURIComponent(this.dataset.league), this.dataset.odds, this.dataset.osrc, parseInt(this.dataset.hg), parseInt(this.dataset.ag), parseInt(this.dataset.conf), parseInt(this.dataset.lid)||null, parseInt(this.dataset.cap)||0); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)'; startChallengeCheckInterval();" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.75rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`}
                         </div>
                     </div>`;
                 });
@@ -2730,7 +2747,12 @@
                     if (h2Momentum.note) reasoning += ` ${h2Momentum.note}`;
                     if (calibAdj.note) reasoning += ` ${calibAdj.note}`;
                     if (weatherImpact.note && weatherImpact.boost !== 0) reasoning += ` ${weatherImpact.note}`;
-                    matchCandidates.push({ fixtureId, match: matchName, league, selection, odds: oddsInfo.odds, oddsSource: oddsInfo.source, confidence, reasoning, totalSoT, totalShots, homeSoT: stats.homeSoT, awaySoT: stats.awaySoT, homeTotal: stats.homeTotal, awayTotal: stats.awayTotal, homeCorners: stats.homeCorners, awayCorners: stats.awayCorners, homePoss: Math.round(stats.homePoss), awayPoss: Math.round(stats.awayPoss), homeGoals: m.goals.home, awayGoals: m.goals.away, leagueId: m.league.id });
+                    const candidateObj = { fixtureId, match: matchName, league, selection, odds: oddsInfo.odds, oddsSource: oddsInfo.source, confidence, reasoning, totalSoT, totalShots, homeSoT: stats.homeSoT, awaySoT: stats.awaySoT, homeTotal: stats.homeTotal, awayTotal: stats.awayTotal, homeCorners: stats.homeCorners, awayCorners: stats.awayCorners, homePoss: Math.round(stats.homePoss), awayPoss: Math.round(stats.awayPoss), homeGoals: m.goals.home, awayGoals: m.goals.away, leagueId: m.league.id };
+                    if (selection.startsWith('Next Corner:')) {
+                        const cornerTeamName = selection.replace('Next Corner: ', '').trim();
+                        candidateObj.cornersAtPlace = cornerTeamName === homeName ? stats.homeCorners : stats.awayCorners;
+                    }
+                    matchCandidates.push(candidateObj);
                 };
 
                 const sotFloor = getSoTFloor(elapsed);
@@ -2823,14 +2845,34 @@
                     }
                 }
 
-                if (totalCorners >= 7 && totalCorners <= 8 && elapsed >= 50 && elapsed <= 78) {
-                    const cornerPace = (totalCorners / Math.max(1, elapsed)) * 90;
-                    if (cornerPace >= 10.5) {
-                        let conf = Math.min(90, Math.round(78 + (cornerPace - 10.5) * 3));
-                        let reason = `${totalCorners} corners at ${elapsed}' (pace: ${cornerPace.toFixed(1)}/game).`;
+                const cornerPace = (totalCorners / Math.max(1, elapsed)) * 90;
+                const cornersNeeded = 11 - totalCorners;
+                const minsLeft = 90 - elapsed;
+                if (totalCorners >= 7 && totalCorners <= 10 && elapsed >= 50 && elapsed <= 78 && cornersNeeded >= 1) {
+                    const projectedRemaining = (cornerPace / 90) * minsLeft;
+                    if (projectedRemaining >= cornersNeeded + 1.5 && cornerPace >= 11) {
+                        let conf = Math.min(90, Math.round(76 + (projectedRemaining - cornersNeeded) * 2.5));
+                        let reason = `${totalCorners} corners at ${elapsed}' (pace: ${cornerPace.toFixed(1)}/game). Need ${cornersNeeded} more, projected ${projectedRemaining.toFixed(1)} remaining.`;
                         if (totalShots >= 16) { conf = Math.min(92, conf + 2); reason += ` ${totalShots} shots driving corners.`; }
                         if (pressure.dominance && (pressure.dominance.includes('siege') || pressure.dominance.includes('edge'))) { conf = Math.min(92, conf + 2); reason += ` Sustained pressure.`; }
-                        addCandidate("Over 8.5 Corners", getOddsWithSource('corners', elapsed), conf, reason);
+                        addCandidate("Over 10.5 Corners", getOddsWithSource('corners', elapsed), conf, reason);
+                    }
+                }
+
+                if (totalCorners >= 6 && elapsed >= 70) {
+                    const hCorners = stats.homeCorners || 0;
+                    const aCorners = stats.awayCorners || 0;
+                    if (hCorners > 0 || aCorners > 0) {
+                        const cornerDom = Math.max(hCorners, aCorners) / Math.max(1, totalCorners);
+                        const domTeam = hCorners >= aCorners ? homeName : awayName;
+                        const domCorners = Math.max(hCorners, aCorners);
+                        const domShots = hCorners >= aCorners ? stats.homeTotal : stats.awayTotal;
+                        if (cornerDom >= 0.6 && domShots >= 6) {
+                            let conf = Math.min(88, Math.round(78 + (cornerDom - 0.6) * 30));
+                            let reason = `${domTeam} dominates corners ${domCorners}-${Math.min(hCorners, aCorners)} with ${domShots} shots. ${minsLeft} mins left for next corner.`;
+                            if (pressure.dominance && (pressure.dominance.includes('siege') || pressure.dominance.includes('edge'))) { conf = Math.min(90, conf + 2); reason += ` Under pressure.`; }
+                            addCandidate(`Next Corner: ${domTeam}`, getOddsWithSource('corners', elapsed), conf, reason);
+                        }
                     }
                 }
 
