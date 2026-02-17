@@ -1620,7 +1620,6 @@
                             { name: "Over 1.5 Goals", min: 1.15, max: 1.35, weight: 25 },
                             { name: "Over 2.5 Goals", min: 1.55, max: 1.95, weight: 10 },
                             { name: "Both Teams to Score", min: 1.60, max: 1.90, weight: 10 },
-                            { name: "Over 10.5 Corners", min: 1.90, max: 2.50, weight: 10 },
                             { name: "Over 3.5 Cards", min: 1.65, max: 2.00, weight: 15 },
                             { name: "Home Win", min: 1.30, max: 2.20, weight: 15 },
                             { name: "Away Win", min: 1.50, max: 2.80, weight: 15 }
@@ -1875,7 +1874,7 @@
             return html;
         }
 
-        function placeChallengebet(fixtureId, selection, match, league, odds, oddsSource, homeGoals, awayGoals, confidence, leagueId, cornersAtPlace) {
+        function placeChallengebet(fixtureId, selection, match, league, odds, oddsSource, homeGoals, awayGoals, confidence, leagueId) {
             const bets = getPlacedChallenges();
             if (bets.some(b => b.fixtureId === fixtureId && b.selection === selection)) return;
             const betObj = {
@@ -1884,7 +1883,6 @@
                 placedAt: Date.now(), status: 'pending', result: null,
                 leagueId: leagueId || null
             };
-            if (cornersAtPlace !== undefined && cornersAtPlace !== null) betObj.cornersAtPlace = cornersAtPlace;
             bets.push(betObj);
             savePlacedChallenges(bets);
         }
@@ -1903,10 +1901,28 @@
                 won = totalGoals > 2;
             } else if (sel === 'Over 3.5 Goals') {
                 won = totalGoals > 3;
-            } else if (sel === 'Over 10.5 Corners') {
-                return bet;
-            } else if (sel.startsWith('Next Corner:')) {
-                return bet;
+            } else if (sel.startsWith('Anytime Goalscorer:')) {
+                const playerName = sel.replace('Anytime Goalscorer: ', '').trim().toLowerCase();
+                if (events && events.length > 0) {
+                    won = events.some(e => {
+                        if (e.type !== 'Goal' || !e.player || !e.player.name) return false;
+                        const eventName = e.player.name.toLowerCase();
+                        return eventName === playerName || eventName.includes(playerName) || playerName.includes(eventName);
+                    });
+                } else {
+                    won = false;
+                }
+            } else if (sel.startsWith('Anytime Booking:')) {
+                const playerName = sel.replace('Anytime Booking: ', '').trim().toLowerCase();
+                if (events && events.length > 0) {
+                    won = events.some(e => {
+                        if (e.type !== 'Card' || !e.player || !e.player.name) return false;
+                        const eventName = e.player.name.toLowerCase();
+                        return eventName === playerName || eventName.includes(playerName) || playerName.includes(eventName);
+                    });
+                } else {
+                    won = false;
+                }
             } else if (sel === 'Both Teams to Score') {
                 won = finalHome > 0 && finalAway > 0;
             } else if (sel.startsWith('Next Goal:')) {
@@ -1969,7 +1985,6 @@
                 if (!data.response) return;
 
                 let anyResolved = false;
-                const cornerBetFixtures = [];
                 data.response.forEach(fix => {
                     const status = fix.fixture.status.short;
                     if (['FT', 'AET', 'PEN'].includes(status)) {
@@ -1977,48 +1992,12 @@
                         const fAway = fix.goals.away;
                         bets.forEach(b => {
                             if (b.fixtureId === fix.fixture.id && b.status === 'pending') {
-                                if (b.selection === 'Over 10.5 Corners' || b.selection.startsWith('Next Corner:')) {
-                                    cornerBetFixtures.push({ bet: b, fix });
-                                } else {
-                                    resolveChallengeBet(b, fHome, fAway, fix.events);
-                                    anyResolved = true;
-                                }
+                                resolveChallengeBet(b, fHome, fAway, fix.events);
+                                anyResolved = true;
                             }
                         });
                     }
                 });
-                for (const cb of cornerBetFixtures) {
-                    try {
-                        trackAPI(1);
-                        const sRes = await fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${cb.fix.fixture.id}`, { headers: { "x-rapidapi-key": API_KEY } });
-                        const sData = await sRes.json();
-                        if (sData.response && sData.response.length >= 2) {
-                            let totalCorners = 0;
-                            sData.response.forEach(team => {
-                                const cStat = team.statistics.find(s => s.type === 'Corner Kicks');
-                                if (cStat) totalCorners += parseInt(cStat.value) || 0;
-                            });
-                            cb.bet.status = 'resolved';
-                            if (cb.bet.selection === 'Over 10.5 Corners') {
-                                cb.bet.result = totalCorners > 10;
-                            } else if (cb.bet.selection.startsWith('Next Corner:')) {
-                                const teamName = cb.bet.selection.replace('Next Corner: ', '').trim();
-                                let teamCorners = 0;
-                                sData.response.forEach(team => {
-                                    if (team.team.name === teamName) {
-                                        const cStat = team.statistics.find(s => s.type === 'Corner Kicks');
-                                        if (cStat) teamCorners = parseInt(cStat.value) || 0;
-                                    }
-                                });
-                                const cornersAtPlace = cb.bet.cornersAtPlace || 0;
-                                cb.bet.result = teamCorners > cornersAtPlace;
-                            }
-                            cb.bet.finalScore = `${cb.fix.goals.home}-${cb.fix.goals.away} (${totalCorners} corners)`;
-                            recordChallengeResult(cb.bet.selection, cb.bet.match, cb.bet.result, cb.bet.leagueId, cb.bet.confidence);
-                            anyResolved = true;
-                        }
-                    } catch(e) {}
-                }
 
                 savePlacedChallenges(bets);
                 if (anyResolved && currentStrategy === 'challenge') {
@@ -2530,6 +2509,14 @@
 
             const allCandidates = getAllChallengeCandidates(analyzed);
 
+            const playerPropTips = await findPlayerPropTips(analyzed, allCandidates);
+            playerPropTips.forEach(tip => {
+                if (!allCandidates.some(c => c.fixtureId === tip.fixtureId && c.selection === tip.selection)) {
+                    allCandidates.push(tip);
+                }
+            });
+            allCandidates.sort((a, b) => b.confidence - a.confidence);
+
             updateChallengeBadge(allCandidates.length);
 
             if (allCandidates.length === 0) {
@@ -2626,7 +2613,7 @@
                         <div style="display:flex; gap:6px; margin-top:8px;">
                             ${getPlacedChallenges().some(b => b.fixtureId === c.fixtureId && b.selection === c.selection) ?
                             `<button disabled style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--gold); background:rgba(210,153,34,0.15); color:var(--gold); font-size:0.75rem; font-weight:bold; cursor:default;">📌 Bet Placed — Tracking</button>` :
-                            `<button data-fid="${c.fixtureId}" data-sel="${encodeURIComponent(c.selection)}" data-match="${encodeURIComponent(c.match)}" data-league="${encodeURIComponent(c.league)}" data-odds="${c.odds}" data-osrc="${c.oddsSource}" data-hg="${c.homeGoals}" data-ag="${c.awayGoals}" data-conf="${c.confidence}" data-lid="${c.leagueId || 0}" data-cap="${c.cornersAtPlace || 0}" onclick="placeChallengebet(parseInt(this.dataset.fid), decodeURIComponent(this.dataset.sel), decodeURIComponent(this.dataset.match), decodeURIComponent(this.dataset.league), this.dataset.odds, this.dataset.osrc, parseInt(this.dataset.hg), parseInt(this.dataset.ag), parseInt(this.dataset.conf), parseInt(this.dataset.lid)||null, parseInt(this.dataset.cap)||0); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)'; startChallengeCheckInterval();" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.75rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`}
+                            `<button data-fid="${c.fixtureId}" data-sel="${encodeURIComponent(c.selection)}" data-match="${encodeURIComponent(c.match)}" data-league="${encodeURIComponent(c.league)}" data-odds="${c.odds}" data-osrc="${c.oddsSource}" data-hg="${c.homeGoals}" data-ag="${c.awayGoals}" data-conf="${c.confidence}" data-lid="${c.leagueId || 0}" onclick="placeChallengebet(parseInt(this.dataset.fid), decodeURIComponent(this.dataset.sel), decodeURIComponent(this.dataset.match), decodeURIComponent(this.dataset.league), this.dataset.odds, this.dataset.osrc, parseInt(this.dataset.hg), parseInt(this.dataset.ag), parseInt(this.dataset.conf), parseInt(this.dataset.lid)||null); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)'; startChallengeCheckInterval();" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.75rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`}
                         </div>
                     </div>`;
                 });
@@ -2765,10 +2752,10 @@
                     }
                     if (market === 'btts') return (1.50 + Math.random() * 0.25).toFixed(2);
                     if (market === 'next') return (1.60 + Math.random() * 0.30).toFixed(2);
-                    if (market === 'corners') {
-                        if (elapsed >= 75) return (1.25 + Math.random() * 0.15).toFixed(2);
-                        if (elapsed >= 65) return (1.40 + Math.random() * 0.20).toFixed(2);
-                        return (1.55 + Math.random() * 0.25).toFixed(2);
+                    if (market === 'goalscorer') {
+                        if (elapsed >= 75) return (2.20 + Math.random() * 0.50).toFixed(2);
+                        if (elapsed >= 65) return (2.50 + Math.random() * 0.60).toFixed(2);
+                        return (2.80 + Math.random() * 0.70).toFixed(2);
                     }
                     return (1.40 + Math.random() * 0.30).toFixed(2);
                 };
@@ -2812,10 +2799,6 @@
                     if (calibAdj.note) reasoning += ` ${calibAdj.note}`;
                     if (weatherImpact.note && weatherImpact.boost !== 0) reasoning += ` ${weatherImpact.note}`;
                     const candidateObj = { fixtureId, match: matchName, league, selection, odds: oddsInfo.odds, oddsSource: oddsInfo.source, confidence, reasoning, totalSoT, totalShots, homeSoT: stats.homeSoT, awaySoT: stats.awaySoT, homeTotal: stats.homeTotal, awayTotal: stats.awayTotal, homeCorners: stats.homeCorners, awayCorners: stats.awayCorners, homePoss: Math.round(stats.homePoss), awayPoss: Math.round(stats.awayPoss), homeGoals: m.goals.home, awayGoals: m.goals.away, leagueId: m.league.id };
-                    if (selection.startsWith('Next Corner:')) {
-                        const cornerTeamName = selection.replace('Next Corner: ', '').trim();
-                        candidateObj.cornersAtPlace = cornerTeamName === homeName ? stats.homeCorners : stats.awayCorners;
-                    }
                     matchCandidates.push(candidateObj);
                 };
 
@@ -2909,36 +2892,7 @@
                     }
                 }
 
-                const cornerPace = (totalCorners / Math.max(1, elapsed)) * 90;
-                const cornersNeeded = 11 - totalCorners;
                 const minsLeft = 90 - elapsed;
-                if (totalCorners >= 7 && totalCorners <= 10 && elapsed >= 50 && elapsed <= 78 && cornersNeeded >= 1) {
-                    const projectedRemaining = (cornerPace / 90) * minsLeft;
-                    if (projectedRemaining >= cornersNeeded + 1.5 && cornerPace >= 11) {
-                        let conf = Math.min(90, Math.round(76 + (projectedRemaining - cornersNeeded) * 2.5));
-                        let reason = `${totalCorners} corners at ${elapsed}' (pace: ${cornerPace.toFixed(1)}/game). Need ${cornersNeeded} more, projected ${projectedRemaining.toFixed(1)} remaining.`;
-                        if (totalShots >= 16) { conf = Math.min(92, conf + 2); reason += ` ${totalShots} shots driving corners.`; }
-                        if (pressure.dominance && (pressure.dominance.includes('siege') || pressure.dominance.includes('edge'))) { conf = Math.min(92, conf + 2); reason += ` Sustained pressure.`; }
-                        addCandidate("Over 10.5 Corners", getOddsWithSource('corners', elapsed), conf, reason);
-                    }
-                }
-
-                if (totalCorners >= 6 && elapsed >= 70) {
-                    const hCorners = stats.homeCorners || 0;
-                    const aCorners = stats.awayCorners || 0;
-                    if (hCorners > 0 || aCorners > 0) {
-                        const cornerDom = Math.max(hCorners, aCorners) / Math.max(1, totalCorners);
-                        const domTeam = hCorners >= aCorners ? homeName : awayName;
-                        const domCorners = Math.max(hCorners, aCorners);
-                        const domShots = hCorners >= aCorners ? stats.homeTotal : stats.awayTotal;
-                        if (cornerDom >= 0.6 && domShots >= 6) {
-                            let conf = Math.min(88, Math.round(78 + (cornerDom - 0.6) * 30));
-                            let reason = `${domTeam} dominates corners ${domCorners}-${Math.min(hCorners, aCorners)} with ${domShots} shots. ${minsLeft} mins left for next corner.`;
-                            if (pressure.dominance && (pressure.dominance.includes('siege') || pressure.dominance.includes('edge'))) { conf = Math.min(90, conf + 2); reason += ` Under pressure.`; }
-                            addCandidate(`Next Corner: ${domTeam}`, getOddsWithSource('corners', elapsed), conf, reason);
-                        }
-                    }
-                }
 
                 const topCandidate = matchCandidates.length > 0 ? matchCandidates.sort((a, b) => b.confidence - a.confidence)[0] : null;
                 if (topCandidate && topCandidate.selection.startsWith('Over')) {
@@ -2963,6 +2917,132 @@
                 return (b.totalSoT + b.totalShots) - (a.totalSoT + a.totalShots);
             });
             return filtered;
+        }
+
+        async function findPlayerPropTips(matches, existingCandidates) {
+            const propTips = [];
+            const qualifying = matches.filter(m => {
+                const stats = m.analyzedStats;
+                if (!stats) return false;
+                const elapsed = m.fixture.status.elapsed || 0;
+                const totalSoT = (stats.homeSoT || 0) + (stats.awaySoT || 0);
+                return elapsed >= 55 && elapsed <= 85 && totalSoT >= 4;
+            }).slice(0, 3);
+
+            for (const m of qualifying) {
+                try {
+                    trackAPI(1);
+                    const res = await fetch(`https://v3.football.api-sports.io/fixtures/players?fixture=${m.fixture.id}`, { headers: { "x-rapidapi-key": API_KEY } });
+                    const data = await res.json();
+                    if (!data.response || data.response.length < 2) continue;
+
+                    const elapsed = m.fixture.status.elapsed || 70;
+                    const stats = m.analyzedStats;
+                    const homeName = m.teams.home.name;
+                    const awayName = m.teams.away.name;
+                    const matchName = `${homeName} vs ${awayName}`;
+                    const league = m.league.name;
+                    const refName = m.fixture.referee ? m.fixture.referee.split(',')[0].trim() : null;
+                    const refProfile = refName ? getRefProfile(refName) : null;
+                    const refStrictness = refProfile ? refProfile.strictness : 'unknown';
+
+                    const baseTipObj = {
+                        totalSoT: (stats.homeSoT || 0) + (stats.awaySoT || 0),
+                        totalShots: (stats.homeTotal || 0) + (stats.awayTotal || 0),
+                        homeSoT: stats.homeSoT || 0,
+                        awaySoT: stats.awaySoT || 0,
+                        homeTotal: stats.homeTotal || 0,
+                        awayTotal: stats.awayTotal || 0,
+                        homeCorners: stats.homeCorners || 0,
+                        awayCorners: stats.awayCorners || 0,
+                        homePoss: Math.round(stats.homePoss || 50),
+                        awayPoss: Math.round(stats.awayPoss || 50),
+                        homeGoals: m.goals.home,
+                        awayGoals: m.goals.away,
+                        leagueId: m.league.id
+                    };
+
+                    let topThreats = [];
+                    let bookingRisks = [];
+
+                    data.response.forEach(t => {
+                        if (!t.players) return;
+                        t.players.forEach(p => {
+                            if (!p.statistics || !p.statistics[0]) return;
+                            const s = p.statistics[0];
+                            if (!s.games) return;
+                            const mins = s.games.minutes || 0;
+                            if (mins < 30) return;
+
+                            if (s.shots && s.goals && s.goals.total === 0 && (s.shots.on || 0) >= 2) {
+                                const shotsOn = s.shots.on || 0;
+                                const shotsTotal = s.shots.total || 0;
+                                const keyPasses = (s.passes && s.passes.key) || 0;
+                                const dribbles = (s.dribbles && s.dribbles.success) || 0;
+                                const threatScore = shotsOn * 4 + (shotsTotal - shotsOn) * 1.5 + keyPasses * 1.5 + dribbles * 0.5;
+                                topThreats.push({
+                                    name: p.player.name, id: p.player.id, team: t.team.name,
+                                    shotsOn, shotsTotal, keyPasses, threatScore, mins
+                                });
+                            }
+
+                            if (s.fouls && s.cards) {
+                                const fouls = s.fouls.committed || 0;
+                                const hasYellow = s.cards.yellow || 0;
+                                const hasRed = s.cards.red || 0;
+                                if (fouls >= 2 && !hasYellow && !hasRed) {
+                                    let cardProb = Math.min(95, Math.round(fouls * 18 + (fouls >= 3 ? 15 : 0) + (elapsed >= 70 ? 10 : 0)));
+                                    if (refStrictness === 'strict') cardProb = Math.min(95, cardProb + 10);
+                                    else if (refStrictness === 'lenient') cardProb = Math.max(50, cardProb - 8);
+                                    const pos = s.games.position || '';
+                                    const isDefender = pos === 'D' || pos === 'Defender';
+                                    const isMidfielder = pos === 'M' || pos === 'Midfielder';
+                                    if (isDefender || isMidfielder) cardProb = Math.min(95, cardProb + 5);
+                                    bookingRisks.push({
+                                        name: p.player.name, id: p.player.id, team: t.team.name,
+                                        fouls, cardProb, pos, mins
+                                    });
+                                }
+                            }
+                        });
+                    });
+
+                    topThreats.sort((a, b) => b.threatScore - a.threatScore);
+                    const bestGoalscorer = topThreats[0];
+                    if (bestGoalscorer && bestGoalscorer.threatScore >= 8) {
+                        let conf = Math.min(88, Math.round(74 + bestGoalscorer.threatScore * 0.8));
+                        conf = Math.min(90, conf + (elapsed >= 70 ? 3 : (elapsed >= 65 ? 2 : 0)));
+                        const reason = `🎯 ${bestGoalscorer.name} (${bestGoalscorer.team}): ${bestGoalscorer.shotsOn} SoT, ${bestGoalscorer.shotsTotal} total shots, ${bestGoalscorer.keyPasses} key passes — 0 goals. Active threat at ${elapsed}'.`;
+                        propTips.push({
+                            fixtureId: m.fixture.id, match: matchName, league,
+                            selection: `Anytime Goalscorer: ${bestGoalscorer.name}`,
+                            odds: (2.20 + Math.random() * 0.80).toFixed(2),
+                            oddsSource: 'estimated', confidence: conf, reasoning: reason,
+                            ...baseTipObj
+                        });
+                    }
+
+                    bookingRisks.sort((a, b) => b.cardProb - a.cardProb);
+                    const bestBooking = bookingRisks[0];
+                    if (bestBooking && bestBooking.cardProb >= 55) {
+                        let conf = Math.min(90, Math.round(bestBooking.cardProb * 0.9));
+                        conf = Math.min(92, conf + (elapsed >= 70 ? 3 : (elapsed >= 65 ? 2 : 0)));
+                        if (refStrictness === 'strict') conf = Math.min(92, conf + 3);
+                        const refNote = refProfile ? ` 👮 Ref: ${refName} (${refStrictness}).` : '';
+                        const posLabel = bestBooking.pos ? ` Position: ${bestBooking.pos}.` : '';
+                        const reason = `🟨 ${bestBooking.name} (${bestBooking.team}): ${bestBooking.fouls} fouls committed, 0 cards so far.${posLabel}${refNote} High booking risk at ${elapsed}'.`;
+                        propTips.push({
+                            fixtureId: m.fixture.id, match: matchName, league,
+                            selection: `Anytime Booking: ${bestBooking.name}`,
+                            odds: (1.60 + Math.random() * 0.50).toFixed(2),
+                            oddsSource: 'estimated', confidence: conf, reasoning: reason,
+                            ...baseTipObj
+                        });
+                    }
+
+                } catch(e) { console.log('Player prop fetch error:', e); }
+            }
+            return propTips;
         }
 
         function createCard(m, isPlaced, hasFullStats) {
@@ -3897,10 +3977,10 @@
                     }
                     if (market === 'btts') return (1.50 + Math.random() * 0.25).toFixed(2);
                     if (market === 'next') return (1.60 + Math.random() * 0.30).toFixed(2);
-                    if (market === 'corners') {
-                        if (elapsed >= 75) return (1.25 + Math.random() * 0.15).toFixed(2);
-                        if (elapsed >= 65) return (1.40 + Math.random() * 0.20).toFixed(2);
-                        return (1.55 + Math.random() * 0.25).toFixed(2);
+                    if (market === 'goalscorer') {
+                        if (elapsed >= 75) return (2.20 + Math.random() * 0.50).toFixed(2);
+                        if (elapsed >= 65) return (2.50 + Math.random() * 0.60).toFixed(2);
+                        return (2.80 + Math.random() * 0.70).toFixed(2);
                     }
                     return (1.40 + Math.random() * 0.30).toFixed(2);
                 };
@@ -4328,7 +4408,8 @@
             if (!selection) return 'Unknown';
             if (selection.startsWith('Over')) return selection.split(' ').slice(0, 2).join(' ');
             if (selection.startsWith('Next Goal:')) return 'Next Goal';
-            if (selection.startsWith('Next Corner:')) return 'Next Corner';
+            if (selection.startsWith('Anytime Goalscorer:')) return 'Goalscorer';
+            if (selection.startsWith('Anytime Booking:')) return 'Booking';
             if (selection === 'Both Teams to Score') return 'BTTS';
             if (selection === 'Home Win' || selection === 'Away Win') return selection;
             return selection;
