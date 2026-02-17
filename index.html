@@ -2748,7 +2748,7 @@
                     }
                 }
 
-                if (totalCorners >= 7 && elapsed >= 50 && elapsed <= 78) {
+                if (totalCorners >= 7 && totalCorners <= 8 && elapsed >= 50 && elapsed <= 78) {
                     const cornerPace = (totalCorners / Math.max(1, elapsed)) * 90;
                     if (cornerPace >= 10.5) {
                         let conf = Math.min(90, Math.round(78 + (cornerPace - 10.5) * 3));
