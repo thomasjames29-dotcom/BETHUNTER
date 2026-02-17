@@ -1749,6 +1749,78 @@
             localStorage.setItem('placedChallenges', JSON.stringify(bets));
         }
 
+        function renderPlacedBetsTracker(pendingBets, resolvedBets) {
+            let html = `<div style="margin:12px 10px 0; padding:10px 12px; background:rgba(210,153,34,0.06); border:1px solid rgba(210,153,34,0.2); border-radius:10px;">
+                <div style="font-size:0.8rem; font-weight:bold; color:var(--gold); margin-bottom:8px;">📋 Placed Bets Tracker</div>`;
+
+            if (pendingBets.length > 0) {
+                html += `<div style="margin-bottom:6px;">`;
+                pendingBets.forEach(b => {
+                    const ago = Math.round((Date.now() - b.placedAt) / 60000);
+                    html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <div>
+                            <div style="font-size:0.75rem; font-weight:bold; color:#ddd;">${b.selection}</div>
+                            <div style="font-size:0.65rem; color:#888;">${b.match} (${b.homeGoalsAtPlace}-${b.awayGoalsAtPlace} when placed)</div>
+                        </div>
+                        <span style="font-size:0.65rem; padding:3px 8px; border-radius:8px; background:rgba(210,153,34,0.15); color:var(--gold); font-weight:bold;">⏳ ${ago}m ago</span>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+
+            if (resolvedBets.length > 0) {
+                const grouped = {};
+                resolvedBets.forEach(b => {
+                    const d = new Date(b.placedAt).toISOString().split('T')[0];
+                    if (!grouped[d]) grouped[d] = [];
+                    grouped[d].push(b);
+                });
+                const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+                const today = new Date().toISOString().split('T')[0];
+
+                sortedDates.forEach(date => {
+                    const dayBets = grouped[date];
+                    let wins = 0, losses = 0;
+                    dayBets.forEach(b => { if (b.result) wins++; else losses++; });
+                    const delta = wins - losses;
+                    const deltaStr = delta >= 0 ? `+${delta}` : `${delta}`;
+                    const deltaColor = delta > 0 ? 'var(--green)' : (delta < 0 ? 'var(--red)' : '#888');
+                    const dateLabel = date === today ? 'Today' : date;
+                    const uid = 'pbt-' + date.replace(/[^a-z0-9]/gi, '');
+
+                    html += `<div style="border-top:1px solid rgba(255,255,255,0.05);">
+                        <div onclick="document.getElementById('${uid}').style.display = document.getElementById('${uid}').style.display === 'none' ? 'block' : 'none'; this.querySelector('.pbt-chev').textContent = document.getElementById('${uid}').style.display === 'none' ? '▶' : '▼'" style="padding:8px 0; display:flex; justify-content:space-between; align-items:center; cursor:pointer; user-select:none;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <span class="pbt-chev" style="color:#888; font-size:0.65rem;">▶</span>
+                                <span style="color:#ccc; font-weight:bold; font-size:0.8rem;">📅 ${dateLabel}</span>
+                                <span style="color:#888; font-size:0.7rem;">${dayBets.length} bet${dayBets.length !== 1 ? 's' : ''}</span>
+                                <span style="font-size:0.7rem; color:#888;">${wins}W ${losses}L</span>
+                            </div>
+                            <span style="font-weight:bold; color:${deltaColor}; font-size:0.8rem;">${deltaStr}</span>
+                        </div>
+                        <div id="${uid}" style="display:none;">`;
+
+                    dayBets.forEach(b => {
+                        const wonColor = b.result ? 'var(--green)' : 'var(--red)';
+                        const wonIcon = b.result ? '✅' : '❌';
+                        const wonText = b.result ? 'WON' : 'LOST';
+                        html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0 5px 16px; border-top:1px solid rgba(255,255,255,0.03);">
+                            <div>
+                                <div style="font-size:0.73rem; font-weight:bold; color:#ddd;">${b.selection} @ ${b.odds}</div>
+                                <div style="font-size:0.63rem; color:#888;">${b.match} (FT: ${b.finalScore})</div>
+                            </div>
+                            <span style="font-size:0.65rem; padding:3px 8px; border-radius:8px; background:${b.result ? 'rgba(46,160,67,0.15)' : 'rgba(218,54,51,0.15)'}; color:${wonColor}; font-weight:bold;">${wonIcon} ${wonText}</span>
+                        </div>`;
+                    });
+
+                    html += `</div></div>`;
+                });
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
         function placeChallengebet(fixtureId, selection, match, league, odds, oddsSource, homeGoals, awayGoals, confidence, leagueId) {
             const bets = getPlacedChallenges();
             if (bets.some(b => b.fixtureId === fixtureId && b.selection === selection)) return;
@@ -2387,18 +2459,9 @@
                 </div>`;
                 const pbAll = getPlacedChallenges();
                 const pbPending = pbAll.filter(b => b.status === 'pending');
-                const pbResolved = pbAll.filter(b => b.status === 'resolved' && (Date.now() - b.placedAt) < 86400000).slice(0, 10);
+                const pbResolved = pbAll.filter(b => b.status === 'resolved').sort((a, b) => b.placedAt - a.placedAt);
                 if (pbPending.length > 0 || pbResolved.length > 0) {
-                    noPicksHtml += `<div style="margin:12px 10px 0; padding:10px 12px; background:rgba(210,153,34,0.06); border:1px solid rgba(210,153,34,0.2); border-radius:10px;">
-                        <div style="font-size:0.8rem; font-weight:bold; color:var(--gold); margin-bottom:8px;">📋 Placed Bets Tracker</div>`;
-                    pbPending.forEach(b => {
-                        const ago = Math.round((Date.now() - b.placedAt) / 60000);
-                        noPicksHtml += `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);"><div><div style="font-size:0.75rem; font-weight:bold; color:#ddd;">${b.selection}</div><div style="font-size:0.65rem; color:#888;">${b.match} (${b.homeGoalsAtPlace}-${b.awayGoalsAtPlace} when placed)</div></div><span style="font-size:0.65rem; padding:3px 8px; border-radius:8px; background:rgba(210,153,34,0.15); color:var(--gold); font-weight:bold;">⏳ ${ago}m ago</span></div>`;
-                    });
-                    pbResolved.forEach(b => {
-                        noPicksHtml += `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);"><div><div style="font-size:0.75rem; font-weight:bold; color:#ddd;">${b.selection} @ ${b.odds}</div><div style="font-size:0.65rem; color:#888;">${b.match} (FT: ${b.finalScore})</div></div><span style="font-size:0.65rem; padding:3px 8px; border-radius:8px; background:${b.result ? 'rgba(46,160,67,0.15)' : 'rgba(218,54,51,0.15)'}; color:${b.result ? 'var(--green)' : 'var(--red)'}; font-weight:bold;">${b.result ? '✅ WON' : '❌ LOST'}</span></div>`;
-                    });
-                    noPicksHtml += `</div>`;
+                    noPicksHtml += renderPlacedBetsTracker(pbPending, pbResolved);
                 }
                 if (pbPending.length > 0) startChallengeCheckInterval();
                 content.innerHTML = noPicksHtml;
@@ -2492,37 +2555,10 @@
 
             const placedBetsAll = getPlacedChallenges();
             const pendingBets = placedBetsAll.filter(b => b.status === 'pending');
-            const recentResolved = placedBetsAll.filter(b => b.status === 'resolved' && (Date.now() - b.placedAt) < 86400000).slice(0, 10);
+            const recentResolved = placedBetsAll.filter(b => b.status === 'resolved').sort((a, b) => b.placedAt - a.placedAt);
 
             if (pendingBets.length > 0 || recentResolved.length > 0) {
-                html += `<div style="margin:12px 10px 0; padding:10px 12px; background:rgba(210,153,34,0.06); border:1px solid rgba(210,153,34,0.2); border-radius:10px;">
-                    <div style="font-size:0.8rem; font-weight:bold; color:var(--gold); margin-bottom:8px;">📋 Placed Bets Tracker</div>`;
-
-                pendingBets.forEach(b => {
-                    const ago = Math.round((Date.now() - b.placedAt) / 60000);
-                    html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
-                        <div>
-                            <div style="font-size:0.75rem; font-weight:bold; color:#ddd;">${b.selection}</div>
-                            <div style="font-size:0.65rem; color:#888;">${b.match} (${b.homeGoalsAtPlace}-${b.awayGoalsAtPlace} when placed)</div>
-                        </div>
-                        <span style="font-size:0.65rem; padding:3px 8px; border-radius:8px; background:rgba(210,153,34,0.15); color:var(--gold); font-weight:bold;">⏳ ${ago}m ago</span>
-                    </div>`;
-                });
-
-                recentResolved.forEach(b => {
-                    const wonColor = b.result ? 'var(--green)' : 'var(--red)';
-                    const wonIcon = b.result ? '✅' : '❌';
-                    const wonText = b.result ? 'WON' : 'LOST';
-                    html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
-                        <div>
-                            <div style="font-size:0.75rem; font-weight:bold; color:#ddd;">${b.selection} @ ${b.odds}</div>
-                            <div style="font-size:0.65rem; color:#888;">${b.match} (FT: ${b.finalScore})</div>
-                        </div>
-                        <span style="font-size:0.65rem; padding:3px 8px; border-radius:8px; background:${b.result ? 'rgba(46,160,67,0.15)' : 'rgba(218,54,51,0.15)'}; color:${wonColor}; font-weight:bold;">${wonIcon} ${wonText}</span>
-                    </div>`;
-                });
-
-                html += `</div>`;
+                html += renderPlacedBetsTracker(pendingBets, recentResolved);
             }
 
             if (pendingBets.length > 0) startChallengeCheckInterval();
