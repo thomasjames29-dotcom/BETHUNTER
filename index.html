@@ -34,6 +34,8 @@
         @keyframes pulse-purple { 0% { box-shadow: 0 0 0 0 rgba(163, 113, 247, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(163, 113, 247, 0); } 100% { box-shadow: 0 0 0 0 rgba(163, 113, 247, 0); } }
 
         /* AUTO-PILOT */
+        .notif-btn { background: #21262d; border: 1px solid #30363d; color: #888; padding: 6px 12px; border-radius: 20px; font-size: 1rem; cursor: pointer; transition: all 0.3s; line-height: 1; }
+        .notif-btn.notif-on { background: rgba(56,139,253,0.15); border-color: var(--blue); }
         .pilot-btn { background: #21262d; border: 1px solid #30363d; color: #888; padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.3s; }
         .pilot-btn.active { background: rgba(46, 160, 67, 0.2); border-color: var(--green); color: var(--green); }
         .pilot-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; }
@@ -245,6 +247,7 @@
             <button id="pilotBtn" class="pilot-btn" onclick="togglePilot()">
                 <div class="pilot-dot"></div> Auto-Pilot
             </button>
+            <button id="notifBtn" class="notif-btn" onclick="toggleNotifications()" title="Notifications Off">🔕</button>
         </div>
         
         <div class="nav-tabs">
@@ -475,6 +478,12 @@
                 }).catch(err => {
                     console.log('SW Registration Failed', err);
                 });
+                const nb = document.getElementById('notifBtn');
+                if (nb && localStorage.getItem('tft_notifications') === 'true' && 'Notification' in window && Notification.permission === 'granted') {
+                    nb.classList.add('notif-on');
+                    nb.innerHTML = '🔔';
+                    nb.title = 'Notifications On';
+                }
             });
         }
 
@@ -1985,6 +1994,7 @@
                 if (!data.response) return;
 
                 let anyResolved = false;
+                const resolvedResults = [];
                 data.response.forEach(fix => {
                     const status = fix.fixture.status.short;
                     if (['FT', 'AET', 'PEN'].includes(status)) {
@@ -1994,9 +2004,15 @@
                             if (b.fixtureId === fix.fixture.id && b.status === 'pending') {
                                 resolveChallengeBet(b, fHome, fAway, fix.events);
                                 anyResolved = true;
+                                resolvedResults.push({ selection: b.selection, won: b.result, match: b.match });
                             }
                         });
                     }
+                });
+                resolvedResults.forEach(r => {
+                    const icon = r.won ? '✅' : '❌';
+                    const status = r.won ? 'WON' : 'LOST';
+                    sendNotification(`${icon} Bet ${status}`, `${r.selection} — ${r.match}`, 'tft-result-' + Date.now());
                 });
 
                 savePlacedChallenges(bets);
@@ -2206,10 +2222,15 @@
                 if (strategyCounts[key] > oldCounts[key]) increased = true;
             });
             if (increased && pilotMode) {
-                if (strategyCounts.red > oldCounts.red) playAlertSound('card');
-                else if (strategyCounts.alert > oldCounts.alert) playAlertSound('goal');
-                else if (strategyCounts.drought > oldCounts.drought) playAlertSound('corner');
-                else playAlertSound('goal');
+                if (strategyCounts.red > oldCounts.red) {
+                    playAlertSound('card');
+                } else if (strategyCounts.alert > oldCounts.alert) {
+                    playAlertSound('goal');
+                } else if (strategyCounts.drought > oldCounts.drought) {
+                    playAlertSound('corner');
+                } else {
+                    playAlertSound('goal');
+                }
             }
 
             updateChipBadges();
@@ -2518,6 +2539,11 @@
             allCandidates.sort((a, b) => b.confidence - a.confidence);
 
             updateChallengeBadge(allCandidates.length);
+
+            if (isAutoRefresh && allCandidates.length > 0) {
+                const topPick = allCandidates[0];
+                sendNotification('🎯 Challenge Pick Found', `${topPick.selection} (${topPick.confidence}%) — ${topPick.match}`, 'tft-challenge');
+            }
 
             if (allCandidates.length === 0) {
                 let noPicksHtml = `<div style="text-align:center; padding:50px 15px; color:#888;">
@@ -4194,6 +4220,52 @@
             const bets = getPlacedChallenges();
             const bet = bets.find(b => b.fixtureId === fixtureId && b.selection === selection);
             if (bet) { bet.note = note; savePlacedChallenges(bets); }
+        }
+
+        // ========== NOTIFICATIONS ==========
+        let notificationsEnabled = localStorage.getItem('tft_notifications') === 'true';
+
+        async function requestNotificationPermission() {
+            if (!('Notification' in window)) return false;
+            if (Notification.permission === 'granted') return true;
+            if (Notification.permission === 'denied') return false;
+            const result = await Notification.requestPermission();
+            return result === 'granted';
+        }
+
+        function sendNotification(title, body, tag) {
+            if (!notificationsEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
+            try {
+                const n = new Notification(title, {
+                    body: body,
+                    icon: './target_PNG26.png',
+                    tag: tag || 'tft-alert',
+                    renotify: true,
+                    silent: false
+                });
+                setTimeout(() => n.close(), 8000);
+            } catch(e) { console.log('Notification error:', e); }
+        }
+
+        async function toggleNotifications() {
+            const btn = document.getElementById('notifBtn');
+            if (notificationsEnabled) {
+                notificationsEnabled = false;
+                localStorage.setItem('tft_notifications', 'false');
+                btn.classList.remove('notif-on');
+                btn.innerHTML = '🔕';
+                btn.title = 'Notifications Off';
+            } else {
+                const granted = await requestNotificationPermission();
+                if (granted) {
+                    notificationsEnabled = true;
+                    localStorage.setItem('tft_notifications', 'true');
+                    btn.classList.add('notif-on');
+                    btn.innerHTML = '🔔';
+                    btn.title = 'Notifications On';
+                    sendNotification('The Final Third', 'Notifications enabled! You\'ll be alerted when tips are found.', 'tft-setup');
+                }
+            }
         }
 
         // ========== ALERT SOUNDS ==========
