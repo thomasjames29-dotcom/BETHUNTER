@@ -1577,30 +1577,28 @@
         }
 
         async function generateAccas(btn) {
-            btn.innerText = "🔍 ANALYZING ELITE DATA...";
+            btn.innerText = "🔍 ANALYZING ALL FIXTURES...";
             btn.disabled = true;
             const area = document.getElementById('accContent');
-            area.innerHTML = "<div style='text-align:center; padding:40px;'><div class='pilot-dot' style='width:20px; height:20px; margin:0 auto; background:var(--gold); animation:pulse-gold 1s infinite;'></div><p style='margin-top:20px; color:var(--gold);'>Calculating high-probability combinations...</p></div>";
+            area.innerHTML = "<div style='text-align:center; padding:40px;'><div class='pilot-dot' style='width:20px; height:20px; margin:0 auto; background:var(--gold); animation:pulse-gold 1s infinite;'></div><p style='margin-top:20px; color:var(--gold);'>Scanning all leagues for high-probability combinations...</p></div>";
             
             try {
                 const today = new Date().toISOString().split('T')[0];
-                const eliteIds = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 137, 188];
                 
-                let allEliteFixtures = [];
-                // Query top 10 elite leagues for better coverage
-                for (let lid of eliteIds.slice(0, 10)) { 
-                    try {
-                        const res = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}&league=${lid}&season=2025`, { headers: { "x-rapidapi-key": API_KEY } });
-                        const data = await res.json();
-                        if(data.response) allEliteFixtures = allEliteFixtures.concat(data.response);
-                    } catch(e) { console.error(`Failed to fetch league ${lid}`, e); }
-                    await new Promise(r => setTimeout(r, 200)); 
+                const res = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}`, { headers: { "x-rapidapi-key": API_KEY } });
+                const data = await res.json();
+                trackAPI(1);
+                
+                let allFixtures = [];
+                if (data.response) {
+                    allFixtures = data.response.filter(f => {
+                        const status = f.fixture.status.short;
+                        return ['NS', 'TBD', '1H', '2H', 'HT'].includes(status);
+                    });
                 }
 
-                trackAPI(10);
-
-                if (allEliteFixtures.length < 3) {
-                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'>Not enough Elite matches today to generate accumulators.</div>";
+                if (allFixtures.length < 3) {
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'>Not enough matches today to generate accumulators.</div>";
                     btn.innerText = "💎 GENERATE DAILY ACCUMULATORS";
                     btn.disabled = false;
                     return;
@@ -1611,7 +1609,7 @@
                 // and pick a random selection from Elite leagues to simulate the "Tips"
                 
                 const shuffle = (array) => array.sort(() => Math.random() - 0.5);
-                const selected = shuffle(allEliteFixtures).slice(0, 8);
+                const selected = shuffle(allFixtures).slice(0, 8);
                 
                 let accasHtml = "";
                 
@@ -1664,7 +1662,7 @@
                     accasHtml += `
                         <div class="match-card" style="border: 1px solid var(--gold);">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                                <h3 style="margin:0; color:var(--gold);">${foldSize}-FOLD ELITE ACCA</h3>
+                                <h3 style="margin:0; color:var(--gold);">${foldSize}-FOLD ACCA</h3>
                                 <div style="background:var(--gold); color:#000; padding:2px 8px; border-radius:4px; font-weight:bold;">${totalOdds.toFixed(2)}</div>
                             </div>
                             ${itemsHtml}
