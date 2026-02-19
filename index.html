@@ -2039,7 +2039,7 @@
 
         function cleanupOldPlacedBets() {
             const bets = getPlacedChallenges();
-            const cutoff = Date.now() - (24 * 60 * 60 * 1000);
+            const cutoff = Date.now() - (10 * 24 * 60 * 60 * 1000);
             const kept = bets.filter(b => b.placedAt > cutoff || b.status === 'pending');
             if (kept.length !== bets.length) savePlacedChallenges(kept);
         }
