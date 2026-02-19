@@ -500,7 +500,12 @@
         let cardPilotInterval;
         let alertedGames = new Set();
         let currentStrategy = 'all';
-        let momentumHistory = {}; 
+        let momentumHistory = {};
+        let accaTipPool = [];
+        let accaDiscarded = [];
+        let accaCurrentPicks = [];
+        let accaAnalyzedCount = 0;
+        let accaLeagueCount = 0; 
         let teamFoulTracker = {};
         let challengeAutoRefreshInterval = null;
         let challengeScanLock = false;
@@ -1753,79 +1758,21 @@
                     await new Promise(r => setTimeout(r, 120));
                 }
 
-                allScoredTips.sort((a, b) => b.prob - a.prob);
+                accaTipPool = allScoredTips.sort((a, b) => b.prob - a.prob);
+                accaDiscarded = [];
 
-                const usedFixtures = new Set();
-                const bestTips = [];
-                for (const tip of allScoredTips) {
-                    const fid = tip.fixture.fixture.id;
-                    if (!usedFixtures.has(fid)) {
-                        bestTips.push(tip);
-                        usedFixtures.add(fid);
-                    }
-                    if (bestTips.length >= 10) break;
-                }
-
-                if (bestTips.length < 3) {
+                const initial = accaBuildFromPool();
+                if (initial.length < 3) {
                     area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>📊</div><p>Not enough high-confidence picks found.</p><p style='font-size:0.8rem; margin-top:8px;'>Analyzed ${toAnalyze.length} matches but couldn't find 3+ selections above 60% probability with sufficient data.</p></div>";
                     btn.innerText = "💎 GENERATE DAILY ACCUMULATORS";
                     btn.disabled = false;
                     return;
                 }
 
-                let accasHtml = `<div style="text-align:center; padding:8px; margin-bottom:12px; color:#888; font-size:0.75rem;">📊 Analyzed ${toAnalyze.length} matches across ${leagueIds.length} leagues · ${allScoredTips.length} selections above 60% found</div>`;
-
-                const folds = bestTips.length >= 7 ? [4, 3] : (bestTips.length >= 6 ? [3, 3] : [3]);
-                let tipIdx = 0;
-                folds.forEach((foldSize, accaIdx) => {
-                    const accaTips = bestTips.slice(tipIdx, tipIdx + foldSize);
-                    tipIdx += foldSize;
-                    if (accaTips.length < foldSize) return;
-
-                    let totalOdds = 1;
-                    let combinedProb = 1;
-                    let itemsHtml = "";
-
-                    accaTips.forEach(t => {
-                        const g = t.fixture;
-                        totalOdds *= parseFloat(t.odds);
-                        combinedProb *= t.prob;
-                        const confPct = Math.round(t.prob * 100);
-                        const confColor = confPct >= 80 ? 'var(--green)' : (confPct >= 70 ? 'var(--cyan)' : 'var(--gold)');
-                        const dataBadges = [];
-                        if (t.standingsAvail && t.homePos && t.awayPos) dataBadges.push(`📍 ${t.homePos}${getOrdinal(t.homePos)} vs ${t.awayPos}${getOrdinal(t.awayPos)}`);
-                        if (t.h2hAvail) dataBadges.push('🔄 H2H');
-                        if (t.homeFormAvail && t.awayFormAvail) dataBadges.push('📈 Form');
-
-                        itemsHtml += `
-                            <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:8px; border-left:3px solid ${confColor};">
-                                <div style="font-size:0.7rem; color:#888; display:flex; justify-content:space-between;">${g.league.name} ${g.league.country ? '· ' + g.league.country : ''}<span style="color:${confColor}; font-weight:bold;">${confPct}%</span></div>
-                                <div style="display:flex; justify-content:space-between; font-weight:bold; margin-top:3px;">
-                                    <span>${g.teams.home.name} vs ${g.teams.away.name}</span>
-                                    <span style="color:var(--gold);">@${t.odds}</span>
-                                </div>
-                                <div style="font-size:0.8rem; color:var(--cyan); margin-top:4px; font-weight:bold;">🔥 ${t.market}</div>
-                                <div style="font-size:0.68rem; color:#777; margin-top:3px;">${t.reasoning}</div>
-                                <div style="font-size:0.65rem; color:#555; margin-top:3px;">${dataBadges.join(' · ')}</div>
-                            </div>
-                        `;
-                    });
-
-                    const accaProb = Math.round(combinedProb * 100);
-                    accasHtml += `
-                        <div class="match-card" style="border: 1px solid var(--gold);">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                <h3 style="margin:0; color:var(--gold);">${foldSize}-FOLD ACCA</h3>
-                                <div style="background:var(--gold); color:#000; padding:2px 8px; border-radius:4px; font-weight:bold;">${totalOdds.toFixed(2)}</div>
-                            </div>
-                            <div style="font-size:0.7rem; color:#888; margin-bottom:12px;">Combined probability: ${accaProb}%</div>
-                            ${itemsHtml}
-                            <button class="bet365-btn" style="width:100%; margin-top:10px;">Load into Bet365</button>
-                        </div>
-                    `;
-                });
-
-                area.innerHTML = accasHtml;
+                accaCurrentPicks = initial;
+                accaAnalyzedCount = toAnalyze.length;
+                accaLeagueCount = leagueIds.length;
+                renderAccaCards();
 
             } catch(e) {
                 console.error("Acca Generation Error:", e);
@@ -1839,6 +1786,127 @@
             const s = ["th","st","nd","rd"];
             const v = n % 100;
             return s[(v - 20) % 10] || s[v] || s[0];
+        }
+
+        function accaBuildFromPool() {
+            const usedFixtures = new Set(accaDiscarded.map(d => d.fixtureId));
+            const picks = [];
+            for (const tip of accaTipPool) {
+                const fid = tip.fixture.fixture.id;
+                if (!usedFixtures.has(fid)) {
+                    picks.push(tip);
+                    usedFixtures.add(fid);
+                }
+                if (picks.length >= 10) break;
+            }
+            return picks;
+        }
+
+        function accaDiscardSelection(accaIdx, slotIdx) {
+            const folds = accaCurrentPicks.length >= 7 ? [4, 3] : (accaCurrentPicks.length >= 6 ? [3, 3] : [3]);
+            let offset = 0;
+            for (let i = 0; i < accaIdx; i++) offset += folds[i];
+            const globalIdx = offset + slotIdx;
+            const discarded = accaCurrentPicks[globalIdx];
+            if (!discarded) return;
+
+            const discardedFid = discarded.fixture.fixture.id;
+            accaDiscarded.push({ fixtureId: discardedFid });
+
+            const usedFids = new Set(accaCurrentPicks.map(p => p.fixture.fixture.id));
+            usedFids.delete(discardedFid);
+            accaDiscarded.forEach(d => usedFids.add(d.fixtureId));
+
+            let replacement = null;
+            for (const tip of accaTipPool) {
+                const fid = tip.fixture.fixture.id;
+                if (!usedFids.has(fid)) {
+                    replacement = tip;
+                    break;
+                }
+            }
+
+            if (replacement) {
+                accaCurrentPicks[globalIdx] = replacement;
+            } else {
+                accaCurrentPicks.splice(globalIdx, 1);
+            }
+
+            renderAccaCards();
+        }
+
+        function renderAccaCards() {
+            const area = document.getElementById('accContent');
+            const picks = accaCurrentPicks;
+
+            if (picks.length < 3) {
+                area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>📊</div><p>Not enough selections remaining. Try generating fresh accumulators.</p></div>";
+                return;
+            }
+
+            const poolRemaining = accaTipPool.filter(t => {
+                const fid = t.fixture.fixture.id;
+                return !accaCurrentPicks.some(p => p.fixture.fixture.id === fid) && !accaDiscarded.some(d => d.fixtureId === fid);
+            }).length;
+
+            let html = `<div style="text-align:center; padding:8px; margin-bottom:12px; color:#888; font-size:0.75rem;">📊 Analyzed ${accaAnalyzedCount} matches across ${accaLeagueCount} leagues · ${poolRemaining} alternative${poolRemaining !== 1 ? 's' : ''} available</div>`;
+
+            const folds = picks.length >= 7 ? [4, 3] : (picks.length >= 6 ? [3, 3] : [3]);
+            let tipIdx = 0;
+
+            folds.forEach((foldSize, accaIdx) => {
+                const accaTips = picks.slice(tipIdx, tipIdx + foldSize);
+                tipIdx += foldSize;
+                if (accaTips.length < foldSize) return;
+
+                let totalOdds = 1;
+                let combinedProb = 1;
+                let itemsHtml = "";
+
+                accaTips.forEach((t, slotIdx) => {
+                    const g = t.fixture;
+                    totalOdds *= parseFloat(t.odds);
+                    combinedProb *= t.prob;
+                    const confPct = Math.round(t.prob * 100);
+                    const confColor = confPct >= 80 ? 'var(--green)' : (confPct >= 70 ? 'var(--cyan)' : 'var(--gold)');
+                    const dataBadges = [];
+                    if (t.standingsAvail && t.homePos && t.awayPos) dataBadges.push(`📍 ${t.homePos}${getOrdinal(t.homePos)} vs ${t.awayPos}${getOrdinal(t.awayPos)}`);
+                    if (t.h2hAvail) dataBadges.push('🔄 H2H');
+                    if (t.homeFormAvail && t.awayFormAvail) dataBadges.push('📈 Form');
+                    const canReplace = poolRemaining > 0;
+
+                    itemsHtml += `
+                        <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:8px; border-left:3px solid ${confColor}; position:relative;">
+                            <div style="font-size:0.7rem; color:#888; display:flex; justify-content:space-between;">${g.league.name} ${g.league.country ? '· ' + g.league.country : ''}<span style="color:${confColor}; font-weight:bold;">${confPct}%</span></div>
+                            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-top:3px;">
+                                <span>${g.teams.home.name} vs ${g.teams.away.name}</span>
+                                <span style="color:var(--gold);">@${t.odds}</span>
+                            </div>
+                            <div style="font-size:0.8rem; color:var(--cyan); margin-top:4px; font-weight:bold;">🔥 ${t.market}</div>
+                            <div style="font-size:0.68rem; color:#777; margin-top:3px;">${t.reasoning}</div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                                <div style="font-size:0.65rem; color:#555;">${dataBadges.join(' · ')}</div>
+                                ${canReplace ? `<button onclick="accaDiscardSelection(${accaIdx}, ${slotIdx})" style="background:rgba(218,54,51,0.15); border:1px solid rgba(218,54,51,0.3); color:var(--red); padding:3px 10px; border-radius:6px; font-size:0.65rem; cursor:pointer; font-weight:bold;">🔄 Replace</button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                const accaProb = Math.round(combinedProb * 100);
+                html += `
+                    <div class="match-card" style="border: 1px solid var(--gold);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <h3 style="margin:0; color:var(--gold);">${foldSize}-FOLD ACCA</h3>
+                            <div style="background:var(--gold); color:#000; padding:2px 8px; border-radius:4px; font-weight:bold;">${totalOdds.toFixed(2)}</div>
+                        </div>
+                        <div style="font-size:0.7rem; color:#888; margin-bottom:12px;">Combined probability: ${accaProb}%</div>
+                        ${itemsHtml}
+                        <button class="bet365-btn" style="width:100%; margin-top:10px;">Load into Bet365</button>
+                    </div>
+                `;
+            });
+
+            area.innerHTML = html;
         }
 
         function setStrategy(strat, el) {
