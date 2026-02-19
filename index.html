@@ -504,6 +504,8 @@
         let accaTipPool = [];
         let accaDiscarded = [];
         let accaCurrentPicks = [];
+        let accaBigOddsPicks = [];
+        let accaBigOddsDiscarded = [];
         let accaAnalyzedCount = 0;
         let accaLeagueCount = 0; 
         let teamFoulTracker = {};
@@ -1760,6 +1762,7 @@
 
                 accaTipPool = allScoredTips.sort((a, b) => b.prob - a.prob);
                 accaDiscarded = [];
+                accaBigOddsDiscarded = [];
 
                 const initial = accaBuildFromPool();
                 if (initial.length < 3) {
@@ -1770,6 +1773,7 @@
                 }
 
                 accaCurrentPicks = initial;
+                accaBigOddsPicks = accaBuildBigOdds();
                 accaAnalyzedCount = toAnalyze.length;
                 accaLeagueCount = leagueIds.length;
                 renderAccaCards();
@@ -1800,6 +1804,88 @@
                 if (picks.length >= 10) break;
             }
             return picks;
+        }
+
+        function accaBuildBigOdds() {
+            const usedByMain = new Set(accaCurrentPicks.map(p => p.fixture.fixture.id));
+            const available = accaTipPool.filter(t => {
+                const fid = t.fixture.fixture.id;
+                return !accaBigOddsDiscarded.some(d => d.fixtureId === fid);
+            });
+            const uniqueByFixture = [];
+            const seenFids = new Set();
+            for (const tip of available) {
+                const fid = tip.fixture.fixture.id;
+                if (!seenFids.has(fid)) {
+                    uniqueByFixture.push(tip);
+                    seenFids.add(fid);
+                }
+            }
+            if (uniqueByFixture.length < 2) return [];
+            let bestCombo = null;
+            let bestDiff = Infinity;
+            for (let size = 2; size <= Math.min(8, uniqueByFixture.length); size++) {
+                let combo = uniqueByFixture.slice(0, size);
+                let odds = combo.reduce((acc, t) => acc * parseFloat(t.odds), 1);
+                if (odds >= 10) {
+                    let diff = odds - 10;
+                    if (diff < bestDiff) {
+                        bestDiff = diff;
+                        bestCombo = [...combo];
+                    }
+                    break;
+                }
+            }
+            if (!bestCombo) {
+                let combo = uniqueByFixture.slice(0, Math.min(8, uniqueByFixture.length));
+                let odds = combo.reduce((acc, t) => acc * parseFloat(t.odds), 1);
+                if (odds >= 8) {
+                    bestCombo = combo;
+                }
+            }
+            if (!bestCombo && uniqueByFixture.length >= 3) {
+                const higherOdds = [...uniqueByFixture].sort((a, b) => parseFloat(b.odds) - parseFloat(a.odds));
+                for (let size = 3; size <= Math.min(8, higherOdds.length); size++) {
+                    let combo = higherOdds.slice(0, size);
+                    let odds = combo.reduce((acc, t) => acc * parseFloat(t.odds), 1);
+                    if (odds >= 10) {
+                        bestCombo = combo;
+                        break;
+                    }
+                }
+                if (!bestCombo) {
+                    bestCombo = higherOdds.slice(0, Math.min(6, higherOdds.length));
+                }
+            }
+            return bestCombo || [];
+        }
+
+        function accaDiscardBigOdds(slotIdx) {
+            const discarded = accaBigOddsPicks[slotIdx];
+            if (!discarded) return;
+            const discardedFid = discarded.fixture.fixture.id;
+            accaBigOddsDiscarded.push({ fixtureId: discardedFid });
+
+            const usedFids = new Set(accaBigOddsPicks.map(p => p.fixture.fixture.id));
+            usedFids.delete(discardedFid);
+            accaBigOddsDiscarded.forEach(d => usedFids.add(d.fixtureId));
+
+            let replacement = null;
+            const available = [...accaTipPool].sort((a, b) => parseFloat(b.odds) - parseFloat(a.odds));
+            for (const tip of available) {
+                const fid = tip.fixture.fixture.id;
+                if (!usedFids.has(fid)) {
+                    replacement = tip;
+                    break;
+                }
+            }
+
+            if (replacement) {
+                accaBigOddsPicks[slotIdx] = replacement;
+            } else {
+                accaBigOddsPicks.splice(slotIdx, 1);
+            }
+            renderAccaCards();
         }
 
         function accaDiscardSelection(accaIdx, slotIdx) {
@@ -1905,6 +1991,61 @@
                     </div>
                 `;
             });
+
+            if (accaBigOddsPicks.length >= 2) {
+                let boTotalOdds = 1;
+                let boCombinedProb = 1;
+                let boItemsHtml = "";
+
+                const boPoolRemaining = accaTipPool.filter(t => {
+                    const fid = t.fixture.fixture.id;
+                    return !accaBigOddsPicks.some(p => p.fixture.fixture.id === fid) && !accaBigOddsDiscarded.some(d => d.fixtureId === fid);
+                }).length;
+
+                accaBigOddsPicks.forEach((t, slotIdx) => {
+                    const g = t.fixture;
+                    boTotalOdds *= parseFloat(t.odds);
+                    boCombinedProb *= t.prob;
+                    const confPct = Math.round(t.prob * 100);
+                    const confColor = confPct >= 80 ? 'var(--green)' : (confPct >= 70 ? 'var(--cyan)' : 'var(--gold)');
+                    const dataBadges = [];
+                    if (t.standingsAvail && t.homePos && t.awayPos) dataBadges.push(`📍 ${t.homePos}${getOrdinal(t.homePos)} vs ${t.awayPos}${getOrdinal(t.awayPos)}`);
+                    if (t.h2hAvail) dataBadges.push('🔄 H2H');
+                    if (t.homeFormAvail && t.awayFormAvail) dataBadges.push('📈 Form');
+                    const canReplace = boPoolRemaining > 0;
+
+                    boItemsHtml += `
+                        <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-bottom:8px; border-left:3px solid ${confColor}; position:relative;">
+                            <div style="font-size:0.7rem; color:#888; display:flex; justify-content:space-between;">${g.league.name} ${g.league.country ? '· ' + g.league.country : ''}<span style="color:${confColor}; font-weight:bold;">${confPct}%</span></div>
+                            <div style="display:flex; justify-content:space-between; font-weight:bold; margin-top:3px;">
+                                <span>${g.teams.home.name} vs ${g.teams.away.name}</span>
+                                <span style="color:var(--gold);">@${t.odds}</span>
+                            </div>
+                            <div style="font-size:0.8rem; color:var(--cyan); margin-top:4px; font-weight:bold;">🔥 ${t.market}</div>
+                            <div style="font-size:0.68rem; color:#777; margin-top:3px;">${t.reasoning}</div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+                                <div style="font-size:0.65rem; color:#555;">${dataBadges.join(' · ')}</div>
+                                ${canReplace ? `<button onclick="accaDiscardBigOdds(${slotIdx})" style="background:rgba(218,54,51,0.15); border:1px solid rgba(218,54,51,0.3); color:var(--red); padding:3px 10px; border-radius:6px; font-size:0.65rem; cursor:pointer; font-weight:bold;">🔄 Replace</button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                const boProb = Math.round(boCombinedProb * 100);
+                const oddsColor = boTotalOdds >= 10 ? 'var(--green)' : 'var(--gold)';
+                const borderColor = boTotalOdds >= 10 ? 'var(--green)' : 'var(--gold)';
+                html += `
+                    <div class="match-card" style="border: 1px solid ${borderColor};">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                            <h3 style="margin:0; color:${borderColor};">🎰 BIG ODDS ACCA</h3>
+                            <div style="background:${borderColor}; color:#000; padding:2px 8px; border-radius:4px; font-weight:bold;">${boTotalOdds.toFixed(2)}</div>
+                        </div>
+                        <div style="font-size:0.7rem; color:#888; margin-bottom:12px;">Target: 10.00+ odds · ${accaBigOddsPicks.length} selections · Combined probability: ${boProb}%</div>
+                        ${boItemsHtml}
+                        <button class="bet365-btn" style="width:100%; margin-top:10px;">Load into Bet365</button>
+                    </div>
+                `;
+            }
 
             area.innerHTML = html;
         }
