@@ -317,10 +317,76 @@
     </div>
 
     <div id="accView" style="display:none;">
-        <button class="card-scan-btn" style="background:var(--gold); color:#000;" onclick="generateAccas(this)">💎 GENERATE DAILY ACCUMULATORS</button>
+        <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="font-size:0.85rem; font-weight:bold; color:var(--gold);">⚙️ Acca Filters</span>
+                <button onclick="toggleAccaFilters()" id="accaFilterToggle" style="background:none; border:1px solid #30363d; color:#888; padding:3px 10px; border-radius:6px; font-size:0.7rem; cursor:pointer;">Show ▼</button>
+            </div>
+            <div id="accaFilterPanel" style="display:none;">
+                <div style="margin-bottom:10px;">
+                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:5px;">Leagues</div>
+                    <div style="display:flex; gap:4px; flex-wrap:wrap; margin-bottom:4px;">
+                        <button onclick="accaSetLeaguePreset('all')" class="acca-league-preset active" data-preset="all" style="background:rgba(56,139,253,0.15); border:1px solid var(--blue); color:var(--blue); padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer; font-weight:bold;">All Leagues</button>
+                        <button onclick="accaSetLeaguePreset('elite')" class="acca-league-preset" data-preset="elite" style="background:#21262d; border:1px solid #30363d; color:#888; padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer;">Elite Only</button>
+                        <button onclick="accaSetLeaguePreset('custom')" class="acca-league-preset" data-preset="custom" style="background:#21262d; border:1px solid #30363d; color:#888; padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer;">Custom</button>
+                    </div>
+                    <div id="accaLeagueCustom" style="display:none; margin-top:6px;">
+                        <div id="accaLeagueList" style="max-height:150px; overflow-y:auto; background:rgba(0,0,0,0.2); border-radius:6px; padding:6px;"></div>
+                        <div style="font-size:0.6rem; color:#555; margin-top:3px;">Leagues populate after first scan</div>
+                    </div>
+                </div>
+                <div style="margin-bottom:10px;">
+                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:5px;">Kick-off Window</div>
+                    <div style="display:flex; gap:6px; align-items:center;">
+                        <input type="time" id="accaTimeFrom" value="00:00" style="background:#21262d; border:1px solid #30363d; color:#ccc; padding:4px 8px; border-radius:6px; font-size:0.75rem;">
+                        <span style="color:#888; font-size:0.75rem;">to</span>
+                        <input type="time" id="accaTimeTo" value="23:59" style="background:#21262d; border:1px solid #30363d; color:#ccc; padding:4px 8px; border-radius:6px; font-size:0.75rem;">
+                    </div>
+                </div>
+                <div style="margin-bottom:10px;">
+                    <div style="font-size:0.75rem; color:#aaa; margin-bottom:5px;">Markets</div>
+                    <div style="display:flex; gap:4px; flex-wrap:wrap;">
+                        <label style="display:flex; align-items:center; gap:3px; background:#21262d; border:1px solid #30363d; padding:4px 8px; border-radius:6px; font-size:0.7rem; color:#ccc; cursor:pointer;"><input type="checkbox" class="acca-market-cb" value="Over 1.5 Goals" checked> Over 1.5</label>
+                        <label style="display:flex; align-items:center; gap:3px; background:#21262d; border:1px solid #30363d; padding:4px 8px; border-radius:6px; font-size:0.7rem; color:#ccc; cursor:pointer;"><input type="checkbox" class="acca-market-cb" value="Over 2.5 Goals" checked> Over 2.5</label>
+                        <label style="display:flex; align-items:center; gap:3px; background:#21262d; border:1px solid #30363d; padding:4px 8px; border-radius:6px; font-size:0.7rem; color:#ccc; cursor:pointer;"><input type="checkbox" class="acca-market-cb" value="BTTS" checked> BTTS</label>
+                        <label style="display:flex; align-items:center; gap:3px; background:#21262d; border:1px solid #30363d; padding:4px 8px; border-radius:6px; font-size:0.7rem; color:#ccc; cursor:pointer;"><input type="checkbox" class="acca-market-cb" value="Home Win" checked> Home Win</label>
+                        <label style="display:flex; align-items:center; gap:3px; background:#21262d; border:1px solid #30363d; padding:4px 8px; border-radius:6px; font-size:0.7rem; color:#ccc; cursor:pointer;"><input type="checkbox" class="acca-market-cb" value="Away Win" checked> Away Win</label>
+                    </div>
+                </div>
+                <div style="margin-bottom:10px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.75rem; color:#aaa;">Acca Size</span>
+                        <span style="font-size:0.75rem; color:var(--gold); font-weight:bold;" id="accaSizeLabel">Auto</span>
+                    </div>
+                    <div style="display:flex; gap:4px; margin-top:5px; flex-wrap:wrap;">
+                        <button onclick="setAccaSize('auto')" class="acca-size-btn active" data-size="auto" style="background:rgba(56,139,253,0.15); border:1px solid var(--blue); color:var(--blue); padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer; font-weight:bold;">Auto</button>
+                        <button onclick="setAccaSize(2)" class="acca-size-btn" data-size="2" style="background:#21262d; border:1px solid #30363d; color:#888; padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer;">2-fold</button>
+                        <button onclick="setAccaSize(3)" class="acca-size-btn" data-size="3" style="background:#21262d; border:1px solid #30363d; color:#888; padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer;">3-fold</button>
+                        <button onclick="setAccaSize(4)" class="acca-size-btn" data-size="4" style="background:#21262d; border:1px solid #30363d; color:#888; padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer;">4-fold</button>
+                        <button onclick="setAccaSize(5)" class="acca-size-btn" data-size="5" style="background:#21262d; border:1px solid #30363d; color:#888; padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer;">5-fold</button>
+                        <button onclick="setAccaSize(6)" class="acca-size-btn" data-size="6" style="background:#21262d; border:1px solid #30363d; color:#888; padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer;">6-fold</button>
+                    </div>
+                </div>
+                <div style="margin-bottom:6px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.75rem; color:#aaa;">Target Odds</span>
+                        <span style="font-size:0.75rem; color:var(--gold); font-weight:bold;" id="accaTargetLabel">Any</span>
+                    </div>
+                    <div style="display:flex; gap:4px; margin-top:5px; flex-wrap:wrap;">
+                        <button onclick="setAccaTarget(0)" class="acca-target-btn active" data-target="0" style="background:rgba(56,139,253,0.15); border:1px solid var(--blue); color:var(--blue); padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer; font-weight:bold;">Any</button>
+                        <button onclick="setAccaTarget(3)" class="acca-target-btn" data-target="3" style="background:#21262d; border:1px solid #30363d; color:#888; padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer;">3+</button>
+                        <button onclick="setAccaTarget(5)" class="acca-target-btn" data-target="5" style="background:#21262d; border:1px solid #30363d; color:#888; padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer;">5+</button>
+                        <button onclick="setAccaTarget(10)" class="acca-target-btn" data-target="10" style="background:#21262d; border:1px solid #30363d; color:#888; padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer;">10+</button>
+                        <button onclick="setAccaTarget(20)" class="acca-target-btn" data-target="20" style="background:#21262d; border:1px solid #30363d; color:#888; padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer;">20+</button>
+                        <button onclick="setAccaTarget(50)" class="acca-target-btn" data-target="50" style="background:#21262d; border:1px solid #30363d; color:#888; padding:3px 10px; border-radius:12px; font-size:0.68rem; cursor:pointer;">50+</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="card-scan-btn" style="background:var(--gold); color:#000;" onclick="generateAccas(this)">💎 GENERATE ACCUMULATORS</button>
         <div id="accContent" style="padding-bottom:100px;">
             <div style="text-align:center; color:#888; padding:20px;">
-                <p>Generate high-probability 3 & 4 fold accumulators using Elite league data.</p>
+                <p>Configure your filters and generate data-driven accumulators.</p>
             </div>
         </div>
     </div>
@@ -507,7 +573,12 @@
         let accaBigOddsPicks = [];
         let accaBigOddsDiscarded = [];
         let accaAnalyzedCount = 0;
-        let accaLeagueCount = 0; 
+        let accaLeagueCount = 0;
+        let accaFilterLeague = 'all';
+        let accaFilterCustomLeagues = [];
+        let accaFilterSize = 'auto';
+        let accaFilterTarget = 0;
+        let accaAvailableLeagues = []; 
         let teamFoulTracker = {};
         let challengeAutoRefreshInterval = null;
         let challengeScanLock = false;
@@ -1654,13 +1725,22 @@
         }
 
         async function generateAccas(btn) {
-            btn.innerText = "🔍 ANALYZING ALL FIXTURES...";
+            btn.innerText = "🔍 ANALYZING FIXTURES...";
             btn.disabled = true;
             const area = document.getElementById('accContent');
-            area.innerHTML = "<div style='text-align:center; padding:40px;'><div class='pilot-dot' style='width:20px; height:20px; margin:0 auto; background:var(--gold); animation:pulse-gold 1s infinite;'></div><p style='margin-top:20px; color:var(--gold);'>Scanning all leagues for high-probability combinations...</p></div>";
+            const allowedMarkets = getAccaMarketFilters();
+            if (allowedMarkets.length === 0) {
+                area.innerHTML = "<div style='text-align:center; padding:40px; color:#da3633;'>Please select at least one market in the filters.</div>";
+                btn.innerText = "💎 GENERATE ACCUMULATORS";
+                btn.disabled = false;
+                return;
+            }
+            area.innerHTML = "<div style='text-align:center; padding:40px;'><div class='pilot-dot' style='width:20px; height:20px; margin:0 auto; background:var(--gold); animation:pulse-gold 1s infinite;'></div><p style='margin-top:20px; color:var(--gold);'>Scanning fixtures with your filters...</p></div>";
             
             try {
                 const today = new Date().toISOString().split('T')[0];
+                const timeFrom = document.getElementById('accaTimeFrom').value || '00:00';
+                const timeTo = document.getElementById('accaTimeTo').value || '23:59';
                 
                 const res = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}`, { headers: { "x-rapidapi-key": API_KEY } });
                 const data = await res.json();
@@ -1670,13 +1750,26 @@
                 if (data.response) {
                     allFixtures = data.response.filter(f => {
                         const status = f.fixture.status.short;
-                        return ['NS', 'TBD'].includes(status);
+                        if (!['NS', 'TBD'].includes(status)) return false;
+                        if (accaFilterLeague === 'elite' && !ELITE_IDS.includes(f.league.id)) return false;
+                        if (accaFilterLeague === 'custom' && accaFilterCustomLeagues.length > 0 && !accaFilterCustomLeagues.includes(f.league.id)) return false;
+                        const koTime = new Date(f.fixture.date);
+                        const koStr = koTime.toTimeString().slice(0, 5);
+                        if (koStr < timeFrom || koStr > timeTo) return false;
+                        return true;
                     });
                 }
 
-                if (allFixtures.length < 3) {
-                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'>Not enough upcoming matches today to generate accumulators.</div>";
-                    btn.innerText = "💎 GENERATE DAILY ACCUMULATORS";
+                const uniqueLeagues = {};
+                (data.response || []).filter(f => ['NS', 'TBD'].includes(f.fixture.status.short)).forEach(f => {
+                    if (!uniqueLeagues[f.league.id]) uniqueLeagues[f.league.id] = { id: f.league.id, name: f.league.name, country: f.league.country };
+                });
+                accaAvailableLeagues = Object.values(uniqueLeagues).sort((a, b) => (a.country + a.name).localeCompare(b.country + b.name));
+                if (accaFilterLeague === 'custom') populateAccaLeagueList();
+
+                if (allFixtures.length < 2) {
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'>Not enough matches matching your filters. Try widening your league or time filters.</div>";
+                    btn.innerText = "💎 GENERATE ACCUMULATORS";
                     btn.disabled = false;
                     return;
                 }
@@ -1740,7 +1833,7 @@
                     const dataQuality = (homeForm ? 1 : 0) + (awayForm ? 1 : 0) + (standings ? 1 : 0) + (h2h && h2h.available ? 1 : 0);
 
                     tips.forEach(tip => {
-                        if (tip.prob >= 0.60 && dataQuality >= 2) {
+                        if (tip.prob >= 0.60 && dataQuality >= 2 && allowedMarkets.includes(tip.market)) {
                             allScoredTips.push({
                                 fixture: fix,
                                 market: tip.market,
@@ -1764,16 +1857,17 @@
                 accaDiscarded = [];
                 accaBigOddsDiscarded = [];
 
+                const minPicks = accaFilterSize === 'auto' ? 2 : accaFilterSize;
                 const initial = accaBuildFromPool();
-                if (initial.length < 3) {
-                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>📊</div><p>Not enough high-confidence picks found.</p><p style='font-size:0.8rem; margin-top:8px;'>Analyzed ${toAnalyze.length} matches but couldn't find 3+ selections above 60% probability with sufficient data.</p></div>";
-                    btn.innerText = "💎 GENERATE DAILY ACCUMULATORS";
+                if (initial.length < minPicks) {
+                    area.innerHTML = `<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>📊</div><p>Not enough high-confidence picks found.</p><p style='font-size:0.8rem; margin-top:8px;'>Analyzed ${toAnalyze.length} matches but couldn't find ${minPicks}+ selections above 60% probability with sufficient data. Try widening your filters.</p></div>`;
+                    btn.innerText = "💎 GENERATE ACCUMULATORS";
                     btn.disabled = false;
                     return;
                 }
 
                 accaCurrentPicks = initial;
-                accaBigOddsPicks = accaBuildBigOdds();
+                accaBigOddsPicks = accaFilterTarget === 0 ? accaBuildBigOdds() : [];
                 accaAnalyzedCount = toAnalyze.length;
                 accaLeagueCount = leagueIds.length;
                 renderAccaCards();
@@ -1782,7 +1876,7 @@
                 console.error("Acca Generation Error:", e);
                 area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error generating tips. Please try again.</div>";
             }
-            btn.innerText = "💎 GENERATE DAILY ACCUMULATORS";
+            btn.innerText = "💎 GENERATE ACCUMULATORS";
             btn.disabled = false;
         }
 
@@ -1792,16 +1886,98 @@
             return s[(v - 20) % 10] || s[v] || s[0];
         }
 
+        function toggleAccaFilters() {
+            const panel = document.getElementById('accaFilterPanel');
+            const btn = document.getElementById('accaFilterToggle');
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                btn.textContent = 'Hide ▲';
+            } else {
+                panel.style.display = 'none';
+                btn.textContent = 'Show ▼';
+            }
+        }
+
+        function accaSetLeaguePreset(preset) {
+            accaFilterLeague = preset;
+            document.querySelectorAll('.acca-league-preset').forEach(b => {
+                const isActive = b.dataset.preset === preset;
+                b.style.background = isActive ? 'rgba(56,139,253,0.15)' : '#21262d';
+                b.style.borderColor = isActive ? 'var(--blue)' : '#30363d';
+                b.style.color = isActive ? 'var(--blue)' : '#888';
+                b.style.fontWeight = isActive ? 'bold' : 'normal';
+            });
+            document.getElementById('accaLeagueCustom').style.display = preset === 'custom' ? 'block' : 'none';
+            if (preset === 'custom' && accaAvailableLeagues.length > 0) populateAccaLeagueList();
+        }
+
+        function populateAccaLeagueList() {
+            const container = document.getElementById('accaLeagueList');
+            let html = `<div style="display:flex; gap:6px; margin-bottom:6px; padding-bottom:6px; border-bottom:1px solid #30363d;">
+                <button onclick="toggleAllAccaLeagues(true)" style="flex:1; background:rgba(56,139,253,0.15); border:1px solid var(--blue); color:var(--blue); padding:4px 8px; border-radius:6px; font-size:0.68rem; cursor:pointer; font-weight:bold;">Select All</button>
+                <button onclick="toggleAllAccaLeagues(false)" style="flex:1; background:rgba(218,54,51,0.15); border:1px solid rgba(218,54,51,0.3); color:var(--red); padding:4px 8px; border-radius:6px; font-size:0.68rem; cursor:pointer; font-weight:bold;">Unselect All</button>
+            </div>`;
+            accaAvailableLeagues.forEach(lg => {
+                const checked = accaFilterCustomLeagues.length === 0 || accaFilterCustomLeagues.includes(lg.id) ? 'checked' : '';
+                html += `<label style="display:flex; align-items:center; gap:5px; padding:3px 4px; font-size:0.7rem; color:#ccc; cursor:pointer;"><input type="checkbox" class="acca-league-cb" value="${lg.id}" ${checked} onchange="updateAccaCustomLeagues()"> ${lg.country ? lg.country + ' - ' : ''}${lg.name}</label>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function toggleAllAccaLeagues(selectAll) {
+            document.querySelectorAll('.acca-league-cb').forEach(cb => cb.checked = selectAll);
+            updateAccaCustomLeagues();
+        }
+
+        function updateAccaCustomLeagues() {
+            accaFilterCustomLeagues = [...document.querySelectorAll('.acca-league-cb:checked')].map(cb => parseInt(cb.value));
+        }
+
+        function setAccaSize(size) {
+            accaFilterSize = size;
+            document.getElementById('accaSizeLabel').textContent = size === 'auto' ? 'Auto' : size + '-fold';
+            document.querySelectorAll('.acca-size-btn').forEach(b => {
+                const isActive = b.dataset.size === String(size);
+                b.style.background = isActive ? 'rgba(56,139,253,0.15)' : '#21262d';
+                b.style.borderColor = isActive ? 'var(--blue)' : '#30363d';
+                b.style.color = isActive ? 'var(--blue)' : '#888';
+                b.style.fontWeight = isActive ? 'bold' : 'normal';
+            });
+        }
+
+        function setAccaTarget(target) {
+            accaFilterTarget = target;
+            document.getElementById('accaTargetLabel').textContent = target === 0 ? 'Any' : target + '+';
+            document.querySelectorAll('.acca-target-btn').forEach(b => {
+                const isActive = b.dataset.target === String(target);
+                b.style.background = isActive ? 'rgba(56,139,253,0.15)' : '#21262d';
+                b.style.borderColor = isActive ? 'var(--blue)' : '#30363d';
+                b.style.color = isActive ? 'var(--blue)' : '#888';
+                b.style.fontWeight = isActive ? 'bold' : 'normal';
+            });
+        }
+
+        function getAccaMarketFilters() {
+            return [...document.querySelectorAll('.acca-market-cb:checked')].map(cb => cb.value);
+        }
+
         function accaBuildFromPool() {
             const usedFixtures = new Set(accaDiscarded.map(d => d.fixtureId));
             const picks = [];
+            let maxPicks = 10;
+            if (accaFilterSize !== 'auto') {
+                maxPicks = accaFilterSize * 2;
+            }
+            if (accaFilterTarget > 0) {
+                maxPicks = 10;
+            }
             for (const tip of accaTipPool) {
                 const fid = tip.fixture.fixture.id;
                 if (!usedFixtures.has(fid)) {
                     picks.push(tip);
                     usedFixtures.add(fid);
                 }
-                if (picks.length >= 10) break;
+                if (picks.length >= maxPicks) break;
             }
             return picks;
         }
@@ -1924,8 +2100,9 @@
         function renderAccaCards() {
             const area = document.getElementById('accContent');
             const picks = accaCurrentPicks;
+            const minRequired = accaFilterSize === 'auto' ? 2 : accaFilterSize;
 
-            if (picks.length < 3) {
+            if (picks.length < minRequired) {
                 area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>📊</div><p>Not enough selections remaining. Try generating fresh accumulators.</p></div>";
                 return;
             }
@@ -1937,7 +2114,24 @@
 
             let html = `<div style="text-align:center; padding:8px; margin-bottom:12px; color:#888; font-size:0.75rem;">📊 Analyzed ${accaAnalyzedCount} matches across ${accaLeagueCount} leagues · ${poolRemaining} alternative${poolRemaining !== 1 ? 's' : ''} available</div>`;
 
-            const folds = picks.length >= 7 ? [4, 3] : (picks.length >= 6 ? [3, 3] : [3]);
+            let folds;
+            if (accaFilterTarget > 0) {
+                let combo = [];
+                let runningOdds = 1;
+                for (const p of picks) {
+                    combo.push(p);
+                    runningOdds *= parseFloat(p.odds);
+                    if (runningOdds >= accaFilterTarget && combo.length >= 2) break;
+                }
+                folds = [combo.length];
+                accaCurrentPicks.length = combo.length;
+            } else if (accaFilterSize !== 'auto') {
+                const sz = Math.min(accaFilterSize, picks.length);
+                folds = [sz];
+                if (picks.length >= sz * 2) folds.push(sz);
+            } else {
+                folds = picks.length >= 7 ? [4, 3] : (picks.length >= 6 ? [3, 3] : [Math.min(3, picks.length)]);
+            }
             let tipIdx = 0;
 
             folds.forEach((foldSize, accaIdx) => {
@@ -1979,13 +2173,17 @@
                 });
 
                 const accaProb = Math.round(combinedProb * 100);
+                const hitsTarget = accaFilterTarget > 0 && totalOdds >= accaFilterTarget;
+                const accaBorder = hitsTarget ? 'var(--green)' : 'var(--gold)';
+                const accaTitle = accaFilterTarget > 0 ? `${foldSize}-FOLD · ${accaFilterTarget}+ ODDS` : `${foldSize}-FOLD ACCA`;
+                const targetNote = accaFilterTarget > 0 ? ` · Target: ${accaFilterTarget}+ ${hitsTarget ? '✅' : '⚠️'}` : '';
                 html += `
-                    <div class="match-card" style="border: 1px solid var(--gold);">
+                    <div class="match-card" style="border: 1px solid ${accaBorder};">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                            <h3 style="margin:0; color:var(--gold);">${foldSize}-FOLD ACCA</h3>
-                            <div style="background:var(--gold); color:#000; padding:2px 8px; border-radius:4px; font-weight:bold;">${totalOdds.toFixed(2)}</div>
+                            <h3 style="margin:0; color:${accaBorder};">${accaTitle}</h3>
+                            <div style="background:${accaBorder}; color:#000; padding:2px 8px; border-radius:4px; font-weight:bold;">${totalOdds.toFixed(2)}</div>
                         </div>
-                        <div style="font-size:0.7rem; color:#888; margin-bottom:12px;">Combined probability: ${accaProb}%</div>
+                        <div style="font-size:0.7rem; color:#888; margin-bottom:12px;">Combined probability: ${accaProb}%${targetNote}</div>
                         ${itemsHtml}
                         <button class="bet365-btn" style="width:100%; margin-top:10px;">Load into Bet365</button>
                     </div>
