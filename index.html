@@ -256,6 +256,7 @@
             <div id="tabChallenge" class="nav-tab" onclick="switchTab('challenge')">💷 Challenge</div>
             <div id="tabSched" class="nav-tab" onclick="switchTab('sched')">📅 Elite Schedule</div>
             <div id="tabAcc" class="nav-tab" onclick="switchTab('acc')">💰 Acca Tips</div>
+            <div id="tab2hg" class="nav-tab" onclick="switchTab('2hg')">⚽ 2nd Half Goal</div>
             <div id="tabStats" class="nav-tab" onclick="switchTab('stats')">📈 Stats</div>
             <div id="tabHist" class="nav-tab" onclick="switchTab('hist')">📜 History</div>
         </div>
@@ -314,6 +315,15 @@
 
     <div id="statsView" style="display:none;">
         <div id="statsContent" style="padding-bottom:100px;"></div>
+    </div>
+
+    <div id="secondHalfGoalView" style="display:none;">
+        <div style="text-align:center; margin-bottom:15px;">
+            <h2 style="color:var(--green); margin:0 0 4px 0;">⚽ 2nd Half Goal Predictor</h2>
+            <p style="color:#888; font-size:0.78rem; margin:0;">Live matches in the 2nd half — AI confidence ratings for another goal</p>
+        </div>
+        <button class="card-scan-btn" style="background:var(--green); color:#000; margin-bottom:15px;" onclick="scan2ndHalfGoals(this)">⚽ SCAN 2ND HALF MATCHES</button>
+        <div id="secondHalfGoalContent" style="padding-bottom:100px; text-align:center; color:#888;">Click above to scan all live 2nd half matches for goal probability.</div>
     </div>
 
     <div id="accView" style="display:none;">
@@ -1618,8 +1628,8 @@
 
         function switchTab(tab) {
             stopChallengeAutoRefresh();
-            const views = ['liveView','schedView','histView','cardView','accView','challengeView','statsView'];
-            const tabs = ['tabLive','tabSched','tabHist','tabCards','tabAcc','tabChallenge','tabStats'];
+            const views = ['liveView','schedView','histView','cardView','accView','challengeView','statsView','secondHalfGoalView'];
+            const tabs = ['tabLive','tabSched','tabHist','tabCards','tabAcc','tabChallenge','tabStats','tab2hg'];
             views.forEach(v => document.getElementById(v).style.display = 'none');
             tabs.forEach(t => document.getElementById(t).classList.remove('active'));
             document.getElementById('filterSelect').style.display = 'none';
@@ -1642,6 +1652,9 @@
             } else if(tab === 'acc') {
                 document.getElementById('accView').style.display = 'block';
                 document.getElementById('tabAcc').classList.add('active');
+            } else if(tab === '2hg') {
+                document.getElementById('secondHalfGoalView').style.display = 'block';
+                document.getElementById('tab2hg').classList.add('active');
             } else if(tab === 'stats') {
                 document.getElementById('statsView').style.display = 'block';
                 document.getElementById('tabStats').classList.add('active');
@@ -2095,6 +2108,358 @@
             }
 
             renderAccaCards();
+        }
+
+        async function scan2ndHalfGoals(btn) {
+            btn.innerText = "⚽ SCANNING 2ND HALF MATCHES...";
+            btn.disabled = true;
+            const area = document.getElementById('secondHalfGoalContent');
+            area.innerHTML = "<div style='text-align:center; padding:40px;'><div class='pilot-dot' style='width:20px; height:20px; margin:0 auto; background:var(--green); animation:pulse-gold 1s infinite;'></div><p style='margin-top:20px; color:var(--green);'>Fetching live 2nd half matches...</p></div>";
+
+            try {
+                const liveRes = await fetch("https://v3.football.api-sports.io/fixtures?live=all", { headers: { "x-rapidapi-key": API_KEY } });
+                const liveData = await liveRes.json();
+                trackAPI(1);
+
+                const BLACKLIST = ['friendly','club friendly','u19','u20','u21','u23','youth','reserve','women','amateur','esports'];
+                let secondHalfMatches = (liveData.response || []).filter(m => {
+                    const elapsed = m.fixture.status.elapsed || 0;
+                    const status = m.fixture.status.short;
+                    if (!['2H','ET','BT'].includes(status) && elapsed < 46) return false;
+                    if (elapsed < 46) return false;
+                    const ln = (m.league.name || '').toLowerCase();
+                    if (BLACKLIST.some(b => ln.includes(b))) return false;
+                    return true;
+                });
+
+                if (secondHalfMatches.length === 0) {
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>⚽</div><p>No 2nd half matches currently live.</p><p style='font-size:0.8rem; margin-top:8px;'>Check back when matches are in the second half (46th minute onwards).</p></div>";
+                    btn.innerText = "⚽ SCAN 2ND HALF MATCHES";
+                    btn.disabled = false;
+                    return;
+                }
+
+                area.innerHTML = `<div style='text-align:center; padding:20px; color:var(--green);'>Analyzing ${secondHalfMatches.length} matches — fetching stats, standings, events & form...</div>`;
+
+                const results = [];
+                const standingsCache2hg = {};
+                const placedBets2hg = getHistory().map(b => b.id);
+
+                for (const match of secondHalfMatches) {
+                    const fid = match.fixture.id;
+                    const lid = match.league.id;
+                    const hId = match.teams.home.id;
+                    const aId = match.teams.away.id;
+                    const elapsed = match.fixture.status.elapsed || 60;
+                    const homeGoals = match.goals.home || 0;
+                    const awayGoals = match.goals.away || 0;
+                    const totalGoals = homeGoals + awayGoals;
+
+                    let hStats = null, aStats = null;
+                    try {
+                        const statRes = await fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${fid}`, { headers: { "x-rapidapi-key": API_KEY } });
+                        const statData = await statRes.json();
+                        trackAPI(1);
+                        if (statData.response && statData.response.length >= 2) {
+                            hStats = statData.response[0].statistics;
+                            aStats = statData.response[1].statistics;
+                        }
+                    } catch(e) {}
+
+                    if (!hStats || !aStats) continue;
+
+                    let events = [];
+                    try {
+                        const evRes = await fetch(`https://v3.football.api-sports.io/fixtures/events?fixture=${fid}`, { headers: { "x-rapidapi-key": API_KEY } });
+                        const evData = await evRes.json();
+                        trackAPI(1);
+                        if (evData.response) events = evData.response;
+                    } catch(e) {}
+
+                    const gs = (arr, type) => {
+                        const item = arr.find(s => s.type === type);
+                        if (item && item.value !== null && item.value !== undefined) {
+                            const v = typeof item.value === 'string' ? parseFloat(item.value) : item.value;
+                            return isNaN(v) ? 0 : v;
+                        }
+                        return 0;
+                    };
+
+                    const homeSoT = gs(hStats, "Shots on Goal");
+                    const awaySoT = gs(aStats, "Shots on Goal");
+                    const homeOffT = gs(hStats, "Shots off Goal");
+                    const awayOffT = gs(aStats, "Shots off Goal");
+                    const homeTotal = gs(hStats, "Total Shots");
+                    const awayTotal = gs(aStats, "Total Shots");
+                    const homePoss = gs(hStats, "Ball Possession") || 50;
+                    const awayPoss = gs(aStats, "Ball Possession") || 50;
+                    const homeDangerous = gs(hStats, "Dangerous Attacks");
+                    const awayDangerous = gs(aStats, "Dangerous Attacks");
+                    const homeExpG = gs(hStats, "expected_goals");
+                    const awayExpG = gs(aStats, "expected_goals");
+                    const homeCorners = gs(hStats, "Corner Kicks");
+                    const awayCorners = gs(aStats, "Corner Kicks");
+
+                    const totalSoT = homeSoT + awaySoT;
+                    const totalShots = homeTotal + awayTotal;
+                    const totalDangerous = homeDangerous + awayDangerous;
+                    const totalxG = homeExpG + awayExpG;
+                    const totalCorners = homeCorners + awayCorners;
+
+                    if (totalShots < 3 && totalSoT < 1) continue;
+
+                    let confidence = 50;
+                    const factors = [];
+
+                    const shotPressure = totalSoT * 3.5 + (totalShots - totalSoT) * 1.2 + totalCorners * 1.5;
+                    if (shotPressure >= 40) { confidence += 8; factors.push(`High shot pressure (${totalSoT} SoT, ${totalShots} shots)`); }
+                    else if (shotPressure >= 25) { confidence += 5; factors.push(`Good shot volume (${totalSoT} SoT, ${totalShots} shots)`); }
+                    else if (shotPressure >= 15) { confidence += 2; factors.push(`Moderate activity (${totalSoT} SoT)`); }
+                    else { confidence -= 4; factors.push(`Low shot activity (${totalSoT} SoT)`); }
+
+                    if (totalCorners >= 10) { confidence += 4; factors.push(`${totalCorners} corners — frequent set pieces`); }
+                    else if (totalCorners >= 7) { confidence += 2; factors.push(`${totalCorners} corners`); }
+
+                    if (totalDangerous >= 80) { confidence += 6; factors.push(`Very dangerous (${totalDangerous} attacks)`); }
+                    else if (totalDangerous >= 50) { confidence += 3; factors.push(`${totalDangerous} dangerous attacks`); }
+
+                    const possImbalance = Math.abs(homePoss - awayPoss);
+                    if (possImbalance >= 20) { confidence += 3; factors.push(`Possession imbalance (${homePoss}%-${awayPoss}%)`); }
+                    else if (possImbalance <= 8) { confidence += 1; factors.push(`Even contest (${homePoss}%-${awayPoss}%)`); }
+
+                    if (totalxG > 0) {
+                        const xgGap = totalxG - totalGoals;
+                        if (xgGap >= 1.5) { confidence += 8; factors.push(`Goals overdue! xG ${totalxG.toFixed(1)} vs ${totalGoals} actual`); }
+                        else if (xgGap >= 0.8) { confidence += 5; factors.push(`xG suggests more goals (${totalxG.toFixed(1)} vs ${totalGoals})`); }
+                        else if (xgGap >= 0.3) { confidence += 2; factors.push(`xG: ${totalxG.toFixed(1)}`); }
+                        else if (xgGap < -0.5) { confidence -= 3; factors.push(`Overperforming xG (${totalxG.toFixed(1)} vs ${totalGoals})`); }
+                    }
+
+                    if (totalGoals >= 3) { confidence += 5; factors.push(`High-scoring game already (${totalGoals} goals)`); }
+                    else if (totalGoals === 2) { confidence += 3; factors.push(`2 goals scored — game is open`); }
+                    else if (totalGoals === 1) { confidence += 1; factors.push(`1 goal scored`); }
+                    else { confidence -= 2; factors.push(`Still 0-0`); }
+
+                    if (homeGoals === awayGoals && totalGoals > 0) { confidence += 3; factors.push(`Level game — both teams pushing`); }
+                    const goalDiff = Math.abs(homeGoals - awayGoals);
+                    if (goalDiff === 1) { confidence += 2; factors.push(`1-goal margin — trailing team chasing`); }
+                    if (goalDiff >= 3) { confidence -= 4; factors.push(`Comfortable lead — game may settle`); }
+
+                    const timeRemaining = 90 - elapsed;
+                    if (timeRemaining >= 35) { confidence += 5; factors.push(`${timeRemaining} mins remaining — plenty of time`); }
+                    else if (timeRemaining >= 25) { confidence += 3; factors.push(`${timeRemaining} mins left`); }
+                    else if (timeRemaining >= 15) { confidence += 1; factors.push(`${timeRemaining} mins remaining`); }
+                    else { confidence -= 3; factors.push(`Only ${timeRemaining} mins left`); }
+
+                    let lateSubs = 0;
+                    let attackingSubs = 0;
+                    const subEvents = events.filter(e => e.type === 'subst' && (e.time.elapsed || 0) >= 46);
+                    lateSubs = subEvents.length;
+                    subEvents.forEach(sub => {
+                        const playerIn = (sub.assist && sub.assist.name) ? sub.assist.name : '';
+                        if (sub.time.elapsed >= 55) attackingSubs++;
+                    });
+                    if (attackingSubs >= 3) { confidence += 4; factors.push(`${attackingSubs} fresh subs since 55' — managers chasing`); }
+                    else if (attackingSubs >= 2) { confidence += 3; factors.push(`${attackingSubs} subs after 55' — tactical changes`); }
+                    else if (lateSubs >= 2) { confidence += 1; factors.push(`${lateSubs} 2nd half substitutions made`); }
+
+                    const firstHalfGoals = events.filter(e => e.type === 'Goal' && (e.time.elapsed || 0) <= 45).length;
+                    const secondHalfGoals = events.filter(e => e.type === 'Goal' && (e.time.elapsed || 0) > 45).length;
+                    const recentGoals = events.filter(e => e.type === 'Goal' && (e.time.elapsed || 0) >= (elapsed - 15)).length;
+
+                    if (recentGoals >= 2) { confidence += 5; factors.push(`${recentGoals} goals in last 15 mins — game wide open!`); }
+                    else if (recentGoals === 1) { confidence += 3; factors.push(`Recent goal — momentum shift`); }
+
+                    if (secondHalfGoals > firstHalfGoals && secondHalfGoals >= 1) {
+                        confidence += 3; factors.push(`2nd half more open (${secondHalfGoals} vs ${firstHalfGoals} 1H goals)`);
+                    } else if (firstHalfGoals >= 2 && secondHalfGoals === 0 && elapsed >= 60) {
+                        confidence -= 2; factors.push(`Active 1st half but quiet 2nd half so far`);
+                    }
+
+                    const shotRate = totalShots > 0 ? (totalShots / (elapsed / 90)) : 0;
+                    const expectedShotRate = 22;
+                    if (shotRate >= expectedShotRate * 1.3) { confidence += 3; factors.push(`Above-average shot rate for this stage`); }
+                    else if (shotRate <= expectedShotRate * 0.6) { confidence -= 2; factors.push(`Below-average shot rate`); }
+
+                    let standings = null;
+                    if (!standingsCache2hg[lid]) {
+                        try {
+                            const season = new Date().getFullYear();
+                            const stRes = await fetch(`https://v3.football.api-sports.io/standings?league=${lid}&season=${season > 6 ? season : season - 1}`, { headers: { "x-rapidapi-key": API_KEY } });
+                            const stData = await stRes.json();
+                            trackAPI(1);
+                            if (stData.response && stData.response[0] && stData.response[0].league && stData.response[0].league.standings) {
+                                standingsCache2hg[lid] = stData.response[0].league.standings[0] || [];
+                            }
+                        } catch(e) {}
+                    }
+                    standings = standingsCache2hg[lid] || null;
+
+                    let homePos = null, awayPos = null, totalTeams = 0;
+                    if (standings) {
+                        const hTeam = standings.find(t => t.team.id === hId);
+                        const aTeam = standings.find(t => t.team.id === aId);
+                        if (hTeam) homePos = hTeam.rank;
+                        if (aTeam) awayPos = aTeam.rank;
+                        totalTeams = standings.length;
+
+                        if (homePos && awayPos) {
+                            const avgPos = (homePos + awayPos) / 2;
+                            const topHalf = totalTeams / 2;
+                            if (avgPos <= topHalf * 0.5) { confidence += 4; factors.push(`Top teams (${homePos}${getOrdinal(homePos)} vs ${awayPos}${getOrdinal(awayPos)})`); }
+                            else if (avgPos <= topHalf) { confidence += 2; factors.push(`Upper half teams (${homePos}${getOrdinal(homePos)} vs ${awayPos}${getOrdinal(awayPos)})`); }
+
+                            const posDiff = Math.abs(homePos - awayPos);
+                            if (posDiff >= totalTeams * 0.5) { confidence += 2; factors.push(`Big quality gap — mismatch potential`); }
+                        }
+
+                        const homeDef = analyzeDefensiveStrength(standings, hId);
+                        const awayDef = analyzeDefensiveStrength(standings, aId);
+                        if (homeDef && awayDef) {
+                            if (homeDef.rating === 'leaky' || awayDef.rating === 'leaky') { confidence += 3; factors.push(`Leaky defense in play`); }
+                            if (homeDef.rating === 'fortress' && awayDef.rating === 'fortress') { confidence -= 4; factors.push(`Both teams defend well`); }
+                        }
+                    }
+
+                    let h2hData = null;
+                    try {
+                        const h2hRes = await fetch(`https://v3.football.api-sports.io/fixtures/headtohead?h2h=${hId}-${aId}&last=5`, { headers: { "x-rapidapi-key": API_KEY } });
+                        h2hData = await h2hRes.json();
+                        trackAPI(1);
+                    } catch(e) {}
+                    const h2h = analyzeH2H(h2hData, hId);
+                    if (h2h && h2h.available) {
+                        if (h2h.avgGoals >= 3.5) { confidence += 5; factors.push(`H2H avg ${h2h.avgGoals.toFixed(1)} goals/game`); }
+                        else if (h2h.avgGoals >= 2.5) { confidence += 3; factors.push(`H2H avg ${h2h.avgGoals.toFixed(1)} goals`); }
+                        else if (h2h.avgGoals < 1.5) { confidence -= 3; factors.push(`H2H avg only ${h2h.avgGoals.toFixed(1)} goals`); }
+
+                        if (h2h.bttsRate >= 0.6) { confidence += 2; factors.push(`H2H BTTS rate ${Math.round(h2h.bttsRate * 100)}%`); }
+                    }
+
+                    const leagueProfile = getLeagueProfile(lid);
+                    if (leagueProfile) {
+                        if (leagueProfile.avgGoals >= 3.0) { confidence += 3; factors.push(`High-scoring league (avg ${leagueProfile.avgGoals})`); }
+                        else if (leagueProfile.avgGoals <= 2.2) { confidence -= 2; factors.push(`Low-scoring league`); }
+                        if (leagueProfile.lateGoalRate >= 0.35) { confidence += 2; factors.push(`League known for late goals`); }
+                    }
+
+                    confidence = Math.min(96, Math.max(15, confidence));
+
+                    results.push({
+                        match,
+                        confidence,
+                        factors,
+                        stats: { homeSoT, awaySoT, homeOffT, awayOffT, homeTotal, awayTotal, homePoss, awayPoss, homeDangerous, awayDangerous, homeExpG, awayExpG, totalxG, totalCorners },
+                        homePos, awayPos, totalTeams,
+                        h2hAvail: h2h && h2h.available,
+                        standingsAvail: !!standings,
+                        elapsed, homeGoals, awayGoals, totalGoals,
+                        lateSubs, recentGoals
+                    });
+
+                    await new Promise(r => setTimeout(r, 100));
+                }
+
+                results.sort((a, b) => b.confidence - a.confidence);
+
+                if (results.length === 0) {
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>⚽</div><p>No 2nd half matches with enough stats to analyze.</p><p style='font-size:0.8rem; margin-top:8px;'>Matches need basic shot/possession data available.</p></div>";
+                    btn.innerText = "⚽ SCAN 2ND HALF MATCHES";
+                    btn.disabled = false;
+                    return;
+                }
+
+                let html = `<div style="text-align:center; padding:6px; margin-bottom:10px; color:#888; font-size:0.75rem;">⚽ ${results.length} match${results.length !== 1 ? 'es' : ''} analyzed · Sorted by goal confidence</div>`;
+
+                results.forEach(r => {
+                    const m = r.match;
+                    const fid = m.fixture.id;
+                    const confColor = r.confidence >= 80 ? 'var(--green)' : (r.confidence >= 65 ? 'var(--cyan)' : (r.confidence >= 50 ? 'var(--gold)' : 'var(--red)'));
+                    const confLabel = r.confidence >= 80 ? 'VERY LIKELY' : (r.confidence >= 65 ? 'LIKELY' : (r.confidence >= 50 ? 'POSSIBLE' : 'UNLIKELY'));
+                    const timeRemaining = 90 - r.elapsed;
+                    const isPlaced = placedBets2hg.includes(fid);
+
+                    const dataBadges = [];
+                    if (r.standingsAvail && r.homePos && r.awayPos) dataBadges.push(`📍 ${r.homePos}${getOrdinal(r.homePos)} vs ${r.awayPos}${getOrdinal(r.awayPos)}`);
+                    if (r.h2hAvail) dataBadges.push('🔄 H2H');
+                    if (r.lateSubs > 0) dataBadges.push(`🔄 ${r.lateSubs} subs`);
+                    dataBadges.push(`⏱ ${timeRemaining} min left`);
+
+                    const barWidth = Math.min(100, r.confidence);
+                    const barColor = r.confidence >= 80 ? '#2ea043' : (r.confidence >= 65 ? '#58a6ff' : (r.confidence >= 50 ? '#d29922' : '#da3633'));
+
+                    html += `
+                        <div class="match-card" style="border-left:4px solid ${confColor};">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <div style="font-size:0.7rem; color:#888;">${m.league.name} ${m.league.country ? '· ' + m.league.country : ''}</div>
+                                <div style="font-size:0.7rem; color:${confColor}; font-weight:bold;">${r.elapsed}'</div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <div style="font-weight:bold; font-size:1rem;">${m.teams.home.name} vs ${m.teams.away.name}</div>
+                                <div style="font-size:1.2rem; font-weight:bold; color:var(--gold);">${r.homeGoals} - ${r.awayGoals}</div>
+                            </div>
+
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                <div style="flex:1; background:#21262d; border-radius:6px; height:8px; overflow:hidden;">
+                                    <div style="width:${barWidth}%; height:100%; background:${barColor}; border-radius:6px; transition:width 0.3s;"></div>
+                                </div>
+                                <div style="font-size:0.9rem; font-weight:bold; color:${confColor}; min-width:45px; text-align:right;">${r.confidence}%</div>
+                            </div>
+                            <div style="text-align:center; font-size:0.7rem; font-weight:bold; color:${confColor}; margin-bottom:10px; text-transform:uppercase;">${confLabel} — Another Goal</div>
+
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:10px;">
+                                <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px; font-size:0.7rem;">
+                                    <span style="color:#888;">Shots on Target</span>
+                                    <div style="font-weight:bold; color:var(--cyan);">${r.stats.homeSoT} - ${r.stats.awaySoT}</div>
+                                </div>
+                                <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px; font-size:0.7rem;">
+                                    <span style="color:#888;">Total Shots</span>
+                                    <div style="font-weight:bold; color:var(--cyan);">${r.stats.homeTotal} - ${r.stats.awayTotal}</div>
+                                </div>
+                                <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px; font-size:0.7rem;">
+                                    <span style="color:#888;">Possession</span>
+                                    <div style="font-weight:bold; color:var(--cyan);">${r.stats.homePoss}% - ${r.stats.awayPoss}%</div>
+                                </div>
+                                <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px; font-size:0.7rem;">
+                                    <span style="color:#888;">xG</span>
+                                    <div style="font-weight:bold; color:${r.stats.totalxG > r.totalGoals ? 'var(--green)' : 'var(--gold)'};">${r.stats.homeExpG > 0 ? r.stats.homeExpG.toFixed(1) + ' - ' + r.stats.awayExpG.toFixed(1) : 'N/A'}</div>
+                                </div>
+                                ${r.stats.homeDangerous > 0 ? `
+                                <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px; font-size:0.7rem;">
+                                    <span style="color:#888;">Dangerous Attacks</span>
+                                    <div style="font-weight:bold; color:var(--cyan);">${r.stats.homeDangerous} - ${r.stats.awayDangerous}</div>
+                                </div>` : ''}
+                                <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px; font-size:0.7rem;">
+                                    <span style="color:#888;">Corners</span>
+                                    <div style="font-weight:bold; color:var(--cyan);">${r.stats.totalCorners}</div>
+                                </div>
+                            </div>
+
+                            <div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:8px; margin-bottom:10px;">
+                                <div style="font-size:0.68rem; color:#888; margin-bottom:4px; font-weight:bold;">KEY FACTORS</div>
+                                ${r.factors.map(f => `<div style="font-size:0.7rem; color:#ccc; padding:2px 0;">• ${f}</div>`).join('')}
+                            </div>
+
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <div style="font-size:0.65rem; color:#555;">${dataBadges.join(' · ')}</div>
+                            </div>
+
+                            ${isPlaced ?
+                                `<button disabled style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--gold); background:rgba(210,153,34,0.15); color:var(--gold); font-size:0.8rem; font-weight:bold; cursor:default;">📌 Bet Placed — Tracking</button>` :
+                                `<button onclick="toggleBet(${fid}, ${r.homeGoals}, ${r.awayGoals}, '${m.teams.home.name.replace(/'/g,"\\'")} vs ${m.teams.away.name.replace(/'/g,"\\'")}'); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)';" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.8rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`
+                            }
+                        </div>
+                    `;
+                });
+
+                area.innerHTML = html;
+
+            } catch(e) {
+                console.error("2nd Half Goal Scan Error:", e);
+                area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error scanning matches. Please try again.</div>";
+            }
+            btn.innerText = "⚽ SCAN 2ND HALF MATCHES";
+            btn.disabled = false;
         }
 
         function renderAccaCards() {
