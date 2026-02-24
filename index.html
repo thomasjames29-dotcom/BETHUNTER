@@ -2143,7 +2143,7 @@
 
                 const results = [];
                 const standingsCache2hg = {};
-                const placedBets2hg = getHistory().map(b => b.id);
+                const placedBets2hg = getPlacedChallenges().filter(b => b.selection === '2nd Half Goal').map(b => b.fixtureId);
 
                 for (const match of secondHalfMatches) {
                     const fid = match.fixture.id;
@@ -2627,7 +2627,7 @@
 
                             ${isPlaced ?
                                 `<button disabled style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--gold); background:rgba(210,153,34,0.15); color:var(--gold); font-size:0.8rem; font-weight:bold; cursor:default;">📌 Bet Placed — Tracking</button>` :
-                                `<button onclick="toggleBet(${fid}, ${r.homeGoals}, ${r.awayGoals}, '${m.teams.home.name.replace(/'/g,"\\'")} vs ${m.teams.away.name.replace(/'/g,"\\'")}'); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)';" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.8rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`
+                                `<button onclick="placeChallengebet(${fid}, '2nd Half Goal', '${m.teams.home.name.replace(/'/g,"\\'")} vs ${m.teams.away.name.replace(/'/g,"\\'")}', '${(m.league.name || '').replace(/'/g,"\\'")}', '1.50', 'est', ${r.homeGoals}, ${r.awayGoals}, ${r.confidence}, ${m.league.id || 0}); startChallengeCheckInterval(); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)';" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.8rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`
                             }
                         </div>
                     `;
@@ -3043,6 +3043,8 @@
                 } else {
                     won = false;
                 }
+            } else if (sel === '2nd Half Goal') {
+                won = totalGoals > (bet.homeGoalsAtPlace + bet.awayGoalsAtPlace);
             } else if (sel === 'Both Teams to Score') {
                 won = finalHome > 0 && finalAway > 0;
             } else if (sel.startsWith('Next Goal:')) {
@@ -5551,6 +5553,47 @@
                 html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:var(--purple); margin-bottom:12px;">By League</div>`;
                 const sortedL = Object.entries(leagueStats).sort((a, b) => b[1].total - a[1].total);
                 sortedL.forEach(([league, data]) => {
+                    const rate = Math.round((data.wins / data.total) * 100);
+                    const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
+                    html += `<div class="stats-bar">
+                        <div class="stats-bar-label">${league}</div>
+                        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
+                        <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.total})</span></div>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+
+            // 2nd Half Goal performance by league
+            const hgBets = resolved.filter(b => b.selection === '2nd Half Goal');
+            if (hgBets.length > 0) {
+                const hgWins = hgBets.filter(b => b.result).length;
+                const hgRate = Math.round((hgWins / hgBets.length) * 100);
+                const hgColor = hgRate >= 60 ? 'var(--green)' : (hgRate >= 45 ? 'var(--gold)' : 'var(--red)');
+                html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:var(--green); margin-bottom:12px;">⚽ 2nd Half Goal Predictions</div>`;
+                html += `<div style="display:flex; gap:10px; margin-bottom:12px;">
+                    <div style="flex:1; background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.1rem; font-weight:bold; color:${hgColor};">${hgRate}%</div>
+                        <div style="font-size:0.65rem; color:#888;">Hit Rate</div>
+                    </div>
+                    <div style="flex:1; background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.1rem; font-weight:bold; color:var(--green);">${hgWins}</div>
+                        <div style="font-size:0.65rem; color:#888;">Wins</div>
+                    </div>
+                    <div style="flex:1; background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.1rem; font-weight:bold; color:var(--red);">${hgBets.length - hgWins}</div>
+                        <div style="font-size:0.65rem; color:#888;">Losses</div>
+                    </div>
+                </div>`;
+                const hgLeagueStats = {};
+                hgBets.forEach(b => {
+                    const key = b.league || 'Unknown';
+                    if (!hgLeagueStats[key]) hgLeagueStats[key] = { wins: 0, total: 0 };
+                    hgLeagueStats[key].total++;
+                    if (b.result) hgLeagueStats[key].wins++;
+                });
+                const sortedHgL = Object.entries(hgLeagueStats).sort((a, b) => b[1].total - a[1].total);
+                sortedHgL.forEach(([league, data]) => {
                     const rate = Math.round((data.wins / data.total) * 100);
                     const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
                     html += `<div class="stats-bar">
