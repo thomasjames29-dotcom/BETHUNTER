@@ -2216,7 +2216,7 @@
 
                     if (totalShots < 3 && totalSoT < 1) continue;
 
-                    let confidence = 50;
+                    let confidence = 35;
                     const factors = [];
 
                     const shotPressure = totalSoT * 3.5 + (totalShots - totalSoT) * 1.2 + totalCorners * 1.5;
@@ -2254,12 +2254,11 @@
                     if (goalDiff >= 3) { confidence -= 4; factors.push(`Comfortable lead — game may settle`); }
 
                     const timeRemaining = 90 - elapsed;
-                    const timeBoost = Math.round((timeRemaining / 45) * 12);
-                    confidence += timeBoost;
-                    if (timeRemaining >= 35) { factors.push(`${timeRemaining} mins remaining — high goal window (+${timeBoost}%)`); }
-                    else if (timeRemaining >= 25) { factors.push(`${timeRemaining} mins left — good time window (+${timeBoost}%)`); }
-                    else if (timeRemaining >= 15) { factors.push(`${timeRemaining} mins remaining (+${timeBoost}%)`); }
-                    else { factors.push(`Only ${timeRemaining} mins left — limited time (+${timeBoost}%)`); }
+                    if (timeRemaining >= 35) { confidence += 10; factors.push(`${timeRemaining} mins remaining — plenty of time for goals (+10%)`); }
+                    else if (timeRemaining >= 25) { confidence += 7; factors.push(`${timeRemaining} mins left — good window for goals (+7%)`); }
+                    else if (timeRemaining >= 15) { confidence += 4; factors.push(`${timeRemaining} mins remaining (+4%)`); }
+                    else if (timeRemaining >= 5) { confidence -= 3; factors.push(`Only ${timeRemaining} mins left — running out of time (-3%)`); }
+                    else { confidence -= 8; factors.push(`Only ${timeRemaining} mins left — very little time (-8%)`); }
 
                     let lateSubs = 0;
                     let attackingSubs = 0;
