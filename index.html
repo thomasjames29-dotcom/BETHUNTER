@@ -2199,6 +2199,14 @@
                     const awayExpG = gs(aStats, "expected_goals");
                     const homeCorners = gs(hStats, "Corner Kicks");
                     const awayCorners = gs(aStats, "Corner Kicks");
+                    const homePassAcc = gs(hStats, "Passes %");
+                    const awayPassAcc = gs(aStats, "Passes %");
+                    const homeBlocked = gs(hStats, "Blocked Shots");
+                    const awayBlocked = gs(aStats, "Blocked Shots");
+                    const homeGKSaves = gs(hStats, "Goalkeeper Saves");
+                    const awayGKSaves = gs(aStats, "Goalkeeper Saves");
+                    const homeAttacks = gs(hStats, "Attacks");
+                    const awayAttacks = gs(aStats, "Attacks");
 
                     const totalSoT = homeSoT + awaySoT;
                     const totalShots = homeTotal + awayTotal;
@@ -2246,29 +2254,58 @@
                     if (goalDiff >= 3) { confidence -= 4; factors.push(`Comfortable lead — game may settle`); }
 
                     const timeRemaining = 90 - elapsed;
-                    if (timeRemaining >= 35) { confidence += 5; factors.push(`${timeRemaining} mins remaining — plenty of time`); }
-                    else if (timeRemaining >= 25) { confidence += 3; factors.push(`${timeRemaining} mins left`); }
-                    else if (timeRemaining >= 15) { confidence += 1; factors.push(`${timeRemaining} mins remaining`); }
-                    else { confidence -= 3; factors.push(`Only ${timeRemaining} mins left`); }
+                    const timeBoost = Math.round((timeRemaining / 45) * 12);
+                    confidence += timeBoost;
+                    if (timeRemaining >= 35) { factors.push(`${timeRemaining} mins remaining — high goal window (+${timeBoost}%)`); }
+                    else if (timeRemaining >= 25) { factors.push(`${timeRemaining} mins left — good time window (+${timeBoost}%)`); }
+                    else if (timeRemaining >= 15) { factors.push(`${timeRemaining} mins remaining (+${timeBoost}%)`); }
+                    else { factors.push(`Only ${timeRemaining} mins left — limited time (+${timeBoost}%)`); }
 
                     let lateSubs = 0;
                     let attackingSubs = 0;
                     const subEvents = events.filter(e => e.type === 'subst' && (e.time.elapsed || 0) >= 46);
                     lateSubs = subEvents.length;
                     subEvents.forEach(sub => {
-                        const playerIn = (sub.assist && sub.assist.name) ? sub.assist.name : '';
                         if (sub.time.elapsed >= 55) attackingSubs++;
                     });
                     if (attackingSubs >= 3) { confidence += 4; factors.push(`${attackingSubs} fresh subs since 55' — managers chasing`); }
                     else if (attackingSubs >= 2) { confidence += 3; factors.push(`${attackingSubs} subs after 55' — tactical changes`); }
                     else if (lateSubs >= 2) { confidence += 1; factors.push(`${lateSubs} 2nd half substitutions made`); }
 
-                    const firstHalfGoals = events.filter(e => e.type === 'Goal' && (e.time.elapsed || 0) <= 45).length;
-                    const secondHalfGoals = events.filter(e => e.type === 'Goal' && (e.time.elapsed || 0) > 45).length;
-                    const recentGoals = events.filter(e => e.type === 'Goal' && (e.time.elapsed || 0) >= (elapsed - 15)).length;
+                    const goalEvents = events.filter(e => e.type === 'Goal');
+                    const firstHalfGoals = goalEvents.filter(e => (e.time.elapsed || 0) <= 45).length;
+                    const secondHalfGoals = goalEvents.filter(e => (e.time.elapsed || 0) > 45).length;
+                    const recentGoals = goalEvents.filter(e => (e.time.elapsed || 0) >= (elapsed - 15)).length;
+                    const earliestGoal = goalEvents.length > 0 ? Math.min(...goalEvents.map(e => e.time.elapsed || 90)) : null;
+
+                    if (firstHalfGoals >= 3) { confidence += 5; factors.push(`${firstHalfGoals} first half goals — high-tempo game`); }
+                    else if (firstHalfGoals >= 2) { confidence += 4; factors.push(`${firstHalfGoals} first half goals — attacking game established`); }
+
+                    if (earliestGoal !== null && earliestGoal <= 15) { confidence += 3; factors.push(`Early goal (${earliestGoal}') — game opened up early`); }
+                    else if (earliestGoal !== null && earliestGoal <= 30) { confidence += 1; factors.push(`Goal before 30' — precedent set`); }
 
                     if (recentGoals >= 2) { confidence += 5; factors.push(`${recentGoals} goals in last 15 mins — game wide open!`); }
-                    else if (recentGoals === 1) { confidence += 3; factors.push(`Recent goal — momentum shift`); }
+                    else if (recentGoals === 1) {
+                        const lastGoal = goalEvents.filter(e => (e.time.elapsed || 0) > 45).sort((a, b) => (b.time.elapsed || 0) - (a.time.elapsed || 0))[0];
+                        if (lastGoal) {
+                            const scorerTeamId = lastGoal.team ? lastGoal.team.id : null;
+                            const leadingTeamIsHome = homeGoals > awayGoals;
+                            const leadingTeamId = leadingTeamIsHome ? hId : aId;
+                            const trailingTeamId = leadingTeamIsHome ? aId : hId;
+
+                            if (homeGoals !== awayGoals && scorerTeamId === trailingTeamId) {
+                                confidence += 4; factors.push(`Trailing team just scored — comeback energy`);
+                            } else if (homeGoals !== awayGoals && scorerTeamId === leadingTeamId && goalDiff >= 2) {
+                                confidence -= 3; factors.push(`Leading team extended lead — may defend now`);
+                            } else if (homeGoals === awayGoals) {
+                                confidence += 3; factors.push(`Recent equalizer — game reset, both pushing`);
+                            } else {
+                                confidence += 2; factors.push(`Recent goal — momentum shift`);
+                            }
+                        } else {
+                            confidence += 2; factors.push(`Recent goal — momentum shift`);
+                        }
+                    }
 
                     if (secondHalfGoals > firstHalfGoals && secondHalfGoals >= 1) {
                         confidence += 3; factors.push(`2nd half more open (${secondHalfGoals} vs ${firstHalfGoals} 1H goals)`);
@@ -2276,10 +2313,102 @@
                         confidence -= 2; factors.push(`Active 1st half but quiet 2nd half so far`);
                     }
 
+                    if (firstHalfGoals === 0 && secondHalfGoals === 0 && elapsed >= 65) {
+                        confidence -= 3; factors.push(`Goalless after 65' — tight defensive game`);
+                    }
+
                     const shotRate = totalShots > 0 ? (totalShots / (elapsed / 90)) : 0;
                     const expectedShotRate = 22;
                     if (shotRate >= expectedShotRate * 1.3) { confidence += 3; factors.push(`Above-average shot rate for this stage`); }
                     else if (shotRate <= expectedShotRate * 0.6) { confidence -= 2; factors.push(`Below-average shot rate`); }
+
+                    const totalBlocked = homeBlocked + awayBlocked;
+                    if (totalBlocked >= 8) { confidence += 4; factors.push(`${totalBlocked} blocked shots — defence under siege, rebound chances`); }
+                    else if (totalBlocked >= 5) { confidence += 2; factors.push(`${totalBlocked} blocked shots — sustained pressure on defence`); }
+
+                    const totalGKSaves = homeGKSaves + awayGKSaves;
+                    if (totalGKSaves >= 8) { confidence += 4; factors.push(`${totalGKSaves} GK saves — keepers busy, one will get through`); }
+                    else if (totalGKSaves >= 5) { confidence += 2; factors.push(`${totalGKSaves} goalkeeper saves — genuine chances being created`); }
+                    else if (totalGKSaves <= 1 && totalSoT >= 4) { confidence += 2; factors.push(`${totalSoT} SoT but only ${totalGKSaves} saves — shots finding the net`); }
+
+                    const avgPassAcc = (homePassAcc + awayPassAcc) / 2;
+                    const passGap = Math.abs(homePassAcc - awayPassAcc);
+                    if (avgPassAcc > 0) {
+                        if (avgPassAcc <= 70) { confidence += 2; factors.push(`Loose passing (avg ${Math.round(avgPassAcc)}%) — turnovers create counter-attack chances`); }
+                        if (passGap >= 15) {
+                            const dominantTeam = homePassAcc > awayPassAcc ? match.teams.home.name : match.teams.away.name;
+                            confidence += 2; factors.push(`${dominantTeam} dominating possession quality (${Math.round(homePassAcc)}% vs ${Math.round(awayPassAcc)}%)`);
+                        }
+                    }
+
+                    const totalAttacks = homeAttacks + awayAttacks;
+                    if (totalAttacks > 0 && totalDangerous > 0) {
+                        const dangerRatio = totalDangerous / totalAttacks;
+                        if (dangerRatio >= 0.45) { confidence += 3; factors.push(`High danger ratio (${Math.round(dangerRatio * 100)}% of attacks are dangerous)`); }
+                        else if (dangerRatio <= 0.25 && totalAttacks >= 80) { confidence -= 2; factors.push(`Low danger ratio — lots of attacks but few threatening`); }
+                    }
+
+                    if (firstHalfGoals === 0 && totalSoT >= 6 && totalShots >= 14) {
+                        confidence += 4; factors.push(`0-0 at HT but ${totalSoT} SoT & ${totalShots} shots — dam about to burst`);
+                    }
+
+                    const combinedShotAccuracy = totalShots > 0 ? (totalSoT / totalShots) : 0;
+                    if (combinedShotAccuracy >= 0.50 && totalSoT >= 6) { confidence += 3; factors.push(`Clinical finishing (${Math.round(combinedShotAccuracy * 100)}% accuracy) — shots on target are landing`); }
+                    else if (combinedShotAccuracy <= 0.25 && totalShots >= 12) { confidence += 1; factors.push(`Wasteful shooting (${Math.round(combinedShotAccuracy * 100)}% accuracy) — but high volume creates chances`); }
+
+                    const yellowCards = events.filter(e => e.type === 'Card' && e.detail === 'Yellow Card');
+                    const redCards = events.filter(e => e.type === 'Card' && (e.detail === 'Red Card' || e.detail === 'Second Yellow card'));
+                    const homeYellows = yellowCards.filter(e => e.team && e.team.id === hId).length;
+                    const awayYellows = yellowCards.filter(e => e.team && e.team.id === aId).length;
+                    const homeReds = redCards.filter(e => e.team && e.team.id === hId).length;
+                    const awayReds = redCards.filter(e => e.team && e.team.id === aId).length;
+                    const totalYellows = homeYellows + awayYellows;
+                    const totalReds = homeReds + awayReds;
+
+                    if (totalReds >= 1) {
+                        const redTeamIsHome = homeReds > awayReds;
+                        const redTeamLeading = redTeamIsHome ? (homeGoals > awayGoals) : (awayGoals > homeGoals);
+                        if (redTeamLeading) {
+                            confidence += 5; factors.push(`🟥 Red card on leading team (${homeReds}H/${awayReds}A) — 10 men defending, pressure coming`);
+                        } else if (homeGoals === awayGoals) {
+                            confidence += 3; factors.push(`🟥 Red card (${homeReds}H/${awayReds}A) — numerical advantage creates chances`);
+                        } else {
+                            confidence += 1; factors.push(`🟥 Red card on trailing team — may struggle to score but game opens`);
+                        }
+                        if (totalReds >= 2) { confidence += 3; factors.push(`Multiple red cards — chaotic game, goals likely`); }
+                    }
+
+                    if (totalYellows >= 6) {
+                        confidence += 3; factors.push(`🟨 ${totalYellows} yellows — heated game, defensive caution rising`);
+                    } else if (totalYellows >= 4) {
+                        confidence += 1; factors.push(`🟨 ${totalYellows} yellow cards — physical match`);
+                    }
+
+                    const homeFouls = gs(hStats, "Fouls");
+                    const awayFouls = gs(aStats, "Fouls");
+                    const totalFouls = homeFouls + awayFouls;
+                    if (totalFouls >= 25) {
+                        confidence += 3; factors.push(`${totalFouls} fouls — scrappy game, set pieces & free kicks in dangerous areas`);
+                    } else if (totalFouls >= 18) {
+                        confidence += 1; factors.push(`${totalFouls} fouls — physical contest`);
+                    }
+
+                    const bookingsOn2ndHalf = yellowCards.filter(e => (e.time.elapsed || 0) > 45);
+                    const recentBookings = bookingsOn2ndHalf.filter(e => (e.time.elapsed || 0) >= (elapsed - 15)).length;
+                    if (recentBookings >= 2) {
+                        confidence += 2; factors.push(`${recentBookings} bookings in last 15 mins — defenders getting stretched`);
+                    }
+
+                    if (totalYellows >= 3 && goalDiff <= 1) {
+                        const defYellowsHome = yellowCards.filter(e => e.team && e.team.id === hId).length;
+                        const defYellowsAway = yellowCards.filter(e => e.team && e.team.id === aId).length;
+                        if (defYellowsHome >= 2 && homeGoals <= awayGoals) {
+                            confidence += 2; factors.push(`Home defense on thin ice (${defYellowsHome} yellows) — cautious tackling`);
+                        }
+                        if (defYellowsAway >= 2 && awayGoals <= homeGoals) {
+                            confidence += 2; factors.push(`Away defense on thin ice (${defYellowsAway} yellows) — can't tackle freely`);
+                        }
+                    }
 
                     let standings = null;
                     if (!standingsCache2hg[lid]) {
@@ -2319,6 +2448,38 @@
                             if (homeDef.rating === 'leaky' || awayDef.rating === 'leaky') { confidence += 3; factors.push(`Leaky defense in play`); }
                             if (homeDef.rating === 'fortress' && awayDef.rating === 'fortress') { confidence -= 4; factors.push(`Both teams defend well`); }
                         }
+
+                        if (homePos && awayPos && goalDiff >= 1 && secondHalfGoals >= 1) {
+                            const leadingTeamIsHome = homeGoals > awayGoals;
+                            const leadingPos = leadingTeamIsHome ? homePos : awayPos;
+                            const trailingPos = leadingTeamIsHome ? awayPos : homePos;
+                            const leadingIsAtHome = leadingTeamIsHome;
+                            const bottomThird = totalTeams * 0.66;
+                            const topThird = totalTeams * 0.33;
+
+                            if (leadingIsAtHome && leadingPos <= topThird && goalDiff >= 2) {
+                                confidence -= 4; factors.push(`Strong home team leading by ${goalDiff} — likely to manage the game`);
+                            } else if (leadingIsAtHome && goalDiff === 1 && leadingPos <= topThird) {
+                                confidence -= 2; factors.push(`Home team leading — may control tempo`);
+                            } else if (!leadingIsAtHome && goalDiff >= 2) {
+                                confidence -= 3; factors.push(`Away team comfortable — may sit deep`);
+                            } else if (!leadingIsAtHome && goalDiff === 1 && trailingPos <= topThird) {
+                                confidence += 2; factors.push(`Strong home team trailing — expect late push`);
+                            }
+
+                            if (trailingPos >= bottomThird && goalDiff >= 2) {
+                                confidence -= 2; factors.push(`Weaker team losing badly — may accept defeat`);
+                            } else if (trailingPos <= topThird && goalDiff === 1) {
+                                confidence += 2; factors.push(`Quality team chasing — likely to create chances`);
+                            }
+
+                            const leadDef = leadingTeamIsHome ? homeDef : awayDef;
+                            if (leadDef && leadDef.rating === 'fortress' && goalDiff >= 1) {
+                                confidence -= 3; factors.push(`Leading team has strong defense — hard to break down`);
+                            } else if (leadDef && leadDef.rating === 'leaky') {
+                                confidence += 2; factors.push(`Leading team leaks goals — deficit recoverable`);
+                            }
+                        }
                     }
 
                     let h2hData = null;
@@ -2349,7 +2510,7 @@
                         match,
                         confidence,
                         factors,
-                        stats: { homeSoT, awaySoT, homeOffT, awayOffT, homeTotal, awayTotal, homePoss, awayPoss, homeDangerous, awayDangerous, homeExpG, awayExpG, totalxG, totalCorners },
+                        stats: { homeSoT, awaySoT, homeOffT, awayOffT, homeTotal, awayTotal, homePoss, awayPoss, homeDangerous, awayDangerous, homeExpG, awayExpG, totalxG, totalCorners, homeBlocked, awayBlocked, homeGKSaves, awayGKSaves, homePassAcc, awayPassAcc, homeFouls: gs(hStats, "Fouls"), awayFouls: gs(aStats, "Fouls"), totalYellows: yellowCards.length, totalReds: redCards.length },
                         homePos, awayPos, totalTeams,
                         h2hAvail: h2h && h2h.available,
                         standingsAvail: !!standings,
@@ -2433,6 +2594,26 @@
                                     <span style="color:#888;">Corners</span>
                                     <div style="font-weight:bold; color:var(--cyan);">${r.stats.totalCorners}</div>
                                 </div>
+                                <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px; font-size:0.7rem;">
+                                    <span style="color:#888;">GK Saves</span>
+                                    <div style="font-weight:bold; color:var(--cyan);">${r.stats.homeGKSaves} - ${r.stats.awayGKSaves}</div>
+                                </div>
+                                <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px; font-size:0.7rem;">
+                                    <span style="color:#888;">Blocked Shots</span>
+                                    <div style="font-weight:bold; color:var(--cyan);">${r.stats.homeBlocked} - ${r.stats.awayBlocked}</div>
+                                </div>
+                                <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px; font-size:0.7rem;">
+                                    <span style="color:#888;">Fouls</span>
+                                    <div style="font-weight:bold; color:var(--cyan);">${r.stats.homeFouls} - ${r.stats.awayFouls}</div>
+                                </div>
+                                <div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px; font-size:0.7rem;">
+                                    <span style="color:#888;">Cards</span>
+                                    <div style="font-weight:bold; color:${r.stats.totalReds > 0 ? 'var(--red)' : (r.stats.totalYellows >= 4 ? 'var(--gold)' : 'var(--cyan)')};">🟨${r.stats.totalYellows} ${r.stats.totalReds > 0 ? '🟥' + r.stats.totalReds : ''}</div>
+                                </div>
+                                ${r.stats.homePassAcc > 0 ? `<div style="background:rgba(255,255,255,0.04); padding:6px 8px; border-radius:6px; font-size:0.7rem;">
+                                    <span style="color:#888;">Pass Accuracy</span>
+                                    <div style="font-weight:bold; color:var(--cyan);">${r.stats.homePassAcc}% - ${r.stats.awayPassAcc}%</div>
+                                </div>` : ''}
                             </div>
 
                             <div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:8px; margin-bottom:10px;">
