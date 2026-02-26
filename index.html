@@ -257,6 +257,7 @@
             <div id="tabSched" class="nav-tab" onclick="switchTab('sched')">📅 Elite Schedule</div>
             <div id="tabAcc" class="nav-tab" onclick="switchTab('acc')">💰 Acca Tips</div>
             <div id="tab2hg" class="nav-tab" onclick="switchTab('2hg')">⚽ 2nd Half Goal</div>
+            <div id="tabBotd" class="nav-tab" onclick="switchTab('botd')">🏆 Bet of the Day</div>
             <div id="tabStats" class="nav-tab" onclick="switchTab('stats')">📈 Stats</div>
             <div id="tabHist" class="nav-tab" onclick="switchTab('hist')">📜 History</div>
         </div>
@@ -324,6 +325,15 @@
         </div>
         <button class="card-scan-btn" style="background:var(--green); color:#000; margin-bottom:15px;" onclick="scan2ndHalfGoals(this)">⚽ SCAN 2ND HALF MATCHES</button>
         <div id="secondHalfGoalContent" style="padding-bottom:100px; text-align:center; color:#888;">Click above to scan all live 2nd half matches for goal probability.</div>
+    </div>
+
+    <div id="botdView" style="display:none;">
+        <div style="text-align:center; margin-bottom:15px;">
+            <h2 style="color:var(--gold); margin:0 0 4px 0;">🏆 Bet of the Day</h2>
+            <p style="color:#888; font-size:0.78rem; margin:0;">One standout pick from each major league — the best bet today</p>
+        </div>
+        <button class="card-scan-btn" style="background:var(--gold); color:#000; margin-bottom:15px;" onclick="scanBetOfTheDay(this)">🏆 FIND TODAY'S BEST BETS</button>
+        <div id="botdContent" style="padding-bottom:100px; text-align:center; color:#888;">Click above to analyze today's fixtures across Europe's top leagues.</div>
     </div>
 
     <div id="accView" style="display:none;">
@@ -1522,21 +1532,31 @@
         }
 
         function exportCSV() {
-            const bets = getHistory();
-            if (bets.length === 0) { alert("No history to export."); return; }
-            let csv = "Date,Match,Result,Status\n";
-            bets.forEach(b => {
-                let res = "OPEN";
-                if(b.status === 'WIN') res = "WIN (+1)";
-                if(b.status === 'LOSS') res = "LOSS (-1)";
-                csv += `${b.date},${b.teams.replace(',',' ')},${res},${b.status}\n`;
+            const huntBets = getHistory();
+            const challengeBets = getPlacedChallenges();
+            const allExport = [];
+            huntBets.forEach(b => {
+                allExport.push({ date: b.date, match: b.teams, selection: b.selection || 'Next Goal', source: 'Hunt', status: b.status, score: b.finalScore || '' });
+            });
+            challengeBets.forEach(b => {
+                const d = b.placedAt ? new Date(b.placedAt).toLocaleDateString('en-CA') : '';
+                let src = 'Challenge';
+                if (b.selection === '2nd Half Goal') src = '2nd Half';
+                else if (b.selection && (b.selection.startsWith('Anytime Goalscorer') || b.selection.startsWith('Anytime Booking'))) src = 'Player';
+                const st = b.status === 'resolved' ? (b.result ? 'WIN' : 'LOSS') : 'OPEN';
+                allExport.push({ date: d, match: b.match || '', selection: b.selection || '', source: src, status: st, score: b.finalScore || '' });
+            });
+            if (allExport.length === 0) { alert("No history to export."); return; }
+            let csv = "Date,Source,Match,Selection,Result,Final Score\n";
+            allExport.forEach(b => {
+                csv += `"${b.date}","${b.source}","${(b.match || '').replace(/"/g, '""')}","${(b.selection || '').replace(/"/g, '""')}","${b.status}","${b.score}"\n`;
             });
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.setAttribute('hidden', '');
             a.setAttribute('href', url);
-            a.setAttribute('download', 'hunter_history.csv');
+            a.setAttribute('download', 'final_third_history.csv');
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -1578,37 +1598,87 @@
         }
 
         function renderHistory() {
-            const bets = getHistory();
+            const huntBets = getHistory();
+            const challengeBets = getPlacedChallenges();
             const histDiv = document.getElementById('histContent');
-            if(bets.length === 0) { histDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>No bets tracked yet.</p>"; return; }
 
-            bets.sort((a, b) => new Date(b.date) - new Date(a.date));
-            const grouped = bets.reduce((acc, bet) => {
-                if(!acc[bet.date]) acc[bet.date] = [];
+            const allBets = [];
+
+            huntBets.forEach(b => {
+                allBets.push({
+                    date: b.date,
+                    teams: b.teams,
+                    selection: b.selection || 'Next Goal',
+                    source: 'Hunt',
+                    status: b.status === 'WIN' ? 'won' : (b.status === 'LOSS' ? 'lost' : 'open'),
+                    finalScore: b.finalScore || null
+                });
+            });
+
+            challengeBets.forEach(b => {
+                const d = b.placedAt ? new Date(b.placedAt).toLocaleDateString('en-CA') : new Date().toLocaleDateString('en-CA');
+                let sourceLabel = 'Challenge';
+                if (b.selection === '2nd Half Goal') sourceLabel = '2nd Half';
+                else if (b.selection && b.selection.startsWith('Anytime Goalscorer')) sourceLabel = 'Player';
+                else if (b.selection && b.selection.startsWith('Anytime Booking')) sourceLabel = 'Player';
+                allBets.push({
+                    date: d,
+                    teams: b.match || 'Unknown',
+                    selection: b.selection || 'Unknown',
+                    source: sourceLabel,
+                    status: b.status === 'resolved' ? (b.result ? 'won' : 'lost') : 'open',
+                    finalScore: b.finalScore || null
+                });
+            });
+
+            if (allBets.length === 0) { histDiv.innerHTML = "<p style='text-align:center; color:#888; margin-top:50px;'>No bets tracked yet.</p>"; return; }
+
+            allBets.sort((a, b) => b.date.localeCompare(a.date));
+            const grouped = allBets.reduce((acc, bet) => {
+                if (!acc[bet.date]) acc[bet.date] = [];
                 acc[bet.date].push(bet);
                 return acc;
             }, {});
 
+            const sourceColors = { 'Hunt': 'var(--cyan)', 'Challenge': 'var(--gold)', '2nd Half': 'var(--green)', 'Player': 'var(--purple)' };
+
             let html = `<button class="export-btn" onclick="exportCSV()">📥 Export to Excel (CSV)</button>`;
             for (const [date, dayBets] of Object.entries(grouped)) {
-                let dailyUnits = 0;
+                let dailyWins = 0, dailyLosses = 0, dailyOpen = 0;
                 let cardsHtml = "";
                 dayBets.forEach(b => {
                     let resClass = "hist-res-open"; let resText = "OPEN";
-                    if(b.status === 'WIN') { resClass = "hist-res-win"; resText = "WIN (+1)"; dailyUnits++; }
-                    if(b.status === 'LOSS') { resClass = "hist-res-loss"; resText = "LOSS (-1)"; dailyUnits--; }
-                    cardsHtml += `<div class="hist-card"><div style="flex:1">${b.teams}</div><div class="${resClass}">${resText}</div></div>`;
-                });
-                let unitClass = dailyUnits > 0 ? "hist-unit-plus" : (dailyUnits < 0 ? "hist-unit-minus" : "hist-unit-even");
-                let unitSign = dailyUnits > 0 ? "+" : "";
-                
-                // NEW MINIMALIST HISTORY ROW
-                html += `
-                    <div class="hist-day" style="margin-bottom:10px;">
-                        <div class="hist-date-row">
-                            <span>📅 ${date}</span>
-                            <span class="${unitClass}">${unitSign}${dailyUnits} Units</span>
+                    if (b.status === 'won') { resClass = "hist-res-win"; resText = "WIN"; dailyWins++; }
+                    if (b.status === 'lost') { resClass = "hist-res-loss"; resText = "LOSS"; dailyLosses++; }
+                    if (b.status === 'open') { dailyOpen++; }
+                    const srcColor = sourceColors[b.source] || '#888';
+                    cardsHtml += `<div class="hist-card" style="display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.04);">
+                        <span style="font-size:0.55rem; padding:2px 6px; border-radius:4px; background:rgba(255,255,255,0.06); color:${srcColor}; font-weight:bold; min-width:52px; text-align:center;">${b.source}</span>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:0.78rem; color:#ddd; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${b.teams}</div>
+                            <div style="font-size:0.65rem; color:#666;">${b.selection}${b.finalScore ? ' · FT: ' + b.finalScore : ''}</div>
                         </div>
+                        <div class="${resClass}" style="font-size:0.7rem; font-weight:bold; min-width:35px; text-align:right;">${resText}</div>
+                    </div>`;
+                });
+                const dailyUnits = dailyWins - dailyLosses;
+                const unitClass = dailyUnits > 0 ? "hist-unit-plus" : (dailyUnits < 0 ? "hist-unit-minus" : "hist-unit-even");
+                const unitSign = dailyUnits > 0 ? "+" : "";
+                const summaryParts = [];
+                if (dailyWins > 0) summaryParts.push(`<span style="color:var(--green);">${dailyWins}W</span>`);
+                if (dailyLosses > 0) summaryParts.push(`<span style="color:var(--red);">${dailyLosses}L</span>`);
+                if (dailyOpen > 0) summaryParts.push(`<span style="color:var(--gold);">${dailyOpen} open</span>`);
+
+                html += `
+                    <div class="hist-day" style="margin-bottom:12px; background:var(--card); border-radius:10px; padding:10px 12px;">
+                        <div class="hist-date-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <span style="font-size:0.8rem; font-weight:bold; color:#ddd;">📅 ${date}</span>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <span style="font-size:0.7rem;">${summaryParts.join(' · ')}</span>
+                                <span class="${unitClass}" style="font-size:0.75rem; font-weight:bold;">${unitSign}${dailyUnits}u</span>
+                            </div>
+                        </div>
+                        ${cardsHtml}
                     </div>
                 `;
             }
@@ -1628,8 +1698,8 @@
 
         function switchTab(tab) {
             stopChallengeAutoRefresh();
-            const views = ['liveView','schedView','histView','cardView','accView','challengeView','statsView','secondHalfGoalView'];
-            const tabs = ['tabLive','tabSched','tabHist','tabCards','tabAcc','tabChallenge','tabStats','tab2hg'];
+            const views = ['liveView','schedView','histView','cardView','accView','challengeView','statsView','secondHalfGoalView','botdView'];
+            const tabs = ['tabLive','tabSched','tabHist','tabCards','tabAcc','tabChallenge','tabStats','tab2hg','tabBotd'];
             views.forEach(v => document.getElementById(v).style.display = 'none');
             tabs.forEach(t => document.getElementById(t).classList.remove('active'));
             document.getElementById('filterSelect').style.display = 'none';
@@ -1655,6 +1725,9 @@
             } else if(tab === '2hg') {
                 document.getElementById('secondHalfGoalView').style.display = 'block';
                 document.getElementById('tab2hg').classList.add('active');
+            } else if(tab === 'botd') {
+                document.getElementById('botdView').style.display = 'block';
+                document.getElementById('tabBotd').classList.add('active');
             } else if(tab === 'stats') {
                 document.getElementById('statsView').style.display = 'block';
                 document.getElementById('tabStats').classList.add('active');
@@ -2639,6 +2712,316 @@
                 area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error scanning matches. Please try again.</div>";
             }
             btn.innerText = "⚽ SCAN 2ND HALF MATCHES";
+            btn.disabled = false;
+        }
+
+        const BOTD_LEAGUES = [
+            { id: 39, name: 'Premier League', country: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { id: 40, name: 'Championship', country: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { id: 140, name: 'La Liga', country: 'Spain', flag: '🇪🇸' },
+            { id: 61, name: 'Ligue 1', country: 'France', flag: '🇫🇷' },
+            { id: 78, name: 'Bundesliga', country: 'Germany', flag: '🇩🇪' },
+            { id: 135, name: 'Serie A', country: 'Italy', flag: '🇮🇹' },
+            { id: 179, name: 'Premiership', country: 'Scotland', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+            { id: 2, name: 'Champions League', country: 'Europe', flag: '🏆' },
+            { id: 3, name: 'Europa League', country: 'Europe', flag: '🏆' },
+            { id: 848, name: 'Conference League', country: 'Europe', flag: '🏆' },
+            { id: 45, name: 'FA Cup', country: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { id: 48, name: 'League Cup', country: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { id: 143, name: 'Copa del Rey', country: 'Spain', flag: '🇪🇸' },
+            { id: 65, name: 'Coupe de France', country: 'France', flag: '🇫🇷' },
+            { id: 81, name: 'DFB Pokal', country: 'Germany', flag: '🇩🇪' },
+            { id: 137, name: 'Coppa Italia', country: 'Italy', flag: '🇮🇹' }
+        ];
+
+        async function scanBetOfTheDay(btn) {
+            btn.innerText = "🔍 ANALYZING FIXTURES...";
+            btn.disabled = true;
+            const area = document.getElementById('botdContent');
+            area.innerHTML = "<div style='text-align:center; padding:40px;'><div class='pilot-dot' style='width:20px; height:20px; margin:0 auto; background:var(--gold); animation:pulse-gold 1s infinite;'></div><p style='margin-top:20px; color:var(--gold);'>Fetching today's fixtures from 6 major leagues...</p></div>";
+
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const season = new Date().getMonth() >= 6 ? new Date().getFullYear() : new Date().getFullYear() - 1;
+
+                trackAPI(1);
+                const res = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}`, { headers: { "x-rapidapi-key": API_KEY } });
+                const data = await res.json();
+
+                if (!data.response || data.response.length === 0) {
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'>No fixtures found for today.</div>";
+                    btn.innerText = "🏆 FIND TODAY'S BEST BETS";
+                    btn.disabled = false;
+                    return;
+                }
+
+                const botdLeagueIds = BOTD_LEAGUES.map(l => l.id);
+                const todayFixtures = data.response.filter(f => botdLeagueIds.includes(f.league.id) && ['NS', 'TBD'].includes(f.fixture.status.short));
+
+                if (todayFixtures.length === 0) {
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>🏆</div><p>No upcoming matches in the big 6 leagues today.</p><p style='font-size:0.75rem; color:#555; margin-top:8px;'>Check back on match days!</p></div>";
+                    btn.innerText = "🏆 FIND TODAY'S BEST BETS";
+                    btn.disabled = false;
+                    return;
+                }
+
+                const leagueFixtures = {};
+                todayFixtures.forEach(f => {
+                    if (!leagueFixtures[f.league.id]) leagueFixtures[f.league.id] = [];
+                    leagueFixtures[f.league.id].push(f);
+                });
+
+                area.innerHTML = `<div style='text-align:center; padding:20px; color:var(--gold);'>Analyzing ${todayFixtures.length} matches across ${Object.keys(leagueFixtures).length} leagues...</div>`;
+
+                const bestPicks = [];
+                const placedBotd = getPlacedChallenges().filter(b => b.source === 'BOTD').map(b => b.fixtureId + '_' + b.selection);
+
+                for (const league of BOTD_LEAGUES) {
+                    const fixtures = leagueFixtures[league.id];
+                    if (!fixtures || fixtures.length === 0) continue;
+
+                    let standingsData = null;
+                    try {
+                        trackAPI(1);
+                        const stRes = await fetch(`https://v3.football.api-sports.io/standings?league=${league.id}&season=${season}`, { headers: { "x-rapidapi-key": API_KEY } });
+                        const stData = await stRes.json();
+                        if (stData.response && stData.response[0]) standingsData = stData.response[0].league.standings[0];
+                    } catch(e) {}
+
+                    let leagueBest = null;
+
+                    for (const fix of fixtures) {
+                        const hId = fix.teams.home.id;
+                        const aId = fix.teams.away.id;
+                        const hName = fix.teams.home.name;
+                        const aName = fix.teams.away.name;
+
+                        let homeForm = null, awayForm = null, h2h = null;
+                        try {
+                            [homeForm, awayForm] = await Promise.all([fetchTeamForm(hId), fetchTeamForm(aId)]);
+                        } catch(e) {}
+
+                        try {
+                            trackAPI(1);
+                            const h2hRes = await fetch(`https://v3.football.api-sports.io/fixtures/headtohead?h2h=${hId}-${aId}&last=10`, { headers: { "x-rapidapi-key": API_KEY } });
+                            const h2hData = await h2hRes.json();
+                            if (h2hData.response && h2hData.response.length >= 3) {
+                                h2h = analyzeH2H(h2hData.response);
+                            }
+                        } catch(e) {}
+
+                        let homePos = null, awayPos = null, homeGA = null, awayGA = null, totalTeams = 20;
+                        if (standingsData) {
+                            const hSt = standingsData.find(s => s.team.id === hId);
+                            const aSt = standingsData.find(s => s.team.id === aId);
+                            if (hSt) { homePos = hSt.rank; homeGA = hSt.all.goals.against; }
+                            if (aSt) { awayPos = aSt.rank; awayGA = aSt.all.goals.against; }
+                            totalTeams = standingsData.length;
+                        }
+
+                        const homeDef = standingsData ? analyzeDefensiveStrength(standingsData, hId) : null;
+                        const awayDef = standingsData ? analyzeDefensiveStrength(standingsData, aId) : null;
+                        const leagueProfile = getLeagueProfile(league.id);
+
+                        const markets = [];
+
+                        const homeAvgScored = homeForm ? homeForm.avgScored : (leagueProfile ? leagueProfile.avgGoals / 2 : 1.3);
+                        const awayAvgScored = awayForm ? awayForm.avgScored : (leagueProfile ? leagueProfile.avgGoals / 2 : 1.1);
+                        const homeAvgConceded = homeForm ? homeForm.avgConceded : 1.1;
+                        const awayAvgConceded = awayForm ? awayForm.avgConceded : 1.3;
+                        const combinedAvg = homeAvgScored + awayAvgScored;
+                        const homeHomeAvg = homeForm && homeForm.homeAvgScored ? homeForm.homeAvgScored : homeAvgScored;
+                        const awayAwayAvg = awayForm && awayForm.awayAvgScored ? awayForm.awayAvgScored : awayAvgScored;
+
+                        let o15Prob = 50;
+                        if (combinedAvg >= 3.0) o15Prob += 15;
+                        else if (combinedAvg >= 2.5) o15Prob += 10;
+                        else if (combinedAvg >= 2.0) o15Prob += 5;
+                        if (homeForm && homeForm.overRate > 0.6) o15Prob += 8;
+                        if (awayForm && awayForm.overRate > 0.6) o15Prob += 8;
+                        if (h2h && h2h.avgGoals >= 3.0) o15Prob += 8;
+                        else if (h2h && h2h.avgGoals >= 2.5) o15Prob += 5;
+                        if (awayDef && awayDef.rating === 'leaky') o15Prob += 6;
+                        if (homeDef && homeDef.rating === 'leaky') o15Prob += 6;
+                        if (awayDef && awayDef.rating === 'fortress') o15Prob -= 8;
+                        if (homeDef && homeDef.rating === 'fortress') o15Prob -= 8;
+                        o15Prob = Math.min(95, Math.max(20, o15Prob));
+
+                        let o25Prob = 35;
+                        if (combinedAvg >= 3.5) o25Prob += 18;
+                        else if (combinedAvg >= 3.0) o25Prob += 12;
+                        else if (combinedAvg >= 2.5) o25Prob += 6;
+                        if (homeForm && homeForm.overRate > 0.6) o25Prob += 8;
+                        if (awayForm && awayForm.overRate > 0.6) o25Prob += 8;
+                        if (h2h && h2h.avgGoals >= 3.5) o25Prob += 10;
+                        else if (h2h && h2h.avgGoals >= 2.5) o25Prob += 5;
+                        if (awayDef && awayDef.rating === 'leaky') o25Prob += 8;
+                        if (homeDef && homeDef.rating === 'leaky') o25Prob += 8;
+                        if (awayDef && awayDef.rating === 'fortress') o25Prob -= 10;
+                        if (homeDef && homeDef.rating === 'fortress') o25Prob -= 10;
+                        o25Prob = Math.min(92, Math.max(15, o25Prob));
+
+                        let bttsPr = 35;
+                        if (homeForm && homeForm.bttsRate > 0.5) bttsPr += 10;
+                        if (awayForm && awayForm.bttsRate > 0.5) bttsPr += 10;
+                        if (homeAvgScored >= 1.3 && awayAvgScored >= 1.0) bttsPr += 8;
+                        if (homeAvgConceded >= 1.2 && awayAvgConceded >= 1.2) bttsPr += 8;
+                        if (h2h && h2h.bttsRate >= 0.6) bttsPr += 8;
+                        if (homeDef && homeDef.rating === 'fortress') bttsPr -= 12;
+                        if (awayDef && awayDef.rating === 'fortress') bttsPr -= 12;
+                        if (homeForm && homeForm.cleanSheetRate > 0.5) bttsPr -= 8;
+                        if (awayForm && awayForm.cleanSheetRate > 0.5) bttsPr -= 8;
+                        bttsPr = Math.min(90, Math.max(15, bttsPr));
+
+                        let homeWinProb = 40;
+                        if (homePos && awayPos) {
+                            const gap = awayPos - homePos;
+                            if (gap >= 8) homeWinProb += 15;
+                            else if (gap >= 4) homeWinProb += 8;
+                            else if (gap <= -8) homeWinProb -= 15;
+                            else if (gap <= -4) homeWinProb -= 8;
+                        }
+                        if (homeHomeAvg >= 2.0) homeWinProb += 8;
+                        if (homeForm && homeForm.avgScored > homeForm.avgConceded + 0.5) homeWinProb += 6;
+                        if (awayForm && awayForm.avgConceded >= 1.8) homeWinProb += 5;
+                        if (h2h && h2h.homeWinRate >= 0.5) homeWinProb += 5;
+                        if (awayDef && awayDef.rating === 'leaky') homeWinProb += 5;
+                        if (homeDef && homeDef.rating === 'fortress') homeWinProb += 5;
+                        homeWinProb = Math.min(90, Math.max(15, homeWinProb));
+
+                        let awayWinProb = 30;
+                        if (homePos && awayPos) {
+                            const gap = homePos - awayPos;
+                            if (gap >= 8) awayWinProb += 15;
+                            else if (gap >= 4) awayWinProb += 8;
+                            else if (gap <= -8) awayWinProb -= 10;
+                            else if (gap <= -4) awayWinProb -= 5;
+                        }
+                        if (awayAwayAvg >= 1.5) awayWinProb += 8;
+                        if (awayForm && awayForm.avgScored > awayForm.avgConceded + 0.5) awayWinProb += 6;
+                        if (homeForm && homeForm.avgConceded >= 1.8) awayWinProb += 5;
+                        if (h2h && h2h.awayWinRate >= 0.4) awayWinProb += 5;
+                        if (homeDef && homeDef.rating === 'leaky') awayWinProb += 5;
+                        awayWinProb = Math.min(85, Math.max(10, awayWinProb));
+
+                        const buildReasoning = (market, prob) => {
+                            const reasons = [];
+                            if (homeForm) reasons.push(`${hName} avg ${homeForm.avgScored.toFixed(1)} scored, ${homeForm.avgConceded.toFixed(1)} conceded`);
+                            if (awayForm) reasons.push(`${aName} avg ${awayForm.avgScored.toFixed(1)} scored, ${awayForm.avgConceded.toFixed(1)} conceded`);
+                            if (homePos && awayPos) reasons.push(`League positions: ${homePos}${getOrdinal(homePos)} vs ${awayPos}${getOrdinal(awayPos)}`);
+                            if (h2h) reasons.push(`H2H avg ${h2h.avgGoals.toFixed(1)} goals, BTTS ${Math.round(h2h.bttsRate * 100)}%`);
+                            if (homeDef) reasons.push(`${hName} defence: ${homeDef.rating}`);
+                            if (awayDef) reasons.push(`${aName} defence: ${awayDef.rating}`);
+                            return reasons;
+                        };
+
+                        const dataSources = (homeForm ? 1 : 0) + (awayForm ? 1 : 0) + (standingsData ? 1 : 0) + (h2h ? 1 : 0);
+
+                        if (dataSources >= 2) {
+                            markets.push({ market: 'Over 1.5 Goals', prob: o15Prob, reasons: buildReasoning('o15', o15Prob) });
+                            markets.push({ market: 'Over 2.5 Goals', prob: o25Prob, reasons: buildReasoning('o25', o25Prob) });
+                            markets.push({ market: 'BTTS', prob: bttsPr, reasons: buildReasoning('btts', bttsPr) });
+                            markets.push({ market: 'Home Win', prob: homeWinProb, reasons: buildReasoning('hw', homeWinProb) });
+                            markets.push({ market: 'Away Win', prob: awayWinProb, reasons: buildReasoning('aw', awayWinProb) });
+                        }
+
+                        if (markets.length > 0) {
+                            const best = markets.sort((a, b) => b.prob - a.prob)[0];
+                            if (!leagueBest || best.prob > leagueBest.prob) {
+                                const koTime = new Date(fix.fixture.date);
+                                leagueBest = {
+                                    fixtureId: fix.fixture.id,
+                                    home: hName, away: aName,
+                                    homePos, awayPos, totalTeams,
+                                    league: league,
+                                    market: best.market,
+                                    prob: best.prob,
+                                    reasons: best.reasons,
+                                    kickoff: koTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                                    dataSources,
+                                    h2hAvail: !!h2h,
+                                    formAvail: !!(homeForm || awayForm),
+                                    standingsAvail: !!standingsData
+                                };
+                            }
+                        }
+
+                        await new Promise(r => setTimeout(r, 80));
+                    }
+
+                    if (leagueBest) bestPicks.push(leagueBest);
+                }
+
+                if (bestPicks.length === 0) {
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>🏆</div><p>Not enough data to pick today's bets. Try again later.</p></div>";
+                    btn.innerText = "🏆 FIND TODAY'S BEST BETS";
+                    btn.disabled = false;
+                    return;
+                }
+
+                bestPicks.sort((a, b) => b.prob - a.prob);
+
+                let html = `<div style="text-align:center; padding:6px; margin-bottom:10px; color:#888; font-size:0.75rem;">🏆 ${bestPicks.length} league${bestPicks.length !== 1 ? 's' : ''} analyzed · Best bet from each</div>`;
+
+                bestPicks.forEach((pick, idx) => {
+                    const confColor = pick.prob >= 75 ? 'var(--green)' : (pick.prob >= 60 ? 'var(--cyan)' : (pick.prob >= 50 ? 'var(--gold)' : 'var(--red)'));
+                    const barWidth = Math.min(100, pick.prob);
+                    const barColor = pick.prob >= 75 ? '#2ea043' : (pick.prob >= 60 ? '#58a6ff' : (pick.prob >= 50 ? '#d29922' : '#da3633'));
+                    const isTopPick = idx === 0;
+                    const betKey = pick.fixtureId + '_' + pick.market;
+                    const isPlaced = placedBotd.includes(betKey);
+
+                    const dataBadges = [];
+                    if (pick.formAvail) dataBadges.push('📊 Form');
+                    if (pick.standingsAvail && pick.homePos) dataBadges.push(`📍 ${pick.homePos}${getOrdinal(pick.homePos)} vs ${pick.awayPos}${getOrdinal(pick.awayPos)}`);
+                    if (pick.h2hAvail) dataBadges.push('🔄 H2H');
+                    dataBadges.push(`📡 ${pick.dataSources} sources`);
+
+                    html += `
+                        <div class="match-card" style="border-left:4px solid ${confColor}; ${isTopPick ? 'border:2px solid var(--gold); box-shadow:0 0 15px rgba(210,153,34,0.15);' : ''}">
+                            ${isTopPick ? '<div style="text-align:center; font-size:0.7rem; font-weight:bold; color:var(--gold); margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">⭐ TOP PICK OF THE DAY ⭐</div>' : ''}
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <div style="font-size:0.7rem; color:#888;">${pick.league.flag} ${pick.league.name} · ${pick.league.country}</div>
+                                <div style="font-size:0.7rem; color:#888;">KO ${pick.kickoff}</div>
+                            </div>
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <div style="font-weight:bold; font-size:1rem;">${pick.home} vs ${pick.away}</div>
+                            </div>
+
+                            <div style="background:rgba(210,153,34,0.08); border:1px solid rgba(210,153,34,0.2); border-radius:8px; padding:10px; margin-bottom:10px; text-align:center;">
+                                <div style="font-size:0.7rem; color:#888; margin-bottom:4px;">BEST BET</div>
+                                <div style="font-size:1.2rem; font-weight:bold; color:var(--gold);">${pick.market}</div>
+                            </div>
+
+                            <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                <div style="flex:1; background:#21262d; border-radius:6px; height:8px; overflow:hidden;">
+                                    <div style="width:${barWidth}%; height:100%; background:${barColor}; border-radius:6px; transition:width 0.3s;"></div>
+                                </div>
+                                <div style="font-size:0.9rem; font-weight:bold; color:${confColor}; min-width:45px; text-align:right;">${pick.prob}%</div>
+                            </div>
+
+                            <div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:8px; margin-bottom:10px;">
+                                <div style="font-size:0.68rem; color:#888; margin-bottom:4px; font-weight:bold;">WHY THIS BET</div>
+                                ${pick.reasons.map(r => `<div style="font-size:0.7rem; color:#ccc; padding:2px 0;">• ${r}</div>`).join('')}
+                            </div>
+
+                            <div style="font-size:0.65rem; color:#555; margin-bottom:10px;">${dataBadges.join(' · ')}</div>
+
+                            ${isPlaced ?
+                                `<button disabled style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--gold); background:rgba(210,153,34,0.15); color:var(--gold); font-size:0.8rem; font-weight:bold; cursor:default;">📌 Bet Placed — Tracking</button>` :
+                                `<button onclick="placeChallengebet(${pick.fixtureId}, '${pick.market.replace(/'/g,"\\'")}', '${pick.home.replace(/'/g,"\\'")} vs ${pick.away.replace(/'/g,"\\'")}', '${pick.league.name.replace(/'/g,"\\'")}', '1.80', 'est', 0, 0, ${pick.prob}, ${pick.league.id}); startChallengeCheckInterval(); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)';" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.8rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`
+                            }
+                        </div>
+                    `;
+                });
+
+                area.innerHTML = html;
+
+            } catch(e) {
+                console.error("BOTD Error:", e);
+                area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error analyzing fixtures. Please try again.</div>";
+            }
+            btn.innerText = "🏆 FIND TODAY'S BEST BETS";
             btn.disabled = false;
         }
 
@@ -5457,28 +5840,7 @@
             track.innerHTML = html;
         }
 
-        // ========== EXPORT HISTORY ==========
-        function exportCSV() {
-            const bets = getHistory();
-            const challenges = getPlacedChallenges();
-            if (bets.length === 0 && challenges.length === 0) { alert('No betting history to export.'); return; }
-            let csv = 'Date,Type,Match,Selection,Odds,Status,Note\n';
-            bets.forEach(b => {
-                csv += `"${b.date || ''}","Live Hunt","${(b.teams || '').replace(/"/g, '')}","${(b.selection || '').replace(/"/g, '')}","${b.odds || ''}","${b.status || 'OPEN'}",""\n`;
-            });
-            challenges.forEach(b => {
-                const date = b.placedAt ? new Date(b.placedAt).toISOString().split('T')[0] : '';
-                const status = b.status === 'resolved' ? (b.result ? 'WIN' : 'LOSS') : 'PENDING';
-                const note = (b.note || '').replace(/"/g, '');
-                csv += `"${date}","Challenge","${(b.match || '').replace(/"/g, '')}","${(b.selection || '').replace(/"/g, '')}","${b.odds || ''}","${status}","${note}"\n`;
-            });
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = `final-third-bets-${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
+        // exportCSV defined earlier, no duplicate needed
 
         // ========== STATS DASHBOARD ==========
         function renderStatsDashboard() {
