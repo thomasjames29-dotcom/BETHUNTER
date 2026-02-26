@@ -2249,6 +2249,11 @@
                         if (evData.response) events = evData.response;
                     } catch(e) {}
 
+                    let homeForm = null, awayForm = null;
+                    try {
+                        [homeForm, awayForm] = await Promise.all([fetchTeamForm(hId), fetchTeamForm(aId)]);
+                    } catch(e) {}
+
                     const gs = (arr, type) => {
                         const item = arr.find(s => s.type === type);
                         if (item && item.value !== null && item.value !== undefined) {
@@ -2361,21 +2366,105 @@
                         const lastGoal = goalEvents.filter(e => (e.time.elapsed || 0) > 45).sort((a, b) => (b.time.elapsed || 0) - (a.time.elapsed || 0))[0];
                         if (lastGoal) {
                             const scorerTeamId = lastGoal.team ? lastGoal.team.id : null;
+                            const scorerIsHome = scorerTeamId === hId;
+                            const scorerForm = scorerIsHome ? homeForm : awayForm;
+                            const concederForm = scorerIsHome ? awayForm : homeForm;
+                            const scorerName = scorerIsHome ? match.teams.home.name : match.teams.away.name;
+                            const concederName = scorerIsHome ? match.teams.away.name : match.teams.home.name;
                             const leadingTeamIsHome = homeGoals > awayGoals;
                             const leadingTeamId = leadingTeamIsHome ? hId : aId;
                             const trailingTeamId = leadingTeamIsHome ? aId : hId;
 
-                            if (homeGoals !== awayGoals && scorerTeamId === trailingTeamId) {
-                                confidence += 4; factors.push(`Trailing team just scored — comeback energy`);
+                            if (homeGoals === awayGoals) {
+                                if (concederForm && concederForm.overRate >= 0.6) {
+                                    confidence += 5; factors.push(`Equalizer scored — ${concederName} games avg ${concederForm.avgScored.toFixed(1)}+ goals, high-scoring profile`);
+                                } else if (concederForm && concederForm.cleanSheetRate >= 0.4) {
+                                    confidence += 1; factors.push(`Equalizer scored but ${concederName} usually tight at the back (${Math.round(concederForm.cleanSheetRate * 100)}% CS rate)`);
+                                } else {
+                                    confidence += 3; factors.push(`Recent equalizer — game reset, both pushing`);
+                                }
+                            } else if (homeGoals !== awayGoals && scorerTeamId === trailingTeamId) {
+                                if (scorerForm && scorerForm.overRate >= 0.5 && scorerForm.avgScored >= 1.5) {
+                                    confidence += 5; factors.push(`${scorerName} pulled one back — attacking team (avg ${scorerForm.avgScored.toFixed(1)} scored), expect more`);
+                                } else if (concederForm && concederForm.cleanSheetRate >= 0.4) {
+                                    confidence += 1; factors.push(`Trailing team scored but ${concederName} defence is solid (${Math.round(concederForm.cleanSheetRate * 100)}% CS)`);
+                                } else {
+                                    confidence += 3; factors.push(`Trailing team just scored — comeback energy`);
+                                }
                             } else if (homeGoals !== awayGoals && scorerTeamId === leadingTeamId && goalDiff >= 2) {
-                                confidence -= 3; factors.push(`Leading team extended lead — may defend now`);
-                            } else if (homeGoals === awayGoals) {
-                                confidence += 3; factors.push(`Recent equalizer — game reset, both pushing`);
+                                if (scorerForm && scorerForm.cleanSheetRate >= 0.4) {
+                                    confidence -= 5; factors.push(`${scorerName} extended lead to ${goalDiff} — disciplined side (${Math.round(scorerForm.cleanSheetRate * 100)}% CS), likely to shut up shop`);
+                                } else if (scorerForm && scorerForm.overRate >= 0.6) {
+                                    confidence += 1; factors.push(`${scorerName} lead by ${goalDiff} but their games are usually high-scoring (${Math.round(scorerForm.overRate * 100)}% over 2.5)`);
+                                } else {
+                                    confidence -= 3; factors.push(`Leading team extended lead — may defend now`);
+                                }
                             } else {
-                                confidence += 2; factors.push(`Recent goal — momentum shift`);
+                                if (scorerForm && scorerForm.overRate >= 0.6) {
+                                    confidence += 3; factors.push(`Recent goal — ${scorerName} involved in high-scoring games (${Math.round(scorerForm.overRate * 100)}% over 2.5)`);
+                                } else if (scorerForm && scorerForm.overRate <= 0.3) {
+                                    confidence += 0; factors.push(`Recent goal but ${scorerName} games are usually low-scoring`);
+                                } else {
+                                    confidence += 2; factors.push(`Recent goal — momentum shift`);
+                                }
                             }
                         } else {
                             confidence += 2; factors.push(`Recent goal — momentum shift`);
+                        }
+                    }
+
+                    if (homeForm && awayForm) {
+                        const combinedOverRate = (homeForm.overRate + awayForm.overRate) / 2;
+                        const combinedBttsRate = (homeForm.bttsRate + awayForm.bttsRate) / 2;
+                        const combinedAvgGoals = homeForm.avgScored + awayForm.avgScored;
+
+                        if (combinedOverRate >= 0.7) {
+                            confidence += 5; factors.push(`Both teams' games regularly high-scoring (${Math.round(homeForm.overRate * 100)}% & ${Math.round(awayForm.overRate * 100)}% over 2.5)`);
+                        } else if (combinedOverRate >= 0.5) {
+                            confidence += 2; factors.push(`Decent over 2.5 profile (${Math.round(homeForm.overRate * 100)}% & ${Math.round(awayForm.overRate * 100)}%)`);
+                        } else if (combinedOverRate <= 0.25) {
+                            confidence -= 3; factors.push(`Both teams' games rarely high-scoring (${Math.round(homeForm.overRate * 100)}% & ${Math.round(awayForm.overRate * 100)}% over 2.5)`);
+                        }
+
+                        if (combinedBttsRate >= 0.65 && homeGoals > 0 && awayGoals > 0) {
+                            confidence += 3; factors.push(`BTTS already landed — both teams' games feature goals at both ends`);
+                        } else if (combinedBttsRate >= 0.65 && (homeGoals === 0 || awayGoals === 0)) {
+                            confidence += 2; factors.push(`High BTTS profile (${Math.round(combinedBttsRate * 100)}%) — shutout team likely to score`);
+                        }
+
+                        if (combinedAvgGoals >= 3.5) {
+                            confidence += 4; factors.push(`Combined scoring rate ${combinedAvgGoals.toFixed(1)} goals/game — prolific matchup`);
+                        } else if (combinedAvgGoals >= 2.8) {
+                            confidence += 2; factors.push(`Good combined scoring rate (${combinedAvgGoals.toFixed(1)}/game)`);
+                        } else if (combinedAvgGoals <= 1.5) {
+                            confidence -= 3; factors.push(`Low combined scoring rate (${combinedAvgGoals.toFixed(1)}/game)`);
+                        }
+
+                        if (homeForm.cleanSheetRate >= 0.5 && awayForm.cleanSheetRate >= 0.5) {
+                            confidence -= 4; factors.push(`Both teams keep clean sheets regularly — defensive matchup`);
+                        } else if (homeForm.cleanSheetRate <= 0.15 && awayForm.cleanSheetRate <= 0.15) {
+                            confidence += 3; factors.push(`Neither team keeps clean sheets — leaky defences`);
+                        }
+
+                        const homeIsHome = true;
+                        const homeHomeScoring = homeForm.homeAvgScored || homeForm.avgScored;
+                        const awayAwayScoring = awayForm.awayAvgScored || awayForm.avgScored;
+                        if (homeHomeScoring >= 2.0) {
+                            confidence += 2; factors.push(`${match.teams.home.name} avg ${homeHomeScoring.toFixed(1)} goals at home`);
+                        }
+                        if (awayAwayScoring >= 1.5) {
+                            confidence += 2; factors.push(`${match.teams.away.name} avg ${awayAwayScoring.toFixed(1)} goals away`);
+                        }
+                        if (homeHomeScoring <= 0.5) {
+                            confidence -= 2; factors.push(`${match.teams.home.name} struggle at home (${homeHomeScoring.toFixed(1)} avg)`);
+                        }
+                    } else if (homeForm || awayForm) {
+                        const form = homeForm || awayForm;
+                        const teamName = homeForm ? match.teams.home.name : match.teams.away.name;
+                        if (form.overRate >= 0.6) {
+                            confidence += 2; factors.push(`${teamName} games often high-scoring (${Math.round(form.overRate * 100)}% over 2.5)`);
+                        } else if (form.overRate <= 0.2) {
+                            confidence -= 2; factors.push(`${teamName} games rarely high-scoring`);
                         }
                     }
 
