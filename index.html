@@ -1133,6 +1133,66 @@
             return { boost, note };
         }
 
+        function getFactorLearningDB() {
+            try { return JSON.parse(localStorage.getItem('factorLearning') || '{}'); }
+            catch(e) { return {}; }
+        }
+
+        function recordFactorOutcomes(factorTags, won) {
+            try {
+                const db = getFactorLearningDB();
+                for (const tag of factorTags) {
+                    if (!db[tag]) db[tag] = { wins: 0, losses: 0, total: 0 };
+                    db[tag].total++;
+                    if (won) db[tag].wins++;
+                    else db[tag].losses++;
+                    if (db[tag].total > 150) {
+                        db[tag].wins = Math.round(db[tag].wins * 0.7);
+                        db[tag].losses = Math.round(db[tag].losses * 0.7);
+                        db[tag].total = db[tag].wins + db[tag].losses;
+                    }
+                }
+                localStorage.setItem('factorLearning', JSON.stringify(db));
+            } catch(e) {}
+        }
+
+        function getFactorWeight(tag, defaultWeight) {
+            const db = getFactorLearningDB();
+            const data = db[tag];
+            if (!data || data.total < 6) return defaultWeight;
+            const hitRate = data.wins / data.total;
+            if (defaultWeight > 0) {
+                if (hitRate >= 0.7) return Math.round(defaultWeight * 1.3);
+                if (hitRate >= 0.55) return defaultWeight;
+                if (hitRate >= 0.4) return Math.round(defaultWeight * 0.6);
+                return Math.round(defaultWeight * 0.3);
+            } else if (defaultWeight < 0) {
+                if (hitRate <= 0.3) return Math.round(defaultWeight * 1.3);
+                if (hitRate <= 0.45) return defaultWeight;
+                if (hitRate <= 0.6) return Math.round(defaultWeight * 0.6);
+                return Math.round(defaultWeight * 0.3);
+            }
+            return defaultWeight;
+        }
+
+        function getFactorLearningNote(tag) {
+            const db = getFactorLearningDB();
+            const data = db[tag];
+            if (!data || data.total < 6) return '';
+            const hitRate = data.wins / data.total;
+            return ` [${data.wins}/${data.total} = ${Math.round(hitRate * 100)}%]`;
+        }
+
+        function getFactorLearningSummary() {
+            const db = getFactorLearningDB();
+            const entries = Object.entries(db).filter(([k, v]) => v.total >= 6);
+            if (entries.length === 0) return null;
+            entries.sort((a, b) => b[1].total - a[1].total);
+            const best = entries.filter(([k, v]) => v.wins / v.total >= 0.6 && v.total >= 8).sort((a, b) => (b[1].wins / b[1].total) - (a[1].wins / a[1].total)).slice(0, 5);
+            const worst = entries.filter(([k, v]) => v.wins / v.total < 0.4 && v.total >= 8).sort((a, b) => (a[1].wins / a[1].total) - (b[1].wins / b[1].total)).slice(0, 5);
+            return { best, worst, totalFactors: entries.length, totalSamples: entries.reduce((s, [k, v]) => s + v.total, 0) };
+        }
+
         function analyzeFixtureCongestion(teamForm) {
             if (!teamForm || !teamForm.matches) return { boost: 0, note: '' };
             if (teamForm.matches >= 5 && teamForm.avgConceded >= 1.5 && teamForm.cleanSheetRate <= 0.15) {
@@ -2296,47 +2356,55 @@
 
                     let confidence = 35;
                     const factors = [];
+                    const factorTags = [];
+                    const addFactor = (tag, weight, text) => {
+                        const adjusted = getFactorWeight(tag, weight);
+                        confidence += adjusted;
+                        const learnNote = getFactorLearningNote(tag);
+                        factors.push(text + learnNote);
+                        factorTags.push(tag);
+                    };
 
                     const shotPressure = totalSoT * 3.5 + (totalShots - totalSoT) * 1.2 + totalCorners * 1.5;
-                    if (shotPressure >= 40) { confidence += 8; factors.push(`High shot pressure (${totalSoT} SoT, ${totalShots} shots)`); }
-                    else if (shotPressure >= 25) { confidence += 5; factors.push(`Good shot volume (${totalSoT} SoT, ${totalShots} shots)`); }
-                    else if (shotPressure >= 15) { confidence += 2; factors.push(`Moderate activity (${totalSoT} SoT)`); }
-                    else { confidence -= 4; factors.push(`Low shot activity (${totalSoT} SoT)`); }
+                    if (shotPressure >= 40) { addFactor('shot_pressure_high', 8, `High shot pressure (${totalSoT} SoT, ${totalShots} shots)`); }
+                    else if (shotPressure >= 25) { addFactor('shot_pressure_good', 5, `Good shot volume (${totalSoT} SoT, ${totalShots} shots)`); }
+                    else if (shotPressure >= 15) { addFactor('shot_pressure_mod', 2, `Moderate activity (${totalSoT} SoT)`); }
+                    else { addFactor('shot_pressure_low', -4, `Low shot activity (${totalSoT} SoT)`); }
 
-                    if (totalCorners >= 10) { confidence += 4; factors.push(`${totalCorners} corners — frequent set pieces`); }
-                    else if (totalCorners >= 7) { confidence += 2; factors.push(`${totalCorners} corners`); }
+                    if (totalCorners >= 10) { addFactor('corners_high', 4, `${totalCorners} corners — frequent set pieces`); }
+                    else if (totalCorners >= 7) { addFactor('corners_mod', 2, `${totalCorners} corners`); }
 
-                    if (totalDangerous >= 80) { confidence += 6; factors.push(`Very dangerous (${totalDangerous} attacks)`); }
-                    else if (totalDangerous >= 50) { confidence += 3; factors.push(`${totalDangerous} dangerous attacks`); }
+                    if (totalDangerous >= 80) { addFactor('dangerous_very_high', 6, `Very dangerous (${totalDangerous} attacks)`); }
+                    else if (totalDangerous >= 50) { addFactor('dangerous_high', 3, `${totalDangerous} dangerous attacks`); }
 
                     const possImbalance = Math.abs(homePoss - awayPoss);
-                    if (possImbalance >= 20) { confidence += 3; factors.push(`Possession imbalance (${homePoss}%-${awayPoss}%)`); }
-                    else if (possImbalance <= 8) { confidence += 1; factors.push(`Even contest (${homePoss}%-${awayPoss}%)`); }
+                    if (possImbalance >= 20) { addFactor('poss_imbalance', 3, `Possession imbalance (${homePoss}%-${awayPoss}%)`); }
+                    else if (possImbalance <= 8) { addFactor('poss_even', 1, `Even contest (${homePoss}%-${awayPoss}%)`); }
 
                     if (totalxG > 0) {
                         const xgGap = totalxG - totalGoals;
-                        if (xgGap >= 1.5) { confidence += 8; factors.push(`Goals overdue! xG ${totalxG.toFixed(1)} vs ${totalGoals} actual`); }
-                        else if (xgGap >= 0.8) { confidence += 5; factors.push(`xG suggests more goals (${totalxG.toFixed(1)} vs ${totalGoals})`); }
-                        else if (xgGap >= 0.3) { confidence += 2; factors.push(`xG: ${totalxG.toFixed(1)}`); }
-                        else if (xgGap < -0.5) { confidence -= 3; factors.push(`Overperforming xG (${totalxG.toFixed(1)} vs ${totalGoals})`); }
+                        if (xgGap >= 1.5) { addFactor('xg_overdue_big', 8, `Goals overdue! xG ${totalxG.toFixed(1)} vs ${totalGoals} actual`); }
+                        else if (xgGap >= 0.8) { addFactor('xg_overdue', 5, `xG suggests more goals (${totalxG.toFixed(1)} vs ${totalGoals})`); }
+                        else if (xgGap >= 0.3) { addFactor('xg_slight', 2, `xG: ${totalxG.toFixed(1)}`); }
+                        else if (xgGap < -0.5) { addFactor('xg_overperform', -3, `Overperforming xG (${totalxG.toFixed(1)} vs ${totalGoals})`); }
                     }
 
-                    if (totalGoals >= 3) { confidence += 5; factors.push(`High-scoring game already (${totalGoals} goals)`); }
-                    else if (totalGoals === 2) { confidence += 3; factors.push(`2 goals scored — game is open`); }
-                    else if (totalGoals === 1) { confidence += 1; factors.push(`1 goal scored`); }
-                    else { confidence -= 2; factors.push(`Still 0-0`); }
+                    if (totalGoals >= 3) { addFactor('current_goals_high', 5, `High-scoring game already (${totalGoals} goals)`); }
+                    else if (totalGoals === 2) { addFactor('current_goals_2', 3, `2 goals scored — game is open`); }
+                    else if (totalGoals === 1) { addFactor('current_goals_1', 1, `1 goal scored`); }
+                    else { addFactor('current_goals_0', -2, `Still 0-0`); }
 
-                    if (homeGoals === awayGoals && totalGoals > 0) { confidence += 3; factors.push(`Level game — both teams pushing`); }
+                    if (homeGoals === awayGoals && totalGoals > 0) { addFactor('level_game', 3, `Level game — both teams pushing`); }
                     const goalDiff = Math.abs(homeGoals - awayGoals);
-                    if (goalDiff === 1) { confidence += 2; factors.push(`1-goal margin — trailing team chasing`); }
-                    if (goalDiff >= 3) { confidence -= 4; factors.push(`Comfortable lead — game may settle`); }
+                    if (goalDiff === 1) { addFactor('margin_1', 2, `1-goal margin — trailing team chasing`); }
+                    if (goalDiff >= 3) { addFactor('margin_3plus', -4, `Comfortable lead — game may settle`); }
 
                     const timeRemaining = 90 - elapsed;
-                    if (timeRemaining >= 35) { confidence += 10; factors.push(`${timeRemaining} mins remaining — plenty of time for goals (+10%)`); }
-                    else if (timeRemaining >= 25) { confidence += 7; factors.push(`${timeRemaining} mins left — good window for goals (+7%)`); }
-                    else if (timeRemaining >= 15) { confidence += 4; factors.push(`${timeRemaining} mins remaining (+4%)`); }
-                    else if (timeRemaining >= 5) { confidence -= 3; factors.push(`Only ${timeRemaining} mins left — running out of time (-3%)`); }
-                    else { confidence -= 8; factors.push(`Only ${timeRemaining} mins left — very little time (-8%)`); }
+                    if (timeRemaining >= 35) { addFactor('time_35plus', 10, `${timeRemaining} mins remaining — plenty of time for goals`); }
+                    else if (timeRemaining >= 25) { addFactor('time_25_34', 7, `${timeRemaining} mins left — good window for goals`); }
+                    else if (timeRemaining >= 15) { addFactor('time_15_24', 4, `${timeRemaining} mins remaining`); }
+                    else if (timeRemaining >= 5) { addFactor('time_5_14', -3, `Only ${timeRemaining} mins left — running out of time`); }
+                    else { addFactor('time_under5', -8, `Only ${timeRemaining} mins left — very little time`); }
 
                     let lateSubs = 0;
                     let attackingSubs = 0;
@@ -2345,9 +2413,9 @@
                     subEvents.forEach(sub => {
                         if (sub.time.elapsed >= 55) attackingSubs++;
                     });
-                    if (attackingSubs >= 3) { confidence += 4; factors.push(`${attackingSubs} fresh subs since 55' — managers chasing`); }
-                    else if (attackingSubs >= 2) { confidence += 3; factors.push(`${attackingSubs} subs after 55' — tactical changes`); }
-                    else if (lateSubs >= 2) { confidence += 1; factors.push(`${lateSubs} 2nd half substitutions made`); }
+                    if (attackingSubs >= 3) { addFactor('subs_attacking_3', 4, `${attackingSubs} fresh subs since 55' — managers chasing`); }
+                    else if (attackingSubs >= 2) { addFactor('subs_attacking_2', 3, `${attackingSubs} subs after 55' — tactical changes`); }
+                    else if (lateSubs >= 2) { addFactor('subs_2h', 1, `${lateSubs} 2nd half substitutions made`); }
 
                     const goalEvents = events.filter(e => e.type === 'Goal');
                     const firstHalfGoals = goalEvents.filter(e => (e.time.elapsed || 0) <= 45).length;
@@ -2355,13 +2423,13 @@
                     const recentGoals = goalEvents.filter(e => (e.time.elapsed || 0) >= (elapsed - 15)).length;
                     const earliestGoal = goalEvents.length > 0 ? Math.min(...goalEvents.map(e => e.time.elapsed || 90)) : null;
 
-                    if (firstHalfGoals >= 3) { confidence += 5; factors.push(`${firstHalfGoals} first half goals — high-tempo game`); }
-                    else if (firstHalfGoals >= 2) { confidence += 4; factors.push(`${firstHalfGoals} first half goals — attacking game established`); }
+                    if (firstHalfGoals >= 3) { addFactor('1h_goals_3plus', 5, `${firstHalfGoals} first half goals — high-tempo game`); }
+                    else if (firstHalfGoals >= 2) { addFactor('1h_goals_2', 4, `${firstHalfGoals} first half goals — attacking game established`); }
 
-                    if (earliestGoal !== null && earliestGoal <= 15) { confidence += 3; factors.push(`Early goal (${earliestGoal}') — game opened up early`); }
-                    else if (earliestGoal !== null && earliestGoal <= 30) { confidence += 1; factors.push(`Goal before 30' — precedent set`); }
+                    if (earliestGoal !== null && earliestGoal <= 15) { addFactor('early_goal_15', 3, `Early goal (${earliestGoal}') — game opened up early`); }
+                    else if (earliestGoal !== null && earliestGoal <= 30) { addFactor('early_goal_30', 1, `Goal before 30' — precedent set`); }
 
-                    if (recentGoals >= 2) { confidence += 5; factors.push(`${recentGoals} goals in last 15 mins — game wide open!`); }
+                    if (recentGoals >= 2) { addFactor('recent_goals_2plus', 5, `${recentGoals} goals in last 15 mins — game wide open!`); }
                     else if (recentGoals === 1) {
                         const lastGoal = goalEvents.filter(e => (e.time.elapsed || 0) > 45).sort((a, b) => (b.time.elapsed || 0) - (a.time.elapsed || 0))[0];
                         if (lastGoal) {
@@ -2377,39 +2445,39 @@
 
                             if (homeGoals === awayGoals) {
                                 if (concederForm && concederForm.overRate >= 0.6) {
-                                    confidence += 5; factors.push(`Equalizer scored — ${concederName} games avg ${concederForm.avgScored.toFixed(1)}+ goals, high-scoring profile`);
+                                    addFactor('equalizer_high_scoring', 5, `Equalizer scored — ${concederName} games avg ${concederForm.avgScored.toFixed(1)}+ goals, high-scoring profile`);
                                 } else if (concederForm && concederForm.cleanSheetRate >= 0.4) {
-                                    confidence += 1; factors.push(`Equalizer scored but ${concederName} usually tight at the back (${Math.round(concederForm.cleanSheetRate * 100)}% CS rate)`);
+                                    addFactor('equalizer_tight_defence', 1, `Equalizer scored but ${concederName} usually tight at the back (${Math.round(concederForm.cleanSheetRate * 100)}% CS rate)`);
                                 } else {
-                                    confidence += 3; factors.push(`Recent equalizer — game reset, both pushing`);
+                                    addFactor('equalizer_generic', 3, `Recent equalizer — game reset, both pushing`);
                                 }
                             } else if (homeGoals !== awayGoals && scorerTeamId === trailingTeamId) {
                                 if (scorerForm && scorerForm.overRate >= 0.5 && scorerForm.avgScored >= 1.5) {
-                                    confidence += 5; factors.push(`${scorerName} pulled one back — attacking team (avg ${scorerForm.avgScored.toFixed(1)} scored), expect more`);
+                                    addFactor('trailing_attacking_team', 5, `${scorerName} pulled one back — attacking team (avg ${scorerForm.avgScored.toFixed(1)} scored), expect more`);
                                 } else if (concederForm && concederForm.cleanSheetRate >= 0.4) {
-                                    confidence += 1; factors.push(`Trailing team scored but ${concederName} defence is solid (${Math.round(concederForm.cleanSheetRate * 100)}% CS)`);
+                                    addFactor('trailing_vs_solid_def', 1, `Trailing team scored but ${concederName} defence is solid (${Math.round(concederForm.cleanSheetRate * 100)}% CS)`);
                                 } else {
-                                    confidence += 3; factors.push(`Trailing team just scored — comeback energy`);
+                                    addFactor('trailing_scored', 3, `Trailing team just scored — comeback energy`);
                                 }
                             } else if (homeGoals !== awayGoals && scorerTeamId === leadingTeamId && goalDiff >= 2) {
                                 if (scorerForm && scorerForm.cleanSheetRate >= 0.4) {
-                                    confidence -= 5; factors.push(`${scorerName} extended lead to ${goalDiff} — disciplined side (${Math.round(scorerForm.cleanSheetRate * 100)}% CS), likely to shut up shop`);
+                                    addFactor('leader_extend_disciplined', -5, `${scorerName} extended lead to ${goalDiff} — disciplined side (${Math.round(scorerForm.cleanSheetRate * 100)}% CS), likely to shut up shop`);
                                 } else if (scorerForm && scorerForm.overRate >= 0.6) {
-                                    confidence += 1; factors.push(`${scorerName} lead by ${goalDiff} but their games are usually high-scoring (${Math.round(scorerForm.overRate * 100)}% over 2.5)`);
+                                    addFactor('leader_extend_high_scoring', 1, `${scorerName} lead by ${goalDiff} but their games are usually high-scoring (${Math.round(scorerForm.overRate * 100)}% over 2.5)`);
                                 } else {
-                                    confidence -= 3; factors.push(`Leading team extended lead — may defend now`);
+                                    addFactor('leader_extend_generic', -3, `Leading team extended lead — may defend now`);
                                 }
                             } else {
                                 if (scorerForm && scorerForm.overRate >= 0.6) {
-                                    confidence += 3; factors.push(`Recent goal — ${scorerName} involved in high-scoring games (${Math.round(scorerForm.overRate * 100)}% over 2.5)`);
+                                    addFactor('recent_goal_high_scoring', 3, `Recent goal — ${scorerName} involved in high-scoring games (${Math.round(scorerForm.overRate * 100)}% over 2.5)`);
                                 } else if (scorerForm && scorerForm.overRate <= 0.3) {
-                                    confidence += 0; factors.push(`Recent goal but ${scorerName} games are usually low-scoring`);
+                                    addFactor('recent_goal_low_scoring', 0, `Recent goal but ${scorerName} games are usually low-scoring`);
                                 } else {
-                                    confidence += 2; factors.push(`Recent goal — momentum shift`);
+                                    addFactor('recent_goal_generic', 2, `Recent goal — momentum shift`);
                                 }
                             }
                         } else {
-                            confidence += 2; factors.push(`Recent goal — momentum shift`);
+                            addFactor('recent_goal_generic', 2, `Recent goal — momentum shift`);
                         }
                     }
 
@@ -2419,103 +2487,102 @@
                         const combinedAvgGoals = homeForm.avgScored + awayForm.avgScored;
 
                         if (combinedOverRate >= 0.7) {
-                            confidence += 5; factors.push(`Both teams' games regularly high-scoring (${Math.round(homeForm.overRate * 100)}% & ${Math.round(awayForm.overRate * 100)}% over 2.5)`);
+                            addFactor('profile_over25_high', 5, `Both teams' games regularly high-scoring (${Math.round(homeForm.overRate * 100)}% & ${Math.round(awayForm.overRate * 100)}% over 2.5)`);
                         } else if (combinedOverRate >= 0.5) {
-                            confidence += 2; factors.push(`Decent over 2.5 profile (${Math.round(homeForm.overRate * 100)}% & ${Math.round(awayForm.overRate * 100)}%)`);
+                            addFactor('profile_over25_decent', 2, `Decent over 2.5 profile (${Math.round(homeForm.overRate * 100)}% & ${Math.round(awayForm.overRate * 100)}%)`);
                         } else if (combinedOverRate <= 0.25) {
-                            confidence -= 3; factors.push(`Both teams' games rarely high-scoring (${Math.round(homeForm.overRate * 100)}% & ${Math.round(awayForm.overRate * 100)}% over 2.5)`);
+                            addFactor('profile_over25_low', -3, `Both teams' games rarely high-scoring (${Math.round(homeForm.overRate * 100)}% & ${Math.round(awayForm.overRate * 100)}% over 2.5)`);
                         }
 
                         if (combinedBttsRate >= 0.65 && homeGoals > 0 && awayGoals > 0) {
-                            confidence += 3; factors.push(`BTTS already landed — both teams' games feature goals at both ends`);
+                            addFactor('btts_landed', 3, `BTTS already landed — both teams' games feature goals at both ends`);
                         } else if (combinedBttsRate >= 0.65 && (homeGoals === 0 || awayGoals === 0)) {
-                            confidence += 2; factors.push(`High BTTS profile (${Math.round(combinedBttsRate * 100)}%) — shutout team likely to score`);
+                            addFactor('btts_profile_shutout', 2, `High BTTS profile (${Math.round(combinedBttsRate * 100)}%) — shutout team likely to score`);
                         }
 
                         if (combinedAvgGoals >= 3.5) {
-                            confidence += 4; factors.push(`Combined scoring rate ${combinedAvgGoals.toFixed(1)} goals/game — prolific matchup`);
+                            addFactor('scoring_rate_prolific', 4, `Combined scoring rate ${combinedAvgGoals.toFixed(1)} goals/game — prolific matchup`);
                         } else if (combinedAvgGoals >= 2.8) {
-                            confidence += 2; factors.push(`Good combined scoring rate (${combinedAvgGoals.toFixed(1)}/game)`);
+                            addFactor('scoring_rate_good', 2, `Good combined scoring rate (${combinedAvgGoals.toFixed(1)}/game)`);
                         } else if (combinedAvgGoals <= 1.5) {
-                            confidence -= 3; factors.push(`Low combined scoring rate (${combinedAvgGoals.toFixed(1)}/game)`);
+                            addFactor('scoring_rate_low', -3, `Low combined scoring rate (${combinedAvgGoals.toFixed(1)}/game)`);
                         }
 
                         if (homeForm.cleanSheetRate >= 0.5 && awayForm.cleanSheetRate >= 0.5) {
-                            confidence -= 4; factors.push(`Both teams keep clean sheets regularly — defensive matchup`);
+                            addFactor('both_cs_high', -4, `Both teams keep clean sheets regularly — defensive matchup`);
                         } else if (homeForm.cleanSheetRate <= 0.15 && awayForm.cleanSheetRate <= 0.15) {
-                            confidence += 3; factors.push(`Neither team keeps clean sheets — leaky defences`);
+                            addFactor('both_cs_low', 3, `Neither team keeps clean sheets — leaky defences`);
                         }
 
-                        const homeIsHome = true;
                         const homeHomeScoring = homeForm.homeAvgScored || homeForm.avgScored;
                         const awayAwayScoring = awayForm.awayAvgScored || awayForm.avgScored;
                         if (homeHomeScoring >= 2.0) {
-                            confidence += 2; factors.push(`${match.teams.home.name} avg ${homeHomeScoring.toFixed(1)} goals at home`);
+                            addFactor('home_scoring_strong', 2, `${match.teams.home.name} avg ${homeHomeScoring.toFixed(1)} goals at home`);
                         }
                         if (awayAwayScoring >= 1.5) {
-                            confidence += 2; factors.push(`${match.teams.away.name} avg ${awayAwayScoring.toFixed(1)} goals away`);
+                            addFactor('away_scoring_strong', 2, `${match.teams.away.name} avg ${awayAwayScoring.toFixed(1)} goals away`);
                         }
                         if (homeHomeScoring <= 0.5) {
-                            confidence -= 2; factors.push(`${match.teams.home.name} struggle at home (${homeHomeScoring.toFixed(1)} avg)`);
+                            addFactor('home_scoring_weak', -2, `${match.teams.home.name} struggle at home (${homeHomeScoring.toFixed(1)} avg)`);
                         }
                     } else if (homeForm || awayForm) {
                         const form = homeForm || awayForm;
                         const teamName = homeForm ? match.teams.home.name : match.teams.away.name;
                         if (form.overRate >= 0.6) {
-                            confidence += 2; factors.push(`${teamName} games often high-scoring (${Math.round(form.overRate * 100)}% over 2.5)`);
+                            addFactor('single_form_high', 2, `${teamName} games often high-scoring (${Math.round(form.overRate * 100)}% over 2.5)`);
                         } else if (form.overRate <= 0.2) {
-                            confidence -= 2; factors.push(`${teamName} games rarely high-scoring`);
+                            addFactor('single_form_low', -2, `${teamName} games rarely high-scoring`);
                         }
                     }
 
                     if (secondHalfGoals > firstHalfGoals && secondHalfGoals >= 1) {
-                        confidence += 3; factors.push(`2nd half more open (${secondHalfGoals} vs ${firstHalfGoals} 1H goals)`);
+                        addFactor('2h_more_open', 3, `2nd half more open (${secondHalfGoals} vs ${firstHalfGoals} 1H goals)`);
                     } else if (firstHalfGoals >= 2 && secondHalfGoals === 0 && elapsed >= 60) {
-                        confidence -= 2; factors.push(`Active 1st half but quiet 2nd half so far`);
+                        addFactor('2h_quiet', -2, `Active 1st half but quiet 2nd half so far`);
                     }
 
                     if (firstHalfGoals === 0 && secondHalfGoals === 0 && elapsed >= 65) {
-                        confidence -= 3; factors.push(`Goalless after 65' — tight defensive game`);
+                        addFactor('goalless_65', -3, `Goalless after 65' — tight defensive game`);
                     }
 
                     const shotRate = totalShots > 0 ? (totalShots / (elapsed / 90)) : 0;
                     const expectedShotRate = 22;
-                    if (shotRate >= expectedShotRate * 1.3) { confidence += 3; factors.push(`Above-average shot rate for this stage`); }
-                    else if (shotRate <= expectedShotRate * 0.6) { confidence -= 2; factors.push(`Below-average shot rate`); }
+                    if (shotRate >= expectedShotRate * 1.3) { addFactor('shot_rate_high', 3, `Above-average shot rate for this stage`); }
+                    else if (shotRate <= expectedShotRate * 0.6) { addFactor('shot_rate_low', -2, `Below-average shot rate`); }
 
                     const totalBlocked = homeBlocked + awayBlocked;
-                    if (totalBlocked >= 8) { confidence += 4; factors.push(`${totalBlocked} blocked shots — defence under siege, rebound chances`); }
-                    else if (totalBlocked >= 5) { confidence += 2; factors.push(`${totalBlocked} blocked shots — sustained pressure on defence`); }
+                    if (totalBlocked >= 8) { addFactor('blocked_high', 4, `${totalBlocked} blocked shots — defence under siege, rebound chances`); }
+                    else if (totalBlocked >= 5) { addFactor('blocked_mod', 2, `${totalBlocked} blocked shots — sustained pressure on defence`); }
 
                     const totalGKSaves = homeGKSaves + awayGKSaves;
-                    if (totalGKSaves >= 8) { confidence += 4; factors.push(`${totalGKSaves} GK saves — keepers busy, one will get through`); }
-                    else if (totalGKSaves >= 5) { confidence += 2; factors.push(`${totalGKSaves} goalkeeper saves — genuine chances being created`); }
-                    else if (totalGKSaves <= 1 && totalSoT >= 4) { confidence += 2; factors.push(`${totalSoT} SoT but only ${totalGKSaves} saves — shots finding the net`); }
+                    if (totalGKSaves >= 8) { addFactor('gk_saves_high', 4, `${totalGKSaves} GK saves — keepers busy, one will get through`); }
+                    else if (totalGKSaves >= 5) { addFactor('gk_saves_mod', 2, `${totalGKSaves} goalkeeper saves — genuine chances being created`); }
+                    else if (totalGKSaves <= 1 && totalSoT >= 4) { addFactor('gk_saves_low_sot', 2, `${totalSoT} SoT but only ${totalGKSaves} saves — shots finding the net`); }
 
                     const avgPassAcc = (homePassAcc + awayPassAcc) / 2;
                     const passGap = Math.abs(homePassAcc - awayPassAcc);
                     if (avgPassAcc > 0) {
-                        if (avgPassAcc <= 70) { confidence += 2; factors.push(`Loose passing (avg ${Math.round(avgPassAcc)}%) — turnovers create counter-attack chances`); }
+                        if (avgPassAcc <= 70) { addFactor('pass_acc_loose', 2, `Loose passing (avg ${Math.round(avgPassAcc)}%) — turnovers create counter-attack chances`); }
                         if (passGap >= 15) {
                             const dominantTeam = homePassAcc > awayPassAcc ? match.teams.home.name : match.teams.away.name;
-                            confidence += 2; factors.push(`${dominantTeam} dominating possession quality (${Math.round(homePassAcc)}% vs ${Math.round(awayPassAcc)}%)`);
+                            addFactor('pass_quality_gap', 2, `${dominantTeam} dominating possession quality (${Math.round(homePassAcc)}% vs ${Math.round(awayPassAcc)}%)`);
                         }
                     }
 
                     const totalAttacks = homeAttacks + awayAttacks;
                     if (totalAttacks > 0 && totalDangerous > 0) {
                         const dangerRatio = totalDangerous / totalAttacks;
-                        if (dangerRatio >= 0.45) { confidence += 3; factors.push(`High danger ratio (${Math.round(dangerRatio * 100)}% of attacks are dangerous)`); }
-                        else if (dangerRatio <= 0.25 && totalAttacks >= 80) { confidence -= 2; factors.push(`Low danger ratio — lots of attacks but few threatening`); }
+                        if (dangerRatio >= 0.45) { addFactor('danger_ratio_high', 3, `High danger ratio (${Math.round(dangerRatio * 100)}% of attacks are dangerous)`); }
+                        else if (dangerRatio <= 0.25 && totalAttacks >= 80) { addFactor('danger_ratio_low', -2, `Low danger ratio — lots of attacks but few threatening`); }
                     }
 
                     if (firstHalfGoals === 0 && totalSoT >= 6 && totalShots >= 14) {
-                        confidence += 4; factors.push(`0-0 at HT but ${totalSoT} SoT & ${totalShots} shots — dam about to burst`);
+                        addFactor('dam_burst', 4, `0-0 at HT but ${totalSoT} SoT & ${totalShots} shots — dam about to burst`);
                     }
 
                     const combinedShotAccuracy = totalShots > 0 ? (totalSoT / totalShots) : 0;
-                    if (combinedShotAccuracy >= 0.50 && totalSoT >= 6) { confidence += 3; factors.push(`Clinical finishing (${Math.round(combinedShotAccuracy * 100)}% accuracy) — shots on target are landing`); }
-                    else if (combinedShotAccuracy <= 0.25 && totalShots >= 12) { confidence += 1; factors.push(`Wasteful shooting (${Math.round(combinedShotAccuracy * 100)}% accuracy) — but high volume creates chances`); }
+                    if (combinedShotAccuracy >= 0.50 && totalSoT >= 6) { addFactor('shot_accuracy_clinical', 3, `Clinical finishing (${Math.round(combinedShotAccuracy * 100)}% accuracy) — shots on target are landing`); }
+                    else if (combinedShotAccuracy <= 0.25 && totalShots >= 12) { addFactor('shot_accuracy_wasteful', 1, `Wasteful shooting (${Math.round(combinedShotAccuracy * 100)}% accuracy) — but high volume creates chances`); }
 
                     const yellowCards = events.filter(e => e.type === 'Card' && e.detail === 'Yellow Card');
                     const redCards = events.filter(e => e.type === 'Card' && (e.detail === 'Red Card' || e.detail === 'Second Yellow card'));
@@ -2530,44 +2597,44 @@
                         const redTeamIsHome = homeReds > awayReds;
                         const redTeamLeading = redTeamIsHome ? (homeGoals > awayGoals) : (awayGoals > homeGoals);
                         if (redTeamLeading) {
-                            confidence += 5; factors.push(`🟥 Red card on leading team (${homeReds}H/${awayReds}A) — 10 men defending, pressure coming`);
+                            addFactor('red_card_leader', 5, `🟥 Red card on leading team (${homeReds}H/${awayReds}A) — 10 men defending, pressure coming`);
                         } else if (homeGoals === awayGoals) {
-                            confidence += 3; factors.push(`🟥 Red card (${homeReds}H/${awayReds}A) — numerical advantage creates chances`);
+                            addFactor('red_card_level', 3, `🟥 Red card (${homeReds}H/${awayReds}A) — numerical advantage creates chances`);
                         } else {
-                            confidence += 1; factors.push(`🟥 Red card on trailing team — may struggle to score but game opens`);
+                            addFactor('red_card_trailing', 1, `🟥 Red card on trailing team — may struggle to score but game opens`);
                         }
-                        if (totalReds >= 2) { confidence += 3; factors.push(`Multiple red cards — chaotic game, goals likely`); }
+                        if (totalReds >= 2) { addFactor('red_cards_multiple', 3, `Multiple red cards — chaotic game, goals likely`); }
                     }
 
                     if (totalYellows >= 6) {
-                        confidence += 3; factors.push(`🟨 ${totalYellows} yellows — heated game, defensive caution rising`);
+                        addFactor('yellows_heated', 3, `🟨 ${totalYellows} yellows — heated game, defensive caution rising`);
                     } else if (totalYellows >= 4) {
-                        confidence += 1; factors.push(`🟨 ${totalYellows} yellow cards — physical match`);
+                        addFactor('yellows_physical', 1, `🟨 ${totalYellows} yellow cards — physical match`);
                     }
 
                     const homeFouls = gs(hStats, "Fouls");
                     const awayFouls = gs(aStats, "Fouls");
                     const totalFouls = homeFouls + awayFouls;
                     if (totalFouls >= 25) {
-                        confidence += 3; factors.push(`${totalFouls} fouls — scrappy game, set pieces & free kicks in dangerous areas`);
+                        addFactor('fouls_high', 3, `${totalFouls} fouls — scrappy game, set pieces & free kicks in dangerous areas`);
                     } else if (totalFouls >= 18) {
-                        confidence += 1; factors.push(`${totalFouls} fouls — physical contest`);
+                        addFactor('fouls_mod', 1, `${totalFouls} fouls — physical contest`);
                     }
 
                     const bookingsOn2ndHalf = yellowCards.filter(e => (e.time.elapsed || 0) > 45);
                     const recentBookings = bookingsOn2ndHalf.filter(e => (e.time.elapsed || 0) >= (elapsed - 15)).length;
                     if (recentBookings >= 2) {
-                        confidence += 2; factors.push(`${recentBookings} bookings in last 15 mins — defenders getting stretched`);
+                        addFactor('recent_bookings', 2, `${recentBookings} bookings in last 15 mins — defenders getting stretched`);
                     }
 
                     if (totalYellows >= 3 && goalDiff <= 1) {
                         const defYellowsHome = yellowCards.filter(e => e.team && e.team.id === hId).length;
                         const defYellowsAway = yellowCards.filter(e => e.team && e.team.id === aId).length;
                         if (defYellowsHome >= 2 && homeGoals <= awayGoals) {
-                            confidence += 2; factors.push(`Home defense on thin ice (${defYellowsHome} yellows) — cautious tackling`);
+                            addFactor('home_def_thin_ice', 2, `Home defense on thin ice (${defYellowsHome} yellows) — cautious tackling`);
                         }
                         if (defYellowsAway >= 2 && awayGoals <= homeGoals) {
-                            confidence += 2; factors.push(`Away defense on thin ice (${defYellowsAway} yellows) — can't tackle freely`);
+                            addFactor('away_def_thin_ice', 2, `Away defense on thin ice (${defYellowsAway} yellows) — can't tackle freely`);
                         }
                     }
 
@@ -2596,18 +2663,18 @@
                         if (homePos && awayPos) {
                             const avgPos = (homePos + awayPos) / 2;
                             const topHalf = totalTeams / 2;
-                            if (avgPos <= topHalf * 0.5) { confidence += 4; factors.push(`Top teams (${homePos}${getOrdinal(homePos)} vs ${awayPos}${getOrdinal(awayPos)})`); }
-                            else if (avgPos <= topHalf) { confidence += 2; factors.push(`Upper half teams (${homePos}${getOrdinal(homePos)} vs ${awayPos}${getOrdinal(awayPos)})`); }
+                            if (avgPos <= topHalf * 0.5) { addFactor('top_teams', 4, `Top teams (${homePos}${getOrdinal(homePos)} vs ${awayPos}${getOrdinal(awayPos)})`); }
+                            else if (avgPos <= topHalf) { addFactor('upper_half', 2, `Upper half teams (${homePos}${getOrdinal(homePos)} vs ${awayPos}${getOrdinal(awayPos)})`); }
 
                             const posDiff = Math.abs(homePos - awayPos);
-                            if (posDiff >= totalTeams * 0.5) { confidence += 2; factors.push(`Big quality gap — mismatch potential`); }
+                            if (posDiff >= totalTeams * 0.5) { addFactor('quality_gap', 2, `Big quality gap — mismatch potential`); }
                         }
 
                         const homeDef = analyzeDefensiveStrength(standings, hId);
                         const awayDef = analyzeDefensiveStrength(standings, aId);
                         if (homeDef && awayDef) {
-                            if (homeDef.rating === 'leaky' || awayDef.rating === 'leaky') { confidence += 3; factors.push(`Leaky defense in play`); }
-                            if (homeDef.rating === 'fortress' && awayDef.rating === 'fortress') { confidence -= 4; factors.push(`Both teams defend well`); }
+                            if (homeDef.rating === 'leaky' || awayDef.rating === 'leaky') { addFactor('leaky_defence', 3, `Leaky defense in play`); }
+                            if (homeDef.rating === 'fortress' && awayDef.rating === 'fortress') { addFactor('both_fortress', -4, `Both teams defend well`); }
                         }
 
                         if (homePos && awayPos && goalDiff >= 1 && secondHalfGoals >= 1) {
@@ -2619,26 +2686,26 @@
                             const topThird = totalTeams * 0.33;
 
                             if (leadingIsAtHome && leadingPos <= topThird && goalDiff >= 2) {
-                                confidence -= 4; factors.push(`Strong home team leading by ${goalDiff} — likely to manage the game`);
+                                addFactor('strong_home_managing', -4, `Strong home team leading by ${goalDiff} — likely to manage the game`);
                             } else if (leadingIsAtHome && goalDiff === 1 && leadingPos <= topThird) {
-                                confidence -= 2; factors.push(`Home team leading — may control tempo`);
+                                addFactor('home_leading_control', -2, `Home team leading — may control tempo`);
                             } else if (!leadingIsAtHome && goalDiff >= 2) {
-                                confidence -= 3; factors.push(`Away team comfortable — may sit deep`);
+                                addFactor('away_comfortable', -3, `Away team comfortable — may sit deep`);
                             } else if (!leadingIsAtHome && goalDiff === 1 && trailingPos <= topThird) {
-                                confidence += 2; factors.push(`Strong home team trailing — expect late push`);
+                                addFactor('strong_home_trailing', 2, `Strong home team trailing — expect late push`);
                             }
 
                             if (trailingPos >= bottomThird && goalDiff >= 2) {
-                                confidence -= 2; factors.push(`Weaker team losing badly — may accept defeat`);
+                                addFactor('weak_team_crushed', -2, `Weaker team losing badly — may accept defeat`);
                             } else if (trailingPos <= topThird && goalDiff === 1) {
-                                confidence += 2; factors.push(`Quality team chasing — likely to create chances`);
+                                addFactor('quality_team_chasing', 2, `Quality team chasing — likely to create chances`);
                             }
 
                             const leadDef = leadingTeamIsHome ? homeDef : awayDef;
                             if (leadDef && leadDef.rating === 'fortress' && goalDiff >= 1) {
-                                confidence -= 3; factors.push(`Leading team has strong defense — hard to break down`);
+                                addFactor('leader_fortress', -3, `Leading team has strong defense — hard to break down`);
                             } else if (leadDef && leadDef.rating === 'leaky') {
-                                confidence += 2; factors.push(`Leading team leaks goals — deficit recoverable`);
+                                addFactor('leader_leaky', 2, `Leading team leaks goals — deficit recoverable`);
                             }
                         }
                     }
@@ -2651,18 +2718,18 @@
                     } catch(e) {}
                     const h2h = analyzeH2H(h2hData, hId);
                     if (h2h && h2h.available) {
-                        if (h2h.avgGoals >= 3.5) { confidence += 5; factors.push(`H2H avg ${h2h.avgGoals.toFixed(1)} goals/game`); }
-                        else if (h2h.avgGoals >= 2.5) { confidence += 3; factors.push(`H2H avg ${h2h.avgGoals.toFixed(1)} goals`); }
-                        else if (h2h.avgGoals < 1.5) { confidence -= 3; factors.push(`H2H avg only ${h2h.avgGoals.toFixed(1)} goals`); }
+                        if (h2h.avgGoals >= 3.5) { addFactor('h2h_high_scoring', 5, `H2H avg ${h2h.avgGoals.toFixed(1)} goals/game`); }
+                        else if (h2h.avgGoals >= 2.5) { addFactor('h2h_decent', 3, `H2H avg ${h2h.avgGoals.toFixed(1)} goals`); }
+                        else if (h2h.avgGoals < 1.5) { addFactor('h2h_low', -3, `H2H avg only ${h2h.avgGoals.toFixed(1)} goals`); }
 
-                        if (h2h.bttsRate >= 0.6) { confidence += 2; factors.push(`H2H BTTS rate ${Math.round(h2h.bttsRate * 100)}%`); }
+                        if (h2h.bttsRate >= 0.6) { addFactor('h2h_btts', 2, `H2H BTTS rate ${Math.round(h2h.bttsRate * 100)}%`); }
                     }
 
                     const leagueProfile = getLeagueProfile(lid);
                     if (leagueProfile) {
-                        if (leagueProfile.avgGoals >= 3.0) { confidence += 3; factors.push(`High-scoring league (avg ${leagueProfile.avgGoals})`); }
-                        else if (leagueProfile.avgGoals <= 2.2) { confidence -= 2; factors.push(`Low-scoring league`); }
-                        if (leagueProfile.lateGoalRate >= 0.35) { confidence += 2; factors.push(`League known for late goals`); }
+                        if (leagueProfile.avgGoals >= 3.0) { addFactor('league_high_scoring', 3, `High-scoring league (avg ${leagueProfile.avgGoals})`); }
+                        else if (leagueProfile.avgGoals <= 2.2) { addFactor('league_low_scoring', -2, `Low-scoring league`); }
+                        if (leagueProfile.lateGoalRate >= 0.35) { addFactor('league_late_goals', 2, `League known for late goals`); }
                     }
 
                     confidence = Math.min(96, Math.max(15, confidence));
@@ -2671,6 +2738,7 @@
                         match,
                         confidence,
                         factors,
+                        factorTags,
                         stats: { homeSoT, awaySoT, homeOffT, awayOffT, homeTotal, awayTotal, homePoss, awayPoss, homeDangerous, awayDangerous, homeExpG, awayExpG, totalxG, totalCorners, homeBlocked, awayBlocked, homeGKSaves, awayGKSaves, homePassAcc, awayPassAcc, homeFouls: gs(hStats, "Fouls"), awayFouls: gs(aStats, "Fouls"), totalYellows: yellowCards.length, totalReds: redCards.length },
                         homePos, awayPos, totalTeams,
                         h2hAvail: h2h && h2h.available,
@@ -2691,7 +2759,10 @@
                     return;
                 }
 
-                let html = `<div style="text-align:center; padding:6px; margin-bottom:10px; color:#888; font-size:0.75rem;">⚽ ${results.length} match${results.length !== 1 ? 'es' : ''} analyzed · Sorted by goal confidence</div>`;
+                const flDB = getFactorLearningDB();
+                const learnedCount = Object.values(flDB).filter(v => v.total >= 6).length;
+                const learnBadge = learnedCount > 0 ? ` · 🧠 ${learnedCount} factors learned` : ' · 🧠 Learning mode (needs 6+ bets)';
+                let html = `<div style="text-align:center; padding:6px; margin-bottom:10px; color:#888; font-size:0.75rem;">⚽ ${results.length} match${results.length !== 1 ? 'es' : ''} analyzed · Sorted by goal confidence${learnBadge}</div>`;
 
                 results.forEach(r => {
                     const m = r.match;
@@ -2788,7 +2859,7 @@
 
                             ${isPlaced ?
                                 `<button disabled style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--gold); background:rgba(210,153,34,0.15); color:var(--gold); font-size:0.8rem; font-weight:bold; cursor:default;">📌 Bet Placed — Tracking</button>` :
-                                `<button onclick="placeChallengebet(${fid}, '2nd Half Goal', '${m.teams.home.name.replace(/'/g,"\\'")} vs ${m.teams.away.name.replace(/'/g,"\\'")}', '${(m.league.name || '').replace(/'/g,"\\'")}', '1.50', 'est', ${r.homeGoals}, ${r.awayGoals}, ${r.confidence}, ${m.league.id || 0}); startChallengeCheckInterval(); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)';" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.8rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`
+                                `<button data-ftags='${JSON.stringify(r.factorTags)}' onclick="placeChallengebet(${fid}, '2nd Half Goal', '${m.teams.home.name.replace(/'/g,"\\'")} vs ${m.teams.away.name.replace(/'/g,"\\'")}', '${(m.league.name || '').replace(/'/g,"\\'")}', '1.50', 'est', ${r.homeGoals}, ${r.awayGoals}, ${r.confidence}, ${m.league.id || 0}, JSON.parse(this.dataset.ftags)); startChallengeCheckInterval(); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)';" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.8rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`
                             }
                         </div>
                     `;
@@ -3465,14 +3536,15 @@
             return html;
         }
 
-        function placeChallengebet(fixtureId, selection, match, league, odds, oddsSource, homeGoals, awayGoals, confidence, leagueId) {
+        function placeChallengebet(fixtureId, selection, match, league, odds, oddsSource, homeGoals, awayGoals, confidence, leagueId, factorTags) {
             const bets = getPlacedChallenges();
             if (bets.some(b => b.fixtureId === fixtureId && b.selection === selection)) return;
             const betObj = {
                 fixtureId, selection, match, league, odds, oddsSource, confidence,
                 homeGoalsAtPlace: homeGoals, awayGoalsAtPlace: awayGoals,
                 placedAt: Date.now(), status: 'pending', result: null,
-                leagueId: leagueId || null
+                leagueId: leagueId || null,
+                factorTags: factorTags || []
             };
             bets.push(betObj);
             savePlacedChallenges(bets);
@@ -3556,6 +3628,9 @@
             bet.result = won;
             bet.finalScore = `${finalHome}-${finalAway}`;
             recordChallengeResult(bet.selection, bet.match, won, bet.leagueId, bet.confidence);
+            if (bet.factorTags && bet.factorTags.length > 0) {
+                recordFactorOutcomes(bet.factorTags, won);
+            }
             return bet;
         }
 
@@ -6052,6 +6127,41 @@
                         <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.total})</span></div>
                     </div>`;
                 });
+                html += `</div>`;
+            }
+
+            const flSummary = getFactorLearningSummary();
+            if (flSummary) {
+                html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:var(--cyan); margin-bottom:12px;">🧠 Smart Learning — Factor Insights</div>`;
+                html += `<div style="font-size:0.7rem; color:#888; margin-bottom:10px;">${flSummary.totalFactors} factors tracked across ${flSummary.totalSamples} data points</div>`;
+
+                if (flSummary.best.length > 0) {
+                    html += `<div style="font-size:0.75rem; font-weight:bold; color:var(--green); margin-bottom:6px;">Best Predictors</div>`;
+                    flSummary.best.forEach(([tag, data]) => {
+                        const rate = Math.round((data.wins / data.total) * 100);
+                        const label = tag.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                        html += `<div class="stats-bar">
+                            <div class="stats-bar-label" style="font-size:0.68rem;">${label}</div>
+                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:var(--green);"></div></div>
+                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
+                        </div>`;
+                    });
+                }
+
+                if (flSummary.worst.length > 0) {
+                    html += `<div style="font-size:0.75rem; font-weight:bold; color:var(--red); margin:10px 0 6px 0;">Weakest Predictors</div>`;
+                    flSummary.worst.forEach(([tag, data]) => {
+                        const rate = Math.round((data.wins / data.total) * 100);
+                        const label = tag.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                        html += `<div class="stats-bar">
+                            <div class="stats-bar-label" style="font-size:0.68rem;">${label}</div>
+                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:var(--red);"></div></div>
+                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
+                        </div>`;
+                    });
+                }
+
+                html += `<div style="font-size:0.65rem; color:#555; margin-top:10px; padding-top:8px; border-top:1px solid #21262d;">Weights auto-adjust after 6+ samples per factor. Strong predictors get boosted, weak ones get reduced.</div>`;
                 html += `</div>`;
             }
 
