@@ -1678,7 +1678,8 @@
             challengeBets.forEach(b => {
                 const d = b.placedAt ? new Date(b.placedAt).toLocaleDateString('en-CA') : new Date().toLocaleDateString('en-CA');
                 let sourceLabel = 'Challenge';
-                if (b.selection === '2nd Half Goal') sourceLabel = '2nd Half';
+                if (b.source === 'BOTD') sourceLabel = 'BOTD';
+                else if (b.selection === '2nd Half Goal') sourceLabel = '2nd Half';
                 else if (b.selection && b.selection.startsWith('Anytime Goalscorer')) sourceLabel = 'Player';
                 else if (b.selection && b.selection.startsWith('Anytime Booking')) sourceLabel = 'Player';
                 allBets.push({
@@ -1700,7 +1701,7 @@
                 return acc;
             }, {});
 
-            const sourceColors = { 'Hunt': 'var(--cyan)', 'Challenge': 'var(--gold)', '2nd Half': 'var(--green)', 'Player': 'var(--purple)' };
+            const sourceColors = { 'Hunt': 'var(--cyan)', 'Challenge': 'var(--gold)', '2nd Half': 'var(--green)', 'Player': 'var(--purple)', 'BOTD': '#e09040' };
 
             let html = `<button class="export-btn" onclick="exportCSV()">📥 Export to Excel (CSV)</button>`;
             for (const [date, dayBets] of Object.entries(grouped)) {
@@ -1924,20 +1925,19 @@
 
                 const leagueIds = [...new Set(allFixtures.map(f => f.league.id))];
                 const standingsMap = {};
-                const batchLeagues = leagueIds.slice(0, 15);
-                for (const lid of batchLeagues) {
+                for (const lid of leagueIds) {
                     const season = allFixtures.find(f => f.league.id === lid).league.season;
                     const s = await fetchStandingsForLeague(lid, season);
                     if (s) standingsMap[lid] = s;
-                    await new Promise(r => setTimeout(r, 150));
+                    await new Promise(r => setTimeout(r, 100));
                 }
 
                 const candidateFixtures = allFixtures.filter(f => standingsMap[f.league.id]);
                 if (candidateFixtures.length < 3) {
-                    const fallback = allFixtures.slice(0, 20);
+                    const fallback = allFixtures.slice(0, 50);
                     fallback.forEach(f => { if (!candidateFixtures.includes(f)) candidateFixtures.push(f); });
                 }
-                const toAnalyze = candidateFixtures.slice(0, 20);
+                const toAnalyze = candidateFixtures;
 
                 area.innerHTML = `<div style='text-align:center; padding:40px;'><div class='pilot-dot' style='width:20px; height:20px; margin:0 auto; background:var(--gold); animation:pulse-gold 1s infinite;'></div><p style='margin-top:20px; color:var(--gold);'>Analyzing form & head-to-head for ${toAnalyze.length} matches...</p></div>`;
 
@@ -3169,7 +3169,7 @@
 
                             ${isPlaced ?
                                 `<button disabled style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--gold); background:rgba(210,153,34,0.15); color:var(--gold); font-size:0.8rem; font-weight:bold; cursor:default;">📌 Bet Placed — Tracking</button>` :
-                                `<button onclick="placeChallengebet(${pick.fixtureId}, '${pick.market.replace(/'/g,"\\'")}', '${pick.home.replace(/'/g,"\\'")} vs ${pick.away.replace(/'/g,"\\'")}', '${pick.league.name.replace(/'/g,"\\'")}', '1.80', 'est', 0, 0, ${pick.prob}, ${pick.league.id}); startChallengeCheckInterval(); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)';" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.8rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`
+                                `<button onclick="placeChallengebet(${pick.fixtureId}, '${pick.market.replace(/'/g,"\\'")}', '${pick.home.replace(/'/g,"\\'")} vs ${pick.away.replace(/'/g,"\\'")}', '${pick.league.name.replace(/'/g,"\\'")}', '1.80', 'est', 0, 0, ${pick.prob}, ${pick.league.id}, null, 'BOTD'); startChallengeCheckInterval(); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)';" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.8rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`
                             }
                         </div>
                     `;
@@ -3536,7 +3536,7 @@
             return html;
         }
 
-        function placeChallengebet(fixtureId, selection, match, league, odds, oddsSource, homeGoals, awayGoals, confidence, leagueId, factorTags) {
+        function placeChallengebet(fixtureId, selection, match, league, odds, oddsSource, homeGoals, awayGoals, confidence, leagueId, factorTags, source) {
             const bets = getPlacedChallenges();
             if (bets.some(b => b.fixtureId === fixtureId && b.selection === selection)) return;
             const betObj = {
@@ -3544,7 +3544,8 @@
                 homeGoalsAtPlace: homeGoals, awayGoalsAtPlace: awayGoals,
                 placedAt: Date.now(), status: 'pending', result: null,
                 leagueId: leagueId || null,
-                factorTags: factorTags || []
+                factorTags: factorTags || [],
+                source: source || null
             };
             bets.push(betObj);
             savePlacedChallenges(bets);
@@ -4062,6 +4063,14 @@
         }
 
         async function _doScanChallengePicks(isAutoRefresh = false) {
+            if (allMatches.length === 0) {
+                try {
+                    const res = await fetch(`https://v3.football.api-sports.io/fixtures?live=all`, { headers: { "x-rapidapi-key": API_KEY } });
+                    const data = await res.json();
+                    trackAPI(1);
+                    if (data.response) allMatches = data.response;
+                } catch(e) {}
+            }
             if (!isAutoRefresh) {
                 content.innerHTML = `<div style="text-align:center; padding:40px 15px;">
                     <div style="font-size:2rem; margin-bottom:10px;">🎯</div>
@@ -4078,7 +4087,7 @@
                 const league = (m.league.name || "").toLowerCase();
                 if (blocked.some(word => league.includes(word))) return false;
                 const elapsed = m.fixture.status.elapsed;
-                return elapsed >= 60 && elapsed <= 85;
+                return elapsed >= 30 && elapsed <= 85;
             });
 
             if (eligible.length === 0) {
@@ -4208,7 +4217,7 @@
                 let noPicksHtml = `<div style="text-align:center; padding:50px 15px; color:#888;">
                     <div style="font-size:2rem; margin-bottom:10px;">🎯</div>
                     <p>No high-confidence picks found right now.</p>
-                    <p style="font-size:0.8rem; margin-top:8px;">Checked ${eligible.length} matches, ${analyzed.length} had enough stats. None met the 78% confidence threshold.</p>
+                    <p style="font-size:0.8rem; margin-top:8px;">Checked ${eligible.length} matches, ${analyzed.length} had enough stats. None met the 75% confidence threshold.</p>
                 </div>`;
                 const pbAll = getPlacedChallenges();
                 const pbPending = pbAll.filter(b => b.status === 'pending');
@@ -4295,10 +4304,14 @@
                             <span style="color:var(--gold); font-weight:bold; font-size:0.95rem;">@ ${c.odds}${oddsLabel}</span>
                         </div>
                         <div style="font-size:0.75rem; color:#aaa; line-height:1.4;">${c.reasoning}</div>
+                        ${c.factors && c.factors.length > 0 ? `
+                        <div style="background:rgba(255,255,255,0.02); border-radius:6px; padding:6px; margin-top:8px;">
+                            ${c.factors.map(f => `<div style="font-size:0.68rem; color:#888; padding:1px 0;">• ${f}</div>`).join('')}
+                        </div>` : ''}
                         <div style="display:flex; gap:6px; margin-top:8px;">
                             ${getPlacedChallenges().some(b => b.fixtureId === c.fixtureId && b.selection === c.selection) ?
                             `<button disabled style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--gold); background:rgba(210,153,34,0.15); color:var(--gold); font-size:0.75rem; font-weight:bold; cursor:default;">📌 Bet Placed — Tracking</button>` :
-                            `<button data-fid="${c.fixtureId}" data-sel="${encodeURIComponent(c.selection)}" data-match="${encodeURIComponent(c.match)}" data-league="${encodeURIComponent(c.league)}" data-odds="${c.odds}" data-osrc="${c.oddsSource}" data-hg="${c.homeGoals}" data-ag="${c.awayGoals}" data-conf="${c.confidence}" data-lid="${c.leagueId || 0}" onclick="placeChallengebet(parseInt(this.dataset.fid), decodeURIComponent(this.dataset.sel), decodeURIComponent(this.dataset.match), decodeURIComponent(this.dataset.league), this.dataset.odds, this.dataset.osrc, parseInt(this.dataset.hg), parseInt(this.dataset.ag), parseInt(this.dataset.conf), parseInt(this.dataset.lid)||null); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)'; startChallengeCheckInterval();" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.75rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`}
+                            `<button data-ftags='${JSON.stringify(c.factorTags || [])}' data-fid="${c.fixtureId}" data-sel="${encodeURIComponent(c.selection)}" data-match="${encodeURIComponent(c.match)}" data-league="${encodeURIComponent(c.league)}" data-odds="${c.odds}" data-osrc="${c.oddsSource}" data-hg="${c.homeGoals}" data-ag="${c.awayGoals}" data-conf="${c.confidence}" data-lid="${c.leagueId || 0}" onclick="placeChallengebet(parseInt(this.dataset.fid), decodeURIComponent(this.dataset.sel), decodeURIComponent(this.dataset.match), decodeURIComponent(this.dataset.league), this.dataset.odds, this.dataset.osrc, parseInt(this.dataset.hg), parseInt(this.dataset.ag), parseInt(this.dataset.conf), parseInt(this.dataset.lid)||null, JSON.parse(this.dataset.ftags), 'Challenge'); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)'; startChallengeCheckInterval();" style="flex:1; padding:8px; border-radius:6px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.75rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`}
                         </div>
                     </div>`;
                 });
@@ -4456,34 +4469,59 @@
 
                 let matchCandidates = [];
 
-                const addCandidate = (selection, oddsInfo, confidence, reasoning) => {
+                const addCandidate = (selection, oddsInfo, baseConfidence, reasoning) => {
+                    const factors = [];
+                    const factorTags = [];
+                    let confidence = baseConfidence;
+
+                    const addF = (tag, weight, text) => {
+                        const adjusted = getFactorWeight(tag, weight);
+                        confidence += adjusted;
+                        const learnNote = getFactorLearningNote(tag);
+                        factors.push(text + learnNote);
+                        factorTags.push(tag);
+                    };
+
                     const rcPenalty = redCardPenalty(selection);
                     if (rcPenalty < 0) {
-                        confidence = Math.max(50, confidence + rcPenalty);
-                        const busTeam = homeRed ? homeName : awayName;
-                        reasoning += ` 🟥 ${busTeam} down to 10 men and leading — likely parking the bus (−${Math.abs(rcPenalty)}%).`;
+                        addF('red_card_penalty', rcPenalty, `${homeRed ? homeName : awayName} red card risk`);
                     }
+
                     const isHome = selection.includes(homeName);
                     const formAdj = applyFormBoost(confidence, homeForm, awayForm, selection, isHome);
+                    if (formAdj.boost !== 0) addF('form_boost', formAdj.boost, formAdj.note);
+
                     const defAdj = applyDefenseAdjustment(confidence, homeDef, awayDef, selection);
+                    if (defAdj.boost !== 0) addF('def_boost', defAdj.boost, defAdj.note);
+
                     const histAdj = applyHistoricalPatternBoost(m.league.id, selection);
+                    if (histAdj.boost !== 0) addF('hist_pattern', histAdj.boost, histAdj.note);
+
                     const calibAdj = getCalibrationAdjustment(confidence);
-                    const congestionBoost = Math.max(homeCongestion.boost, awayCongestion.boost);
-                    const congestionNote = homeCongestion.boost >= awayCongestion.boost ? homeCongestion.note : awayCongestion.note;
-                    confidence = Math.max(50, Math.min(96, confidence + formAdj.boost + defAdj.boost + histAdj.boost + xgGap.boost + subImpact.boost + scoreFlow.boost + congestionBoost + possTrend.boost + shotAcc.boost + h2Momentum.boost + calibAdj.boost));
-                    if (formAdj.note) reasoning += ` ${formAdj.note}`;
-                    if (defAdj.note) reasoning += ` ${defAdj.note}`;
-                    if (histAdj.note) reasoning += ` ${histAdj.note}`;
-                    if (xgGap.note) reasoning += ` ${xgGap.note}`;
-                    if (subImpact.note) reasoning += ` ${subImpact.note}`;
-                    if (scoreFlow.note) reasoning += ` ${scoreFlow.note}`;
-                    if (congestionNote) reasoning += ` ${congestionNote}`;
-                    if (possTrend.note) reasoning += ` ${possTrend.note}`;
-                    if (shotAcc.note) reasoning += ` ${shotAcc.note}`;
-                    if (h2Momentum.note) reasoning += ` ${h2Momentum.note}`;
-                    if (calibAdj.note) reasoning += ` ${calibAdj.note}`;
-                    if (weatherImpact.note && weatherImpact.boost !== 0) reasoning += ` ${weatherImpact.note}`;
-                    const candidateObj = { fixtureId, match: matchName, league, selection, odds: oddsInfo.odds, oddsSource: oddsInfo.source, confidence, reasoning, totalSoT, totalShots, homeSoT: stats.homeSoT, awaySoT: stats.awaySoT, homeTotal: stats.homeTotal, awayTotal: stats.awayTotal, homeCorners: stats.homeCorners, awayCorners: stats.awayCorners, homePoss: Math.round(stats.homePoss), awayPoss: Math.round(stats.awayPoss), homeGoals: m.goals.home, awayGoals: m.goals.away, leagueId: m.league.id };
+                    if (calibAdj.boost !== 0) addF('calibration', calibAdj.boost, calibAdj.note);
+
+                    if (homeCongestion.boost !== 0) addF('congestion_home', homeCongestion.boost, homeCongestion.note);
+                    if (awayCongestion.boost !== 0) addF('congestion_away', awayCongestion.boost, awayCongestion.note);
+                    
+                    if (xgGap.boost !== 0) addF('xg_gap', xgGap.boost, xgGap.note);
+                    if (subImpact.boost !== 0) addF('sub_impact', subImpact.boost, subImpact.note);
+                    if (scoreFlow.boost !== 0) addF('score_flow', scoreFlow.boost, scoreFlow.note);
+                    if (possTrend.boost !== 0) addF('poss_trend', possTrend.boost, possTrend.note);
+                    if (shotAcc.boost !== 0) addF('shot_accuracy', shotAcc.boost, shotAcc.note);
+                    if (h2Momentum.boost !== 0) addF('h2_momentum', h2Momentum.boost, h2Momentum.note);
+
+                    confidence = Math.max(50, Math.min(96, confidence));
+                    
+                    const candidateObj = { 
+                        fixtureId, match: matchName, league, selection, 
+                        odds: oddsInfo.odds, oddsSource: oddsInfo.source, 
+                        confidence, reasoning, factors, factorTags,
+                        totalSoT, totalShots, homeSoT: stats.homeSoT, awaySoT: stats.awaySoT, 
+                        homeTotal: stats.homeTotal, awayTotal: stats.awayTotal, 
+                        homeCorners: stats.homeCorners, awayCorners: stats.awayCorners, 
+                        homePoss: Math.round(stats.homePoss), awayPoss: Math.round(stats.awayPoss), 
+                        homeGoals: m.goals.home, awayGoals: m.goals.away, leagueId: m.league.id 
+                    };
                     matchCandidates.push(candidateObj);
                 };
 
@@ -4612,7 +4650,7 @@
                 const elapsed = m.fixture.status.elapsed || 0;
                 const totalSoT = (stats.homeSoT || 0) + (stats.awaySoT || 0);
                 return elapsed >= 55 && elapsed <= 85 && totalSoT >= 4;
-            }).slice(0, 3);
+            });
 
             for (const m of qualifying) {
                 try {
@@ -5525,9 +5563,9 @@
                     return;
                 }
                 
-                btn.innerText = `🔍 Analyzing ${Math.min(8, eligible.length)} matches...`;
+                btn.innerText = `🔍 Analyzing ${eligible.length} matches...`;
                 const analyzed = [];
-                for (let i = 0; i < Math.min(8, eligible.length); i++) {
+                for (let i = 0; i < eligible.length; i++) {
                     const m = eligible[i];
                     try {
                         trackAPI(1);
@@ -5579,7 +5617,7 @@
                                 analyzed.push(m);
                             }
                         }
-                        await new Promise(r => setTimeout(r, 400));
+                        await new Promise(r => setTimeout(r, 350));
                     } catch(e) {
                         console.warn("Stats fetch failed for fixture", m.fixture.id);
                     }
@@ -5602,6 +5640,7 @@
                 // Save and display
                 const state = getChallengeState();
                 state.currentBet = bestBet;
+                state.betPlaced = false;
                 saveChallengeState(state);
                 displaySuggestedBet(bestBet, state.stake);
                 
@@ -5670,83 +5709,93 @@
                     return (1.40 + Math.random() * 0.30).toFixed(2);
                 };
 
+                const addCandidate = (selection, oddsInfo, baseConfidence, reasoning) => {
+                    const factors = [];
+                    const factorTags = [];
+                    let confidence = baseConfidence;
+
+                    const addF = (tag, weight, text) => {
+                        const adjusted = getFactorWeight(tag, weight);
+                        confidence += adjusted;
+                        const learnNote = getFactorLearningNote(tag);
+                        factors.push(text + learnNote);
+                        factorTags.push(tag);
+                    };
+
+                    const timeMultiplier = elapsed >= 75 ? 1.12 : (elapsed >= 70 ? 1.06 : 1.0);
+                    const leagueBoost = leagueProfile.tempo === "high" ? 1.06 : (leagueProfile.tempo === "low" ? 0.92 : 1.0);
+                    const lateGoalBoost = leagueProfile.lateGoalRate > 0.30 ? 1.08 : 1.0;
+
+                    const pressure = calculateSmartPressure(stats);
+                    const momentum = calculateMomentum(m, stats);
+
+                    if (momentum.surgeDetected) addF('momentum_surge', 3, 'Momentum surge detected');
+                    if (leagueProfile.lateGoalRate > 0.30) addF('late_goal_league', 5, `High late goal league (${Math.round(leagueProfile.lateGoalRate*100)}%)`);
+                    
+                    const calibAdj = getCalibrationAdjustment(confidence);
+                    if (calibAdj.boost !== 0) addF('calibration', calibAdj.boost, calibAdj.note);
+
+                    confidence = Math.max(50, Math.min(96, confidence));
+
+                    candidates.push({ 
+                        fixtureId, match: matchName, league, selection, 
+                        odds: oddsInfo.odds || oddsInfo, // support both formats
+                        confidence, reasoning, factors, factorTags,
+                        totalSoT, totalShots 
+                    });
+                };
+
                 // === OVER 0.5 GOALS (0-0 games, late, with shot activity) ===
                 if (totalGoals === 0 && elapsed >= 65 && totalSoT >= 3) {
-                    let conf = Math.min(92, Math.round(scoreState.goalProb * 100 * timeMultiplier * lateGoalBoost));
-                    let reason = `0-0 at ${elapsed}' in ${leagueProfile.name} (${Math.round(leagueProfile.lateGoalRate * 100)}% late goal rate).`;
-                    if (totalSoT >= 8) {
-                        conf = Math.min(94, conf + 6);
-                        reason += ` ${totalSoT} SoT - breakthrough imminent!`;
-                    } else if (totalSoT >= 5) {
-                        conf = Math.min(93, conf + 4);
-                        reason += ` ${totalSoT} shots on target already.`;
-                    } else {
-                        reason += ` ${totalSoT} SoT, ${totalShots} total shots.`;
-                    }
-                    if (momentum.surgeDetected) { conf = Math.min(94, conf + 3); reason += ` ⚡ Momentum surge!`; }
-                    candidates.push({ fixtureId, match: matchName, league, selection: "Over 0.5 Goals", odds: getRealisticOdds('o05', elapsed), confidence: conf, reasoning: reason, totalSoT, totalShots });
+                    let conf = Math.round(scoreState.goalProb * 100);
+                    let reason = `0-0 at ${elapsed}' in ${leagueProfile.name}.`;
+                    addCandidate("Over 0.5 Goals", getRealisticOdds('o05', elapsed), conf, reason);
                 }
                 
                 // === OVER 1.5 GOALS (1 goal scored, evidence of more coming) ===
                 if (totalGoals === 1 && elapsed >= 50 && elapsed <= 80 && totalSoT >= 4) {
-                    let conf = Math.min(90, Math.round(scoreState.goalProb * 100 * timeMultiplier * leagueBoost));
+                    let conf = Math.round(scoreState.goalProb * 100);
                     const chasingTeam = m.goals.home < m.goals.away ? homeName : awayName;
                     const chasingStats = m.goals.home < m.goals.away ? `${stats.homeSoT} SoT` : `${stats.awaySoT} SoT`;
-                    let reason = `${m.goals.home}-${m.goals.away} at ${elapsed}'. ${chasingTeam} chasing (${chasingStats}).`;
-                    if (totalSoT >= 7) { conf = Math.min(92, conf + 4); reason += ` Open game, ${totalSoT} SoT total.`; }
-                    if (totalShots >= 18) { conf = Math.min(92, conf + 3); reason += ` ${totalShots} total shots.`; }
-                    if (momentum.surgeDetected) { conf = Math.min(92, conf + 3); reason += ` ⚡ Momentum surge!`; }
-                    candidates.push({ fixtureId, match: matchName, league, selection: "Over 1.5 Goals", odds: getRealisticOdds('o15', elapsed), confidence: conf, reasoning: reason, totalSoT, totalShots });
+                    let reason = `${m.goals.home}-${m.goals.away} at ${elapsed}'. ${chasingTeam} chasing.`;
+                    addCandidate("Over 1.5 Goals", getRealisticOdds('o15', elapsed), conf, reason);
                 }
                 
                 // === OVER 2.5 GOALS (2 goals, open game with lots of chances) ===
                 if (totalGoals === 2 && elapsed >= 45 && elapsed <= 75 && totalSoT >= 6 && totalShots >= 14) {
-                    let conf = Math.min(88, Math.round(scoreState.goalProb * 100 * leagueBoost));
+                    let conf = Math.round(scoreState.goalProb * 100);
                     let reason = `${m.goals.home}-${m.goals.away} at ${elapsed}'. ${scoreState.desc}`;
-                    if (totalShots >= 22) { conf = Math.min(90, conf + 4); reason += ` Very open - ${totalShots} shots, ${totalSoT} on target.`; }
-                    else { reason += ` ${totalShots} shots, ${totalSoT} SoT.`; }
-                    if (totalCorners >= 8) { conf = Math.min(90, conf + 2); reason += ` ${totalCorners} corners.`; }
-                    candidates.push({ fixtureId, match: matchName, league, selection: "Over 2.5 Goals", odds: getRealisticOdds('o25', elapsed), confidence: conf, reasoning: reason, totalSoT, totalShots });
+                    addCandidate("Over 2.5 Goals", getRealisticOdds('o25', elapsed), conf, reason);
                 }
 
                 // === BTTS (one team yet to score but showing genuine attacking intent) ===
                 if (totalGoals >= 1 && m.goals.home === 0 && elapsed >= 55 && elapsed <= 78) {
                     if (stats.homeSoT >= 2 && stats.homeTotal >= 4) {
-                        let conf = Math.min(85, Math.round(scoreState.bttsProb * 100 * timeMultiplier));
-                        let reason = `${homeName} 0 goals but ${stats.homeSoT} SoT and ${stats.homeTotal} shots.`;
-                        if (pressure.dominance === "home_siege" || pressure.dominance === "home_edge") { conf = Math.min(88, conf + 4); reason += ` Home pressure ${pressure.hPercent}%.`; }
-                        if (momentum.surgeTeam === "home") { conf = Math.min(88, conf + 3); reason += ` ⚡ Home momentum surge!`; }
-                        if (conf >= 78) {
-                            candidates.push({ fixtureId, match: matchName, league, selection: "Both Teams to Score", odds: getRealisticOdds('btts', elapsed), confidence: conf, reasoning: reason, totalSoT, totalShots });
-                        }
+                        let conf = Math.round(scoreState.bttsProb * 100);
+                        let reason = `${homeName} 0 goals but ${stats.homeSoT} SoT.`;
+                        addCandidate("Both Teams to Score", getRealisticOdds('btts', elapsed), conf, reason);
                     }
                 } else if (totalGoals >= 1 && m.goals.away === 0 && elapsed >= 55 && elapsed <= 78) {
                     if (stats.awaySoT >= 2 && stats.awayTotal >= 4) {
-                        let conf = Math.min(83, Math.round(scoreState.bttsProb * 100 * timeMultiplier));
-                        let reason = `${awayName} 0 goals but ${stats.awaySoT} SoT and ${stats.awayTotal} shots.`;
-                        if (pressure.dominance === "away_siege" || pressure.dominance === "away_edge") { conf = Math.min(86, conf + 4); reason += ` Away pressure ${pressure.aPercent}%.`; }
-                        if (momentum.surgeTeam === "away") { conf = Math.min(86, conf + 3); reason += ` ⚡ Away momentum surge!`; }
-                        if (conf >= 78) {
-                            candidates.push({ fixtureId, match: matchName, league, selection: "Both Teams to Score", odds: getRealisticOdds('btts', elapsed), confidence: conf, reasoning: reason, totalSoT, totalShots });
-                        }
+                        let conf = Math.round(scoreState.bttsProb * 100);
+                        let reason = `${awayName} 0 goals but ${stats.awaySoT} SoT.`;
+                        addCandidate("Both Teams to Score", getRealisticOdds('btts', elapsed), conf, reason);
                     }
                 }
 
                 // === NEXT GOAL (only when one side has CLEAR dominance backed by real stats) ===
                 if (pressure.dominance === "home_siege" && stats.homeSoT >= 3 && elapsed >= 55 && m.goals.home <= m.goals.away) {
-                    let conf = Math.min(87, Math.round(76 * timeMultiplier * leagueBoost));
-                    let reason = `${homeName} siege: ${stats.homeSoT} SoT, ${stats.homeTotal} shots, ${stats.homeCorners} corners (${pressure.hPercent}% pressure).`;
-                    if (momentum.surgeTeam === "home") { conf = Math.min(90, conf + 4); reason += ` ⚡ Home momentum surge!`; }
-                    if (stats.homePoss >= 60) { conf = Math.min(90, conf + 2); reason += ` ${stats.homePoss}% possession.`; }
-                    candidates.push({ fixtureId, match: matchName, league, selection: `Next Goal: ${homeName}`, odds: getRealisticOdds('next', elapsed), confidence: conf, reasoning: reason, totalSoT, totalShots });
+                    let conf = 76;
+                    let reason = `${homeName} siege (${pressure.hPercent}% pressure).`;
+                    addCandidate(`Next Goal: ${homeName}`, getRealisticOdds('next', elapsed), conf, reason);
                 }
                 
                 if (pressure.dominance === "away_siege" && stats.awaySoT >= 3 && elapsed >= 55 && m.goals.away <= m.goals.home) {
-                    let conf = Math.min(85, Math.round(74 * timeMultiplier * leagueBoost));
-                    let reason = `${awayName} siege: ${stats.awaySoT} SoT, ${stats.awayTotal} shots, ${stats.awayCorners} corners (${pressure.aPercent}% pressure).`;
+                    let conf = 74;
+                    let reason = `${awayName} siege (${pressure.aPercent}% pressure).`;
                     if (momentum.surgeTeam === "away") { conf = Math.min(88, conf + 4); reason += ` ⚡ Away momentum surge!`; }
                     if (stats.awayPoss >= 60) { conf = Math.min(88, conf + 2); reason += ` ${stats.awayPoss}% possession.`; }
-                    candidates.push({ fixtureId, match: matchName, league, selection: `Next Goal: ${awayName}`, odds: getRealisticOdds('next', elapsed), confidence: conf, reasoning: reason, totalSoT, totalShots });
+                    addCandidate(`Next Goal: ${awayName}`, getRealisticOdds('next', elapsed), conf, reason);
                 }
                 
                 // === RED CARD ADVANTAGE (concrete advantage, still requires some shot activity) ===
@@ -5776,14 +5825,70 @@
         }
         
         function displaySuggestedBet(bet, stake) {
-            document.getElementById('suggestedBet').style.display = 'block';
-            document.getElementById('betMatch').innerText = bet.match;
-            document.getElementById('betLeague').innerText = bet.league;
-            document.getElementById('betType').innerText = bet.selection;
-            document.getElementById('betOdds').innerText = `@ ${bet.odds}`;
-            document.getElementById('betReasoning').innerText = bet.reasoning;
-            document.getElementById('betStake').innerText = `£${stake.toFixed(2)}`;
-            document.getElementById('betReturn').innerText = `£${(stake * parseFloat(bet.odds)).toFixed(2)}`;
+            const suggArea = document.getElementById('suggestedBet');
+            suggArea.style.display = 'block';
+            
+            const state = getChallengeState();
+            const isPlaced = state.betPlaced === true;
+            
+            suggArea.innerHTML = `
+                <div class="bet-pick-card" style="border:1px solid ${isPlaced ? 'var(--green)' : 'var(--gold)'}; background:${isPlaced ? 'rgba(46,160,67,0.08)' : 'rgba(210,153,34,0.05)'}; padding:15px; border-radius:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                        <span style="font-size:0.75rem; color:#888;">${bet.league}</span>
+                        <span style="font-size:0.75rem; color:${isPlaced ? 'var(--green)' : 'var(--gold)'}; font-weight:bold;">${isPlaced ? '📌 BET PLACED' : '🎯 CHALLENGE PICK'}</span>
+                    </div>
+                    <div style="font-weight:bold; font-size:1.1rem; margin-bottom:5px; color:white;">${bet.match}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <span style="color:var(--green); font-weight:bold; font-size:1rem;">✅ ${bet.selection}</span>
+                        <span style="color:var(--gold); font-weight:bold; font-size:1.1rem;">@ ${bet.odds}</span>
+                    </div>
+                    
+                    <div style="font-size:0.8rem; color:#ccc; line-height:1.4; margin-bottom:10px;">${bet.reasoning}</div>
+                    
+                    ${bet.factors && bet.factors.length > 0 ? `
+                    <div style="background:rgba(255,255,255,0.03); border-radius:6px; padding:8px; margin-bottom:12px;">
+                        ${bet.factors.map(f => `<div style="font-size:0.7rem; color:#aaa; padding:2px 0;">• ${f}</div>`).join('')}
+                    </div>` : ''}
+
+                    <div style="background:rgba(255,255,255,0.05); border-radius:8px; padding:12px; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:0.7rem; color:#888;">STAKE</div>
+                            <div style="font-size:1.1rem; font-weight:bold; color:white;">£${stake.toFixed(2)}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:0.7rem; color:#888;">EST. RETURN</div>
+                            <div style="font-size:1.1rem; font-weight:bold; color:var(--green);">£${(stake * parseFloat(bet.odds)).toFixed(2)}</div>
+                        </div>
+                    </div>
+                    
+                    ${isPlaced ? `
+                    <div style="background:rgba(46,160,67,0.1); border:1px solid var(--green); border-radius:8px; padding:10px; margin-bottom:15px; text-align:center;">
+                        <div style="font-size:0.8rem; color:var(--green); font-weight:bold;">Bet is live — mark the result when ready</div>
+                    </div>
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <button onclick="markBetResult('won')" style="flex:1; background:var(--green); color:white; border:none; padding:16px; border-radius:8px; font-weight:bold; font-size:1.1rem; cursor:pointer;">✅ WON</button>
+                        <button onclick="markBetResult('lost')" style="flex:1; background:var(--red); color:white; border:none; padding:16px; border-radius:8px; font-weight:bold; font-size:1.1rem; cursor:pointer;">❌ LOST</button>
+                    </div>
+                    <button onclick="rejectAndFindNew(this)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #444; background:transparent; color:#888; font-size:0.8rem; cursor:pointer;">🔄 Cancel & Find Different Match</button>
+                    ` : `
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="confirmChallengeBetPlaced()" style="flex:2; padding:14px; border-radius:8px; border:none; background:var(--green); color:white; font-weight:bold; font-size:1rem; cursor:pointer;">📌 CONFIRM BET PLACED</button>
+                        <button onclick="rejectAndFindNew(this)" style="flex:1; padding:14px; border-radius:8px; border:1px solid #444; background:transparent; color:#888; font-size:0.8rem; cursor:pointer;">SKIP</button>
+                    </div>
+                    `}
+                </div>
+            `;
+        }
+        
+        function confirmChallengeBetPlaced() {
+            const state = getChallengeState();
+            if (!state.currentBet) return;
+            const bet = state.currentBet;
+            state.betPlaced = true;
+            saveChallengeState(state);
+            placeChallengebet(bet.fixtureId, bet.selection, bet.match, bet.league, bet.odds, 'estimated', 0, 0, bet.confidence, null, bet.factorTags || [], 'Challenge');
+            startChallengeCheckInterval();
+            displaySuggestedBet(bet, state.stake);
         }
         
         async function rejectAndFindNew(btn) {
@@ -5792,10 +5897,10 @@
                 rejectedFixtures.push(state.currentBet.fixtureId);
             }
             state.currentBet = null;
+            state.betPlaced = false;
             saveChallengeState(state);
             document.getElementById('suggestedBet').style.display = 'none';
             
-            // Find a new bet
             const findBtn = document.querySelector('#challengeActiveScreen .card-scan-btn');
             if (findBtn) {
                 await findNextBet(findBtn);
@@ -5815,7 +5920,6 @@
                 playPing();
             }
             
-            // Add to history
             state.history.push({
                 match: bet.match,
                 selection: bet.selection,
@@ -5823,21 +5927,26 @@
                 result: result,
                 stakeBefore: stakeBefore,
                 stakeAfter: result === 'won' ? stakeAfter : stakeBefore,
+                factorTags: bet.factorTags || [],
                 date: new Date().toISOString().split('T')[0]
             });
+            
+            if (bet.factorTags && bet.factorTags.length > 0) {
+                recordFactorOutcomes(bet.factorTags, result === 'won');
+            }
+            
+            state.betPlaced = false;
             
             if (result === 'won') {
                 state.stake = stakeAfter;
                 state.currentBet = null;
                 
-                // Check if target reached
                 if (state.stake >= CHALLENGE_TARGET) {
                     saveChallengeState(state);
                     updateChallengeUI(state);
                     return;
                 }
             } else {
-                // Lost - set lostDate to today
                 state.lostDate = new Date().toISOString().split('T')[0];
                 state.active = false;
             }
@@ -6127,6 +6236,95 @@
                         <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.total})</span></div>
                     </div>`;
                 });
+                html += `</div>`;
+            }
+
+            const botdBets = resolved.filter(b => b.source === 'BOTD');
+            if (botdBets.length > 0) {
+                const botdWins = botdBets.filter(b => b.result).length;
+                const botdRate = Math.round((botdWins / botdBets.length) * 100);
+                const botdColor = botdRate >= 60 ? 'var(--green)' : (botdRate >= 45 ? 'var(--gold)' : 'var(--red)');
+                html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:#e09040; margin-bottom:12px;">🏆 Bet of the Day Performance</div>`;
+                html += `<div style="display:flex; gap:10px; margin-bottom:12px;">
+                    <div style="flex:1; background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.1rem; font-weight:bold; color:${botdColor};">${botdRate}%</div>
+                        <div style="font-size:0.65rem; color:#888;">Hit Rate</div>
+                    </div>
+                    <div style="flex:1; background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.1rem; font-weight:bold; color:var(--green);">${botdWins}</div>
+                        <div style="font-size:0.65rem; color:#888;">Wins</div>
+                    </div>
+                    <div style="flex:1; background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.1rem; font-weight:bold; color:var(--red);">${botdBets.length - botdWins}</div>
+                        <div style="font-size:0.65rem; color:#888;">Losses</div>
+                    </div>
+                </div>`;
+
+                const botdMarketStats = {};
+                botdBets.forEach(b => {
+                    const key = b.selection || 'Unknown';
+                    if (!botdMarketStats[key]) botdMarketStats[key] = { wins: 0, total: 0 };
+                    botdMarketStats[key].total++;
+                    if (b.result) botdMarketStats[key].wins++;
+                });
+                const sortedBotdM = Object.entries(botdMarketStats).sort((a, b) => b[1].total - a[1].total);
+                if (sortedBotdM.length > 0) {
+                    html += `<div style="font-size:0.7rem; font-weight:bold; color:#888; margin-bottom:6px;">By Market</div>`;
+                    sortedBotdM.forEach(([market, data]) => {
+                        const rate = Math.round((data.wins / data.total) * 100);
+                        const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
+                        html += `<div class="stats-bar">
+                            <div class="stats-bar-label">${market}</div>
+                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
+                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
+                        </div>`;
+                    });
+                }
+
+                const botdLeagueStats = {};
+                botdBets.forEach(b => {
+                    const key = b.league || 'Unknown';
+                    if (!botdLeagueStats[key]) botdLeagueStats[key] = { wins: 0, total: 0 };
+                    botdLeagueStats[key].total++;
+                    if (b.result) botdLeagueStats[key].wins++;
+                });
+                const sortedBotdL = Object.entries(botdLeagueStats).sort((a, b) => b[1].total - a[1].total);
+                if (sortedBotdL.length > 0) {
+                    html += `<div style="font-size:0.7rem; font-weight:bold; color:#888; margin:10px 0 6px 0;">By League</div>`;
+                    sortedBotdL.forEach(([league, data]) => {
+                        const rate = Math.round((data.wins / data.total) * 100);
+                        const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
+                        html += `<div class="stats-bar">
+                            <div class="stats-bar-label">${league}</div>
+                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
+                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
+                        </div>`;
+                    });
+                }
+
+                const botdConfBands = {};
+                botdBets.forEach(b => {
+                    const band = b.confidence >= 80 ? '80%+' : (b.confidence >= 70 ? '70-79%' : (b.confidence >= 60 ? '60-69%' : '<60%'));
+                    if (!botdConfBands[band]) botdConfBands[band] = { wins: 0, total: 0 };
+                    botdConfBands[band].total++;
+                    if (b.result) botdConfBands[band].wins++;
+                });
+                const bandOrder = ['80%+', '70-79%', '60-69%', '<60%'];
+                const availBands = bandOrder.filter(b => botdConfBands[b]);
+                if (availBands.length > 1) {
+                    html += `<div style="font-size:0.7rem; font-weight:bold; color:#888; margin:10px 0 6px 0;">By Confidence Band</div>`;
+                    availBands.forEach(band => {
+                        const data = botdConfBands[band];
+                        const rate = Math.round((data.wins / data.total) * 100);
+                        const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
+                        html += `<div class="stats-bar">
+                            <div class="stats-bar-label">${band}</div>
+                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
+                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
+                        </div>`;
+                    });
+                }
+
                 html += `</div>`;
             }
 
