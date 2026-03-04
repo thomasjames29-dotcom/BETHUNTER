@@ -329,10 +329,10 @@
 
     <div id="botdView" style="display:none;">
         <div style="text-align:center; margin-bottom:15px;">
-            <h2 style="color:var(--gold); margin:0 0 4px 0;">🏆 Bet of the Day</h2>
-            <p style="color:#888; font-size:0.78rem; margin:0;">One standout pick from each major league — the best bet today</p>
+            <h2 style="color:var(--gold); margin:0 0 4px 0;">🏆 Top 10 Picks of the Day</h2>
+            <p style="color:#888; font-size:0.78rem; margin:0;">The 10 strongest bets today across all top leagues</p>
         </div>
-        <button class="card-scan-btn" style="background:var(--gold); color:#000; margin-bottom:15px;" onclick="scanBetOfTheDay(this)">🏆 FIND TODAY'S BEST BETS</button>
+        <button class="card-scan-btn" style="background:var(--gold); color:#000; margin-bottom:15px;" onclick="scanBetOfTheDay(this)">🏆 FIND TODAY'S TOP 10</button>
         <div id="botdContent" style="padding-bottom:100px; text-align:center; color:#888;">Click above to analyze today's fixtures across Europe's top leagues.</div>
     </div>
 
@@ -2898,7 +2898,7 @@
             btn.innerText = "🔍 ANALYZING FIXTURES...";
             btn.disabled = true;
             const area = document.getElementById('botdContent');
-            area.innerHTML = "<div style='text-align:center; padding:40px;'><div class='pilot-dot' style='width:20px; height:20px; margin:0 auto; background:var(--gold); animation:pulse-gold 1s infinite;'></div><p style='margin-top:20px; color:var(--gold);'>Fetching today's fixtures from 6 major leagues...</p></div>";
+            area.innerHTML = "<div style='text-align:center; padding:40px;'><div class='pilot-dot' style='width:20px; height:20px; margin:0 auto; background:var(--gold); animation:pulse-gold 1s infinite;'></div><p style='margin-top:20px; color:var(--gold);'>Fetching today's fixtures across top leagues...</p></div>";
 
             try {
                 const today = new Date().toISOString().split('T')[0];
@@ -2910,7 +2910,7 @@
 
                 if (!data.response || data.response.length === 0) {
                     area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'>No fixtures found for today.</div>";
-                    btn.innerText = "🏆 FIND TODAY'S BEST BETS";
+                    btn.innerText = "🏆 FIND TODAY'S TOP 10";
                     btn.disabled = false;
                     return;
                 }
@@ -2919,8 +2919,8 @@
                 const todayFixtures = data.response.filter(f => botdLeagueIds.includes(f.league.id) && ['NS', 'TBD'].includes(f.fixture.status.short));
 
                 if (todayFixtures.length === 0) {
-                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>🏆</div><p>No upcoming matches in the big 6 leagues today.</p><p style='font-size:0.75rem; color:#555; margin-top:8px;'>Check back on match days!</p></div>";
-                    btn.innerText = "🏆 FIND TODAY'S BEST BETS";
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>🏆</div><p>No upcoming matches in the top leagues today.</p><p style='font-size:0.75rem; color:#555; margin-top:8px;'>Check back on match days!</p></div>";
+                    btn.innerText = "🏆 FIND TODAY'S TOP 10";
                     btn.disabled = false;
                     return;
                 }
@@ -2931,9 +2931,47 @@
                     leagueFixtures[f.league.id].push(f);
                 });
 
+                let botdOddsMap = {};
+                try {
+                    trackAPI(1);
+                    const oddsRes = await fetch(`https://v3.football.api-sports.io/odds?date=${today}&bookmaker=8`, { headers: { "x-rapidapi-key": API_KEY } });
+                    const oddsData = await oddsRes.json();
+                    if (oddsData.response && oddsData.response.length > 0) {
+                        oddsData.response.forEach(entry => {
+                            const fid = entry.fixture?.id;
+                            if (!fid) return;
+                            const bookie = entry.bookmakers && entry.bookmakers[0];
+                            if (!bookie || !bookie.bets) return;
+                            botdOddsMap[fid] = {};
+                            bookie.bets.forEach(bet => {
+                                const name = (bet.name || '').toLowerCase();
+                                if (name.includes('match winner') || name === 'match winner') {
+                                    bet.values.forEach(v => {
+                                        if (v.value === 'Home') botdOddsMap[fid]['Home Win'] = parseFloat(v.odd);
+                                        if (v.value === 'Away') botdOddsMap[fid]['Away Win'] = parseFloat(v.odd);
+                                    });
+                                }
+                                if (name.includes('goals over/under') || name.includes('over/under')) {
+                                    bet.values.forEach(v => {
+                                        if (v.value === 'Over 1.5') botdOddsMap[fid]['Over 1.5 Goals'] = parseFloat(v.odd);
+                                        if (v.value === 'Over 2.5') botdOddsMap[fid]['Over 2.5 Goals'] = parseFloat(v.odd);
+                                    });
+                                }
+                                if (name.includes('both teams score') || name === 'both teams score') {
+                                    bet.values.forEach(v => {
+                                        if (v.value === 'Yes') botdOddsMap[fid]['BTTS'] = parseFloat(v.odd);
+                                    });
+                                }
+                            });
+                        });
+                    }
+                } catch(e) {
+                    console.warn("BOTD odds fetch failed:", e);
+                }
+
                 area.innerHTML = `<div style='text-align:center; padding:20px; color:var(--gold);'>Analyzing ${todayFixtures.length} matches across ${Object.keys(leagueFixtures).length} leagues...</div>`;
 
-                const bestPicks = [];
+                const allPicks = [];
                 const placedBotd = getPlacedChallenges().filter(b => b.source === 'BOTD').map(b => b.fixtureId + '_' + b.selection);
 
                 for (const league of BOTD_LEAGUES) {
@@ -2947,8 +2985,6 @@
                         const stData = await stRes.json();
                         if (stData.response && stData.response[0]) standingsData = stData.response[0].league.standings[0];
                     } catch(e) {}
-
-                    let leagueBest = null;
 
                     for (const fix of fixtures) {
                         const hId = fix.teams.home.id;
@@ -2970,12 +3006,12 @@
                             }
                         } catch(e) {}
 
-                        let homePos = null, awayPos = null, homeGA = null, awayGA = null, totalTeams = 20;
+                        let homePos = null, awayPos = null, totalTeams = 20;
                         if (standingsData) {
                             const hSt = standingsData.find(s => s.team.id === hId);
                             const aSt = standingsData.find(s => s.team.id === aId);
-                            if (hSt) { homePos = hSt.rank; homeGA = hSt.all.goals.against; }
-                            if (aSt) { awayPos = aSt.rank; awayGA = aSt.all.goals.against; }
+                            if (hSt) { homePos = hSt.rank; }
+                            if (aSt) { awayPos = aSt.rank; }
                             totalTeams = standingsData.length;
                         }
 
@@ -3078,50 +3114,63 @@
                         const dataSources = (homeForm ? 1 : 0) + (awayForm ? 1 : 0) + (standingsData ? 1 : 0) + (h2h ? 1 : 0);
 
                         if (dataSources >= 2) {
-                            markets.push({ market: 'Over 1.5 Goals', prob: o15Prob, reasons: buildReasoning('o15', o15Prob) });
-                            markets.push({ market: 'Over 2.5 Goals', prob: o25Prob, reasons: buildReasoning('o25', o25Prob) });
-                            markets.push({ market: 'BTTS', prob: bttsPr, reasons: buildReasoning('btts', bttsPr) });
-                            markets.push({ market: 'Home Win', prob: homeWinProb, reasons: buildReasoning('hw', homeWinProb) });
-                            markets.push({ market: 'Away Win', prob: awayWinProb, reasons: buildReasoning('aw', awayWinProb) });
-                        }
+                            const marketList = [
+                                { market: 'Over 1.5 Goals', prob: o15Prob },
+                                { market: 'Over 2.5 Goals', prob: o25Prob },
+                                { market: 'BTTS', prob: bttsPr },
+                                { market: 'Home Win', prob: homeWinProb },
+                                { market: 'Away Win', prob: awayWinProb }
+                            ];
 
-                        if (markets.length > 0) {
-                            const best = markets.sort((a, b) => b.prob - a.prob)[0];
-                            if (!leagueBest || best.prob > leagueBest.prob) {
+                            const fixtureOdds = botdOddsMap[fix.fixture.id] || {};
+
+                            marketList.forEach(m => {
+                                const odds = fixtureOdds[m.market] || null;
+                                if (odds !== null && odds < 1.20) return;
                                 const koTime = new Date(fix.fixture.date);
-                                leagueBest = {
+                                allPicks.push({
                                     fixtureId: fix.fixture.id,
                                     home: hName, away: aName,
                                     homePos, awayPos, totalTeams,
                                     league: league,
-                                    market: best.market,
-                                    prob: best.prob,
-                                    reasons: best.reasons,
+                                    market: m.market,
+                                    prob: m.prob,
+                                    odds: odds,
+                                    reasons: buildReasoning(m.market, m.prob),
                                     kickoff: koTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                                     dataSources,
                                     h2hAvail: !!h2h,
                                     formAvail: !!(homeForm || awayForm),
                                     standingsAvail: !!standingsData
-                                };
-                            }
+                                });
+                            });
                         }
 
                         await new Promise(r => setTimeout(r, 80));
                     }
+                }
 
-                    if (leagueBest) bestPicks.push(leagueBest);
+                allPicks.sort((a, b) => b.prob - a.prob);
+
+                const seen = new Set();
+                const bestPicks = [];
+                for (const pick of allPicks) {
+                    const key = pick.fixtureId + '_' + pick.market;
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+                    bestPicks.push(pick);
+                    if (bestPicks.length >= 10) break;
                 }
 
                 if (bestPicks.length === 0) {
                     area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>🏆</div><p>Not enough data to pick today's bets. Try again later.</p></div>";
-                    btn.innerText = "🏆 FIND TODAY'S BEST BETS";
+                    btn.innerText = "🏆 FIND TODAY'S TOP 10";
                     btn.disabled = false;
                     return;
                 }
 
-                bestPicks.sort((a, b) => b.prob - a.prob);
-
-                let html = `<div style="text-align:center; padding:6px; margin-bottom:10px; color:#888; font-size:0.75rem;">🏆 ${bestPicks.length} league${bestPicks.length !== 1 ? 's' : ''} analyzed · Best bet from each</div>`;
+                const hasAnyOdds = bestPicks.some(p => p.odds !== null);
+                let html = `<div style="text-align:center; padding:6px; margin-bottom:10px; color:#888; font-size:0.75rem;">🏆 Top ${bestPicks.length} picks from ${todayFixtures.length} matches analyzed${hasAnyOdds ? ' · Bet365 odds' : ''}</div>`;
 
                 bestPicks.forEach((pick, idx) => {
                     const confColor = pick.prob >= 75 ? 'var(--green)' : (pick.prob >= 60 ? 'var(--cyan)' : (pick.prob >= 50 ? 'var(--gold)' : 'var(--red)'));
@@ -3130,6 +3179,9 @@
                     const isTopPick = idx === 0;
                     const betKey = pick.fixtureId + '_' + pick.market;
                     const isPlaced = placedBotd.includes(betKey);
+                    const oddsDisplay = pick.odds ? pick.odds.toFixed(2) : 'N/A';
+                    const oddsSource = pick.odds ? 'bet365' : 'est';
+                    const oddsValue = pick.odds ? pick.odds.toFixed(2) : '1.80';
 
                     const dataBadges = [];
                     if (pick.formAvail) dataBadges.push('📊 Form');
@@ -3146,11 +3198,18 @@
                             </div>
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                                 <div style="font-weight:bold; font-size:1rem;">${pick.home} vs ${pick.away}</div>
+                                <div style="font-size:0.75rem; color:#888; font-weight:bold;">#${idx + 1}</div>
                             </div>
 
-                            <div style="background:rgba(210,153,34,0.08); border:1px solid rgba(210,153,34,0.2); border-radius:8px; padding:10px; margin-bottom:10px; text-align:center;">
-                                <div style="font-size:0.7rem; color:#888; margin-bottom:4px;">BEST BET</div>
-                                <div style="font-size:1.2rem; font-weight:bold; color:var(--gold);">${pick.market}</div>
+                            <div style="display:flex; gap:8px; margin-bottom:10px;">
+                                <div style="flex:1; background:rgba(210,153,34,0.08); border:1px solid rgba(210,153,34,0.2); border-radius:8px; padding:10px; text-align:center;">
+                                    <div style="font-size:0.65rem; color:#888; margin-bottom:4px;">PICK</div>
+                                    <div style="font-size:1.1rem; font-weight:bold; color:var(--gold);">${pick.market}</div>
+                                </div>
+                                <div style="width:80px; background:rgba(0,112,60,0.1); border:1px solid rgba(0,112,60,0.3); border-radius:8px; padding:10px; text-align:center;">
+                                    <div style="font-size:0.65rem; color:#888; margin-bottom:4px;">${pick.odds ? 'BET365' : 'ODDS'}</div>
+                                    <div style="font-size:1.1rem; font-weight:bold; color:${pick.odds ? '#00703c' : '#888'};">${oddsDisplay}</div>
+                                </div>
                             </div>
 
                             <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
@@ -3169,7 +3228,7 @@
 
                             ${isPlaced ?
                                 `<button disabled style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--gold); background:rgba(210,153,34,0.15); color:var(--gold); font-size:0.8rem; font-weight:bold; cursor:default;">📌 Bet Placed — Tracking</button>` :
-                                `<button onclick="placeChallengebet(${pick.fixtureId}, '${pick.market.replace(/'/g,"\\'")}', '${pick.home.replace(/'/g,"\\'")} vs ${pick.away.replace(/'/g,"\\'")}', '${pick.league.name.replace(/'/g,"\\'")}', '1.80', 'est', 0, 0, ${pick.prob}, ${pick.league.id}, null, 'BOTD'); startChallengeCheckInterval(); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)';" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.8rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`
+                                `<button onclick="placeChallengebet(${pick.fixtureId}, '${pick.market.replace(/'/g,"\\'")}', '${pick.home.replace(/'/g,"\\'")} vs ${pick.away.replace(/'/g,"\\'")}', '${pick.league.name.replace(/'/g,"\\'")}', '${oddsValue}', '${oddsSource}', 0, 0, ${pick.prob}, ${pick.league.id}, null, 'BOTD'); startChallengeCheckInterval(); this.disabled=true; this.innerHTML='📌 Bet Placed — Tracking'; this.style.borderColor='var(--gold)'; this.style.background='rgba(210,153,34,0.15)'; this.style.color='var(--gold)';" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--green); background:rgba(46,160,67,0.1); color:var(--green); font-size:0.8rem; font-weight:bold; cursor:pointer;">📌 Bet Placed</button>`
                             }
                         </div>
                     `;
@@ -3181,7 +3240,7 @@
                 console.error("BOTD Error:", e);
                 area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error analyzing fixtures. Please try again.</div>";
             }
-            btn.innerText = "🏆 FIND TODAY'S BEST BETS";
+            btn.innerText = "🏆 FIND TODAY'S TOP 10";
             btn.disabled = false;
         }
 
