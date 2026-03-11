@@ -258,6 +258,7 @@
             <div id="tabAcc" class="nav-tab" onclick="switchTab('acc')">💰 Acca Tips</div>
             <div id="tab2hg" class="nav-tab" onclick="switchTab('2hg')">⚽ 2nd Half Goal</div>
             <div id="tabBotd" class="nav-tab" onclick="switchTab('botd')">🏆 Bet of the Day</div>
+            <div id="tabValue" class="nav-tab" onclick="switchTab('value')">🎯 Value Bets</div>
             <div id="tabStats" class="nav-tab" onclick="switchTab('stats')">📈 Stats</div>
             <div id="tabHist" class="nav-tab" onclick="switchTab('hist')">📜 History</div>
         </div>
@@ -334,6 +335,33 @@
         </div>
         <button class="card-scan-btn" style="background:var(--gold); color:#000; margin-bottom:15px;" onclick="scanBetOfTheDay(this)">🏆 FIND TODAY'S TOP 10</button>
         <div id="botdContent" style="padding-bottom:100px; text-align:center; color:#888;">Click above to analyze today's fixtures across Europe's top leagues.</div>
+    </div>
+
+    <div id="valueView" style="display:none;">
+        <div style="text-align:center; margin-bottom:15px;">
+            <h2 style="color:#58e6a8; margin:0 0 4px 0;">🎯 Value Bets</h2>
+            <p style="color:#888; font-size:0.78rem; margin:0;">Bets where our model beats the bookmaker's implied odds</p>
+        </div>
+        <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:0 0 12px 0;">
+            <div style="font-size:0.75rem; color:#aaa; margin-bottom:6px; font-weight:bold;">💰 YOUR BANKROLL (for stake sizing)</div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <span style="color:#888; font-size:1rem; font-weight:bold;">£</span>
+                <input id="valueBankroll" type="number" min="1" placeholder="e.g. 100" value="100" style="flex:1; background:#21262d; border:1px solid #30363d; border-radius:8px; padding:8px 12px; color:white; font-size:0.9rem; outline:none;"/>
+            </div>
+            <div style="font-size:0.65rem; color:#555; margin-top:5px;">Stake recommendations use ¼ Kelly Criterion — the professional standard for bankroll safety</div>
+        </div>
+        <div style="display:flex; gap:8px; margin-bottom:15px;">
+            <button class="card-scan-btn" style="flex:1; background:linear-gradient(135deg,#1a7f4e,#145c38); color:white; margin-bottom:0; border:1px solid #2ea043;" onclick="scanValueBets(this)">🎯 FIND VALUE BETS</button>
+            <button class="card-scan-btn" style="flex:1; background:linear-gradient(135deg,#1a4f7f,#123a5c); color:white; margin-bottom:0; border:1px solid #388bfd;" onclick="scanOddsMovement(this)">📡 ODDS SIGNALS</button>
+        </div>
+        <div id="valueContent" style="padding-bottom:100px; text-align:center; color:#888;">
+            <div style="padding:40px 20px;">
+                <div style="font-size:3rem; margin-bottom:10px;">🎯</div>
+                <p style="margin-bottom:8px;">Value Bets finds where our model gives a <strong style="color:white;">higher probability</strong> than Bet365's odds imply.</p>
+                <p style="font-size:0.78rem; color:#555; margin-bottom:4px;">Only bets with positive Expected Value (EV) are shown.</p>
+                <p style="font-size:0.78rem; color:#555;">Positive EV bets are mathematically profitable long-term.</p>
+            </div>
+        </div>
     </div>
 
     <div id="accView" style="display:none;">
@@ -1759,8 +1787,8 @@
 
         function switchTab(tab) {
             stopChallengeAutoRefresh();
-            const views = ['liveView','schedView','histView','cardView','accView','challengeView','statsView','secondHalfGoalView','botdView'];
-            const tabs = ['tabLive','tabSched','tabHist','tabCards','tabAcc','tabChallenge','tabStats','tab2hg','tabBotd'];
+            const views = ['liveView','schedView','histView','cardView','accView','challengeView','statsView','secondHalfGoalView','botdView','valueView'];
+            const tabs = ['tabLive','tabSched','tabHist','tabCards','tabAcc','tabChallenge','tabStats','tab2hg','tabBotd','tabValue'];
             views.forEach(v => document.getElementById(v).style.display = 'none');
             tabs.forEach(t => document.getElementById(t).classList.remove('active'));
             document.getElementById('filterSelect').style.display = 'none';
@@ -1789,6 +1817,9 @@
             } else if(tab === 'botd') {
                 document.getElementById('botdView').style.display = 'block';
                 document.getElementById('tabBotd').classList.add('active');
+            } else if(tab === 'value') {
+                document.getElementById('valueView').style.display = 'block';
+                document.getElementById('tabValue').classList.add('active');
             } else if(tab === 'stats') {
                 document.getElementById('statsView').style.display = 'block';
                 document.getElementById('tabStats').classList.add('active');
@@ -2919,6 +2950,45 @@
             { id: 96, name: 'Taça de Portugal', country: 'Portugal', flag: '🇵🇹' }
         ];
 
+        const VALUE_LEAGUES = [
+            ...BOTD_LEAGUES,
+            { id: 43, name: 'National League', country: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { id: 182, name: 'Championship', country: 'Scotland', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+            { id: 183, name: 'League One', country: 'Scotland', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+            { id: 62, name: 'Ligue 2', country: 'France', flag: '🇫🇷' },
+            { id: 80, name: '3. Liga', country: 'Germany', flag: '🇩🇪' },
+            { id: 89, name: 'Eerste Divisie', country: 'Netherlands', flag: '🇳🇱' },
+            { id: 95, name: 'Liga Portugal 2', country: 'Portugal', flag: '🇵🇹' },
+            { id: 145, name: 'Eerste Nationale', country: 'Belgium', flag: '🇧🇪' },
+            { id: 114, name: 'Superettan', country: 'Sweden', flag: '🇸🇪' },
+            { id: 104, name: '1. divisjon', country: 'Norway', flag: '🇳🇴' },
+            { id: 120, name: '1st Division', country: 'Denmark', flag: '🇩🇰' },
+            { id: 244, name: 'Veikkausliiga', country: 'Finland', flag: '🇫🇮' },
+            { id: 164, name: 'Urvalsdeild', country: 'Iceland', flag: '🇮🇸' },
+            { id: 107, name: 'I Liga', country: 'Poland', flag: '🇵🇱' },
+            { id: 283, name: 'Liga 1', country: 'Romania', flag: '🇷🇴' },
+            { id: 172, name: 'First League', country: 'Bulgaria', flag: '🇧🇬' },
+            { id: 210, name: 'HNL', country: 'Croatia', flag: '🇭🇷' },
+            { id: 345, name: 'Czech Liga', country: 'Czech Republic', flag: '🇨🇿' },
+            { id: 286, name: 'SuperLiga', country: 'Serbia', flag: '🇷🇸' },
+            { id: 271, name: 'OTP Bank Liga', country: 'Hungary', flag: '🇭🇺' },
+            { id: 332, name: 'Super Liga', country: 'Slovakia', flag: '🇸🇰' },
+            { id: 333, name: 'Premier League', country: 'Ukraine', flag: '🇺🇦' },
+            { id: 357, name: 'Premier Division', country: 'Ireland', flag: '🇮🇪' },
+            { id: 384, name: 'Premiership', country: 'N. Ireland', flag: '🇬🇧' },
+            { id: 71, name: 'Serie A', country: 'Brazil', flag: '🇧🇷' },
+            { id: 72, name: 'Serie B', country: 'Brazil', flag: '🇧🇷' },
+            { id: 128, name: 'Primera División', country: 'Argentina', flag: '🇦🇷' },
+            { id: 239, name: 'Primera A', country: 'Colombia', flag: '🇨🇴' },
+            { id: 265, name: 'Primera División', country: 'Chile', flag: '🇨🇱' },
+            { id: 281, name: 'Liga 1', country: 'Peru', flag: '🇵🇪' },
+            { id: 253, name: 'Major League Soccer', country: 'USA', flag: '🇺🇸' },
+            { id: 262, name: 'Liga MX', country: 'Mexico', flag: '🇲🇽' },
+            { id: 98, name: 'J1 League', country: 'Japan', flag: '🇯🇵' },
+            { id: 292, name: 'K League 1', country: 'South Korea', flag: '🇰🇷' },
+            { id: 188, name: 'A-League', country: 'Australia', flag: '🇦🇺' }
+        ];
+
         async function scanBetOfTheDay(btn) {
             btn.innerText = "🔍 ANALYZING FIXTURES...";
             btn.disabled = true;
@@ -3266,6 +3336,572 @@
                 area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error analyzing fixtures. Please try again.</div>";
             }
             btn.innerText = "🏆 FIND TODAY'S TOP 10";
+            btn.disabled = false;
+        }
+
+        async function scanValueBets(btn) {
+            const area = document.getElementById('valueContent');
+            const bankrollInput = document.getElementById('valueBankroll');
+            const bankroll = parseFloat(bankrollInput.value) || 100;
+
+            btn.innerText = "🔍 SCANNING FOR VALUE...";
+            btn.disabled = true;
+            area.innerHTML = `<div style='text-align:center; padding:30px; color:var(--cyan);'>Fetching fixtures and Bet365 odds...</div>`;
+
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const season = new Date().getMonth() >= 6 ? new Date().getFullYear() : new Date().getFullYear() - 1;
+
+                trackAPI(1);
+                const res = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}`, { headers: { "x-rapidapi-key": API_KEY } });
+                const data = await res.json();
+
+                if (!data.response || data.response.length === 0) {
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'>No fixtures found for today.</div>";
+                    btn.innerText = "🎯 FIND VALUE BETS";
+                    btn.disabled = false;
+                    return;
+                }
+
+                const botdLeagueIds = VALUE_LEAGUES.map(l => l.id);
+                const todayFixtures = data.response.filter(f => botdLeagueIds.includes(f.league.id) && ['NS', 'TBD'].includes(f.fixture.status.short));
+
+                if (todayFixtures.length === 0) {
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>🎯</div><p>No upcoming matches in covered leagues today.</p></div>";
+                    btn.innerText = "🎯 FIND VALUE BETS";
+                    btn.disabled = false;
+                    return;
+                }
+
+                let valueOddsMap = {};
+                try {
+                    trackAPI(1);
+                    const oddsRes = await fetch(`https://v3.football.api-sports.io/odds?date=${today}&bookmaker=8`, { headers: { "x-rapidapi-key": API_KEY } });
+                    const oddsData = await oddsRes.json();
+                    if (oddsData.response && oddsData.response.length > 0) {
+                        oddsData.response.forEach(entry => {
+                            const fid = entry.fixture?.id;
+                            if (!fid) return;
+                            const bookie = entry.bookmakers && entry.bookmakers[0];
+                            if (!bookie || !bookie.bets) return;
+                            valueOddsMap[fid] = {};
+                            bookie.bets.forEach(bet => {
+                                const name = (bet.name || '').toLowerCase();
+                                if (name.includes('match winner') || name === 'match winner') {
+                                    bet.values.forEach(v => {
+                                        if (v.value === 'Home') valueOddsMap[fid]['Home Win'] = parseFloat(v.odd);
+                                        if (v.value === 'Away') valueOddsMap[fid]['Away Win'] = parseFloat(v.odd);
+                                        if (v.value === 'Draw') valueOddsMap[fid]['Draw'] = parseFloat(v.odd);
+                                    });
+                                }
+                                if (name.includes('goals over/under') || name.includes('over/under')) {
+                                    bet.values.forEach(v => {
+                                        if (v.value === 'Over 1.5') valueOddsMap[fid]['Over 1.5 Goals'] = parseFloat(v.odd);
+                                        if (v.value === 'Over 2.5') valueOddsMap[fid]['Over 2.5 Goals'] = parseFloat(v.odd);
+                                        if (v.value === 'Under 2.5') valueOddsMap[fid]['Under 2.5 Goals'] = parseFloat(v.odd);
+                                    });
+                                }
+                                if (name.includes('both teams score') || name === 'both teams score') {
+                                    bet.values.forEach(v => {
+                                        if (v.value === 'Yes') valueOddsMap[fid]['BTTS'] = parseFloat(v.odd);
+                                        if (v.value === 'No') valueOddsMap[fid]['BTTS No'] = parseFloat(v.odd);
+                                    });
+                                }
+                            });
+                        });
+                    }
+                } catch(e) { console.warn("Value odds fetch failed:", e); }
+
+                const fixturesWithOdds = todayFixtures.filter(f => valueOddsMap[f.fixture.id] && Object.keys(valueOddsMap[f.fixture.id]).length > 0);
+
+                if (fixturesWithOdds.length === 0) {
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>🎯</div><p>No Bet365 odds available yet for today's matches.</p><p style='font-size:0.78rem; color:#555; margin-top:8px;'>Odds usually appear 24-48hrs before kick-off. Try again closer to match time.</p></div>";
+                    btn.innerText = "🎯 FIND VALUE BETS";
+                    btn.disabled = false;
+                    return;
+                }
+
+                area.innerHTML = `<div style='text-align:center; padding:20px; color:#58e6a8;'>Analysing ${fixturesWithOdds.length} matches with live Bet365 odds...</div>`;
+
+                const leagueFixtures = {};
+                fixturesWithOdds.forEach(f => {
+                    if (!leagueFixtures[f.league.id]) leagueFixtures[f.league.id] = [];
+                    leagueFixtures[f.league.id].push(f);
+                });
+
+                const allValuePicks = [];
+                const prevSnapshot = (() => { try { return JSON.parse(localStorage.getItem('oddsSnapshot') || '{}'); } catch(e) { return {}; } })();
+                const newSnapshot = {};
+
+                for (const league of VALUE_LEAGUES) {
+                    const fixtures = leagueFixtures[league.id];
+                    if (!fixtures || fixtures.length === 0) continue;
+
+                    let standingsData = null;
+                    try {
+                        trackAPI(1);
+                        const stRes = await fetch(`https://v3.football.api-sports.io/standings?league=${league.id}&season=${season}`, { headers: { "x-rapidapi-key": API_KEY } });
+                        const stData = await stRes.json();
+                        if (stData.response && stData.response[0]) standingsData = stData.response[0].league.standings[0];
+                    } catch(e) {}
+
+                    for (const fix of fixtures) {
+                        const hId = fix.teams.home.id;
+                        const aId = fix.teams.away.id;
+                        const hName = fix.teams.home.name;
+                        const aName = fix.teams.away.name;
+
+                        let homeForm = null, awayForm = null, h2h = null;
+                        try {
+                            [homeForm, awayForm] = await Promise.all([fetchTeamForm(hId), fetchTeamForm(aId)]);
+                        } catch(e) {}
+                        try {
+                            trackAPI(1);
+                            const h2hRes = await fetch(`https://v3.football.api-sports.io/fixtures/headtohead?h2h=${hId}-${aId}&last=10`, { headers: { "x-rapidapi-key": API_KEY } });
+                            const h2hData = await h2hRes.json();
+                            if (h2hData.response && h2hData.response.length >= 3) h2h = analyzeH2H(h2hData.response);
+                        } catch(e) {}
+
+                        let homePos = null, awayPos = null, totalTeams = 20;
+                        if (standingsData) {
+                            const hSt = standingsData.find(s => s.team.id === hId);
+                            const aSt = standingsData.find(s => s.team.id === aId);
+                            if (hSt) homePos = hSt.rank;
+                            if (aSt) awayPos = aSt.rank;
+                            totalTeams = standingsData.length;
+                        }
+
+                        const homeDef = standingsData ? analyzeDefensiveStrength(standingsData, hId) : null;
+                        const awayDef = standingsData ? analyzeDefensiveStrength(standingsData, aId) : null;
+                        const leagueProfile = getLeagueProfile(league.id);
+                        const fixtureOdds = valueOddsMap[fix.fixture.id] || {};
+
+                        const homeAvgScored = homeForm ? homeForm.avgScored : 1.3;
+                        const awayAvgScored = awayForm ? awayForm.avgScored : 1.1;
+                        const homeAvgConceded = homeForm ? homeForm.avgConceded : 1.1;
+                        const awayAvgConceded = awayForm ? awayForm.avgConceded : 1.3;
+                        const combinedAvg = homeAvgScored + awayAvgScored;
+                        const homeHomeAvg = homeForm && homeForm.homeAvgScored ? homeForm.homeAvgScored : homeAvgScored;
+                        const awayAwayAvg = awayForm && awayForm.awayAvgScored ? awayForm.awayAvgScored : awayAvgScored;
+
+                        let o15Prob = 50;
+                        if (combinedAvg >= 3.0) o15Prob += 15; else if (combinedAvg >= 2.5) o15Prob += 10; else if (combinedAvg >= 2.0) o15Prob += 5;
+                        if (homeForm && homeForm.overRate > 0.6) o15Prob += 8;
+                        if (awayForm && awayForm.overRate > 0.6) o15Prob += 8;
+                        if (h2h && h2h.avgGoals >= 3.0) o15Prob += 8; else if (h2h && h2h.avgGoals >= 2.5) o15Prob += 5;
+                        if (awayDef && awayDef.rating === 'leaky') o15Prob += 6;
+                        if (homeDef && homeDef.rating === 'leaky') o15Prob += 6;
+                        if (awayDef && awayDef.rating === 'fortress') o15Prob -= 8;
+                        if (homeDef && homeDef.rating === 'fortress') o15Prob -= 8;
+                        o15Prob = Math.min(95, Math.max(20, o15Prob));
+
+                        let u25Prob = 65;
+                        if (combinedAvg >= 3.5) u25Prob -= 20; else if (combinedAvg >= 3.0) u25Prob -= 14; else if (combinedAvg >= 2.5) u25Prob -= 8;
+                        if (homeForm && homeForm.overRate > 0.6) u25Prob -= 8;
+                        if (awayForm && awayForm.overRate > 0.6) u25Prob -= 8;
+                        if (h2h && h2h.avgGoals >= 3.5) u25Prob -= 10; else if (h2h && h2h.avgGoals >= 2.5) u25Prob -= 5;
+                        if (awayDef && awayDef.rating === 'leaky') u25Prob -= 8;
+                        if (homeDef && homeDef.rating === 'leaky') u25Prob -= 8;
+                        if (awayDef && awayDef.rating === 'fortress') u25Prob += 10;
+                        if (homeDef && homeDef.rating === 'fortress') u25Prob += 10;
+                        u25Prob = Math.min(90, Math.max(15, u25Prob));
+
+                        let o25Prob = 35;
+                        if (combinedAvg >= 3.5) o25Prob += 18; else if (combinedAvg >= 3.0) o25Prob += 12; else if (combinedAvg >= 2.5) o25Prob += 6;
+                        if (homeForm && homeForm.overRate > 0.6) o25Prob += 8;
+                        if (awayForm && awayForm.overRate > 0.6) o25Prob += 8;
+                        if (h2h && h2h.avgGoals >= 3.5) o25Prob += 10; else if (h2h && h2h.avgGoals >= 2.5) o25Prob += 5;
+                        if (awayDef && awayDef.rating === 'leaky') o25Prob += 8;
+                        if (homeDef && homeDef.rating === 'leaky') o25Prob += 8;
+                        if (awayDef && awayDef.rating === 'fortress') o25Prob -= 10;
+                        if (homeDef && homeDef.rating === 'fortress') o25Prob -= 10;
+                        o25Prob = Math.min(92, Math.max(15, o25Prob));
+
+                        let bttsPr = 35;
+                        if (homeForm && homeForm.bttsRate > 0.5) bttsPr += 10;
+                        if (awayForm && awayForm.bttsRate > 0.5) bttsPr += 10;
+                        if (homeAvgScored >= 1.3 && awayAvgScored >= 1.0) bttsPr += 8;
+                        if (homeAvgConceded >= 1.2 && awayAvgConceded >= 1.2) bttsPr += 8;
+                        if (h2h && h2h.bttsRate >= 0.6) bttsPr += 8;
+                        if (homeDef && homeDef.rating === 'fortress') bttsPr -= 12;
+                        if (awayDef && awayDef.rating === 'fortress') bttsPr -= 12;
+                        if (homeForm && homeForm.cleanSheetRate > 0.5) bttsPr -= 8;
+                        if (awayForm && awayForm.cleanSheetRate > 0.5) bttsPr -= 8;
+                        bttsPr = Math.min(90, Math.max(15, bttsPr));
+
+                        let bttsNoPr = 100 - bttsPr;
+                        bttsNoPr = Math.min(85, Math.max(15, bttsNoPr));
+
+                        let homeWinProb = 40;
+                        if (homePos && awayPos) {
+                            const gap = awayPos - homePos;
+                            if (gap >= 8) homeWinProb += 15; else if (gap >= 4) homeWinProb += 8;
+                            else if (gap <= -8) homeWinProb -= 15; else if (gap <= -4) homeWinProb -= 8;
+                        }
+                        if (homeHomeAvg >= 2.0) homeWinProb += 8;
+                        if (homeForm && homeForm.avgScored > homeForm.avgConceded + 0.5) homeWinProb += 6;
+                        if (awayForm && awayForm.avgConceded >= 1.8) homeWinProb += 5;
+                        if (h2h && h2h.homeWinRate >= 0.5) homeWinProb += 5;
+                        if (awayDef && awayDef.rating === 'leaky') homeWinProb += 5;
+                        if (homeDef && homeDef.rating === 'fortress') homeWinProb += 5;
+                        homeWinProb = Math.min(90, Math.max(15, homeWinProb));
+
+                        let awayWinProb = 30;
+                        if (homePos && awayPos) {
+                            const gap = homePos - awayPos;
+                            if (gap >= 8) awayWinProb += 15; else if (gap >= 4) awayWinProb += 8;
+                            else if (gap <= -8) awayWinProb -= 10; else if (gap <= -4) awayWinProb -= 5;
+                        }
+                        if (awayAwayAvg >= 1.5) awayWinProb += 8;
+                        if (awayForm && awayForm.avgScored > awayForm.avgConceded + 0.5) awayWinProb += 6;
+                        if (homeForm && homeForm.avgConceded >= 1.8) awayWinProb += 5;
+                        if (h2h && h2h.awayWinRate >= 0.4) awayWinProb += 5;
+                        if (homeDef && homeDef.rating === 'leaky') awayWinProb += 5;
+                        awayWinProb = Math.min(85, Math.max(10, awayWinProb));
+
+                        let drawProb = Math.max(10, 100 - homeWinProb - awayWinProb);
+                        drawProb = Math.min(40, drawProb);
+
+                        const marketProbPairs = [
+                            { market: 'Over 1.5 Goals', prob: o15Prob },
+                            { market: 'Over 2.5 Goals', prob: o25Prob },
+                            { market: 'Under 2.5 Goals', prob: u25Prob },
+                            { market: 'BTTS', prob: bttsPr },
+                            { market: 'BTTS No', prob: bttsNoPr },
+                            { market: 'Home Win', prob: homeWinProb },
+                            { market: 'Away Win', prob: awayWinProb },
+                            { market: 'Draw', prob: drawProb }
+                        ];
+
+                        const koTime = new Date(fix.fixture.date);
+                        const kickoff = koTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                        for (const { market, prob } of marketProbPairs) {
+                            const odds = fixtureOdds[market];
+                            if (!odds || odds < 1.10) continue;
+                            const snapKey = `${fix.fixture.id}_${market}`;
+                            newSnapshot[snapKey] = { odds, ts: Date.now(), home: hName, away: aName, league: league.name, kickoff: new Date(fix.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+                            const impliedProb = (1 / odds) * 100;
+                            const edgePct = prob - impliedProb;
+                            const ev = ((prob / 100) * odds - 1) * 100;
+                            if (ev < 3) continue;
+
+                            const fullKelly = ev / ((odds - 1) * 100);
+                            const quarterKelly = fullKelly / 4;
+                            const stake = Math.min(bankroll * 0.15, bankroll * quarterKelly);
+
+                            let movement = null;
+                            if (prevSnapshot[snapKey]) {
+                                const prevOdds = prevSnapshot[snapKey].odds;
+                                const change = odds - prevOdds;
+                                const changePct = (change / prevOdds) * 100;
+                                if (Math.abs(changePct) >= 2) movement = { prev: prevOdds, change: Math.round(change * 100) / 100, changePct: Math.round(changePct * 10) / 10 };
+                            }
+
+                            allValuePicks.push({
+                                fixtureId: fix.fixture.id,
+                                home: hName, away: aName,
+                                homePos, awayPos, totalTeams,
+                                league, market,
+                                modelProb: Math.round(prob),
+                                impliedProb: Math.round(impliedProb * 10) / 10,
+                                edge: Math.round(edgePct * 10) / 10,
+                                ev: Math.round(ev * 10) / 10,
+                                odds,
+                                stake: Math.round(stake * 100) / 100,
+                                kickoff,
+                                movement
+                            });
+                        }
+
+                        await new Promise(r => setTimeout(r, 80));
+                    }
+                }
+
+                try { localStorage.setItem('oddsSnapshot', JSON.stringify(newSnapshot)); } catch(e) {}
+
+                allValuePicks.sort((a, b) => b.ev - a.ev);
+                const seen = new Set();
+                const valuePicks = [];
+                for (const pick of allValuePicks) {
+                    const key = pick.fixtureId + '_' + pick.market;
+                    if (seen.has(key)) continue;
+                    seen.add(key);
+                    valuePicks.push(pick);
+                }
+
+                if (valuePicks.length === 0) {
+                    area.innerHTML = `<div style='text-align:center; padding:40px; color:#888;'>
+                        <div style='font-size:2rem; margin-bottom:10px;'>🎯</div>
+                        <p>No value bets found today.</p>
+                        <p style='font-size:0.78rem; color:#555; margin-top:8px;'>The bookmaker's prices are accurate today — no edge to exploit. Check again later as markets shift closer to kick-off.</p>
+                    </div>`;
+                    btn.innerText = "🎯 FIND VALUE BETS";
+                    btn.disabled = false;
+                    return;
+                }
+
+                let html = `<div style="text-align:center; padding:6px; margin-bottom:10px; color:#888; font-size:0.75rem;">🎯 ${valuePicks.length} value bet${valuePicks.length > 1 ? 's' : ''} found from ${fixturesWithOdds.length} matches · Sorted by Expected Value</div>`;
+
+                valuePicks.forEach((pick, idx) => {
+                    const evColor = pick.ev >= 15 ? '#58e6a8' : (pick.ev >= 8 ? '#58a6ff' : '#d29922');
+                    const evLabel = pick.ev >= 15 ? 'STRONG VALUE' : (pick.ev >= 8 ? 'GOOD VALUE' : 'VALUE');
+                    const evBarWidth = Math.min(100, pick.ev * 3);
+
+                    const posText = (pick.homePos && pick.awayPos) ? `${pick.homePos}${getOrdinal(pick.homePos)} vs ${pick.awayPos}${getOrdinal(pick.awayPos)}` : '';
+
+                    html += `
+                        <div class="match-card" style="border-left:4px solid ${evColor}; ${idx === 0 ? 'border:2px solid #58e6a8; box-shadow:0 0 15px rgba(88,230,168,0.12);' : ''}">
+                            ${idx === 0 ? '<div style="text-align:center; font-size:0.7rem; font-weight:bold; color:#58e6a8; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">⭐ HIGHEST VALUE BET TODAY ⭐</div>' : ''}
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                <div style="font-size:0.7rem; color:#888;">${pick.league.flag} ${pick.league.name} · ${pick.league.country}</div>
+                                <div style="font-size:0.7rem; color:#888;">KO ${pick.kickoff}</div>
+                            </div>
+                            <div style="font-weight:bold; font-size:0.95rem; margin-bottom:6px;">${pick.home} vs ${pick.away}</div>
+
+                            ${pick.movement ? (() => {
+                                const shortened = pick.movement.change < 0;
+                                const mc = shortened ? '#58e6a8' : '#f0883e';
+                                const icon = shortened ? '📉' : '📈';
+                                const msg = shortened ? `Odds shortened ${pick.movement.changePct}% (${pick.movement.prev.toFixed(2)} → ${pick.odds.toFixed(2)}) — sharp money signal` : `Odds drifted +${pick.movement.changePct}% (${pick.movement.prev.toFixed(2)} → ${pick.odds.toFixed(2)}) — market fading this`;
+                                return `<div style="background:rgba(${shortened?'88,230,168':'240,136,62'},0.1); border:1px solid rgba(${shortened?'88,230,168':'240,136,62'},0.3); border-radius:6px; padding:5px 8px; margin-bottom:8px; font-size:0.68rem; color:${mc};">${icon} ${msg}</div>`;
+                            })() : ''}
+
+                            <div style="display:flex; gap:8px; margin-bottom:10px;">
+                                <div style="flex:2; background:rgba(88,230,168,0.06); border:1px solid rgba(88,230,168,0.2); border-radius:8px; padding:10px; text-align:center;">
+                                    <div style="font-size:0.6rem; color:#888; margin-bottom:3px;">BET</div>
+                                    <div style="font-size:0.95rem; font-weight:bold; color:#58e6a8;">${pick.market}</div>
+                                </div>
+                                <div style="flex:1; background:rgba(0,112,60,0.1); border:1px solid rgba(0,112,60,0.3); border-radius:8px; padding:10px; text-align:center;">
+                                    <div style="font-size:0.6rem; color:#888; margin-bottom:3px;">BET365</div>
+                                    <div style="font-size:1rem; font-weight:bold; color:#00703c;">${pick.odds.toFixed(2)}</div>
+                                </div>
+                            </div>
+
+                            <div style="background:rgba(0,0,0,0.3); border-radius:10px; padding:10px; margin-bottom:10px;">
+                                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:10px;">
+                                    <div style="text-align:center;">
+                                        <div style="font-size:0.6rem; color:#888; margin-bottom:2px;">OUR MODEL</div>
+                                        <div style="font-size:1.1rem; font-weight:bold; color:white;">${pick.modelProb}%</div>
+                                    </div>
+                                    <div style="text-align:center;">
+                                        <div style="font-size:0.6rem; color:#888; margin-bottom:2px;">BOOKIE SAYS</div>
+                                        <div style="font-size:1.1rem; font-weight:bold; color:#da3633;">${pick.impliedProb}%</div>
+                                    </div>
+                                    <div style="text-align:center;">
+                                        <div style="font-size:0.6rem; color:#888; margin-bottom:2px;">EDGE</div>
+                                        <div style="font-size:1.1rem; font-weight:bold; color:#58e6a8;">+${pick.edge}%</div>
+                                    </div>
+                                </div>
+                                <div style="margin-bottom:6px;">
+                                    <div style="display:flex; justify-content:space-between; font-size:0.62rem; color:#888; margin-bottom:3px;">
+                                        <span>${evLabel}</span>
+                                        <span>EV: +${pick.ev}%</span>
+                                    </div>
+                                    <div style="background:#21262d; border-radius:4px; height:6px; overflow:hidden;">
+                                        <div style="width:${evBarWidth}%; height:100%; background:${evColor}; border-radius:4px; transition:width 0.3s;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="background:rgba(88,230,168,0.06); border:1px solid rgba(88,230,168,0.15); border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <div>
+                                    <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">¼ KELLY STAKE</div>
+                                    <div style="font-size:1.3rem; font-weight:bold; color:#58e6a8;">£${pick.stake.toFixed(2)}</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">POTENTIAL RETURN</div>
+                                    <div style="font-size:1rem; font-weight:bold; color:white;">£${(pick.stake * pick.odds).toFixed(2)}</div>
+                                    <div style="font-size:0.62rem; color:#555;">(£${(pick.stake * pick.odds - pick.stake).toFixed(2)} profit)</div>
+                                </div>
+                            </div>
+
+                            ${posText ? `<div style="font-size:0.65rem; color:#555; margin-bottom:8px;">📍 League Position: ${posText}</div>` : ''}
+
+                            <div style="font-size:0.62rem; color:#555; border-top:1px solid #21262d; padding-top:6px;">
+                                EV = (${pick.modelProb}% × ${pick.odds.toFixed(2)}) − 1 = <span style="color:${evColor}">+${pick.ev}%</span> · ¼ Kelly = ${(pick.stake/bankroll*100).toFixed(1)}% of bankroll
+                            </div>
+                        </div>
+                    `;
+                });
+
+                area.innerHTML = html;
+
+            } catch(e) {
+                console.error("Value Bets Error:", e);
+                area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error scanning for value bets. Please try again.</div>";
+            }
+            btn.innerText = "🎯 FIND VALUE BETS";
+            btn.disabled = false;
+        }
+
+        async function scanOddsMovement(btn) {
+            const area = document.getElementById('valueContent');
+            btn.innerText = "📡 SCANNING ODDS...";
+            btn.disabled = true;
+            area.innerHTML = `<div style='text-align:center; padding:30px; color:#58a6ff;'>Fetching latest Bet365 odds and checking for movements...</div>`;
+
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const prevSnapshot = (() => { try { return JSON.parse(localStorage.getItem('oddsSnapshot') || '{}'); } catch(e) { return {}; } })();
+
+                trackAPI(1);
+                const res = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}`, { headers: { "x-rapidapi-key": API_KEY } });
+                const data = await res.json();
+
+                if (!data.response || data.response.length === 0) {
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'>No fixtures found.</div>";
+                    btn.innerText = "📡 ODDS SIGNALS";
+                    btn.disabled = false;
+                    return;
+                }
+
+                const allLeagueIds = VALUE_LEAGUES.map(l => l.id);
+                const fixtures = data.response.filter(f => allLeagueIds.includes(f.league.id) && ['NS', 'TBD'].includes(f.fixture.status.short));
+                const leagueMap = {};
+                VALUE_LEAGUES.forEach(l => { leagueMap[l.id] = l; });
+
+                trackAPI(1);
+                const oddsRes = await fetch(`https://v3.football.api-sports.io/odds?date=${today}&bookmaker=8`, { headers: { "x-rapidapi-key": API_KEY } });
+                const oddsData = await oddsRes.json();
+
+                const currentOdds = {};
+                if (oddsData.response) {
+                    oddsData.response.forEach(entry => {
+                        const fid = entry.fixture?.id;
+                        if (!fid) return;
+                        const bookie = entry.bookmakers && entry.bookmakers[0];
+                        if (!bookie || !bookie.bets) return;
+                        currentOdds[fid] = {};
+                        bookie.bets.forEach(bet => {
+                            const name = (bet.name || '').toLowerCase();
+                            if (name.includes('match winner') || name === 'match winner') {
+                                bet.values.forEach(v => {
+                                    if (v.value === 'Home') currentOdds[fid]['Home Win'] = parseFloat(v.odd);
+                                    if (v.value === 'Away') currentOdds[fid]['Away Win'] = parseFloat(v.odd);
+                                    if (v.value === 'Draw') currentOdds[fid]['Draw'] = parseFloat(v.odd);
+                                });
+                            }
+                            if (name.includes('goals over/under') || name.includes('over/under')) {
+                                bet.values.forEach(v => {
+                                    if (v.value === 'Over 1.5') currentOdds[fid]['Over 1.5 Goals'] = parseFloat(v.odd);
+                                    if (v.value === 'Over 2.5') currentOdds[fid]['Over 2.5 Goals'] = parseFloat(v.odd);
+                                    if (v.value === 'Under 2.5') currentOdds[fid]['Under 2.5 Goals'] = parseFloat(v.odd);
+                                });
+                            }
+                            if (name.includes('both teams score') || name === 'both teams score') {
+                                bet.values.forEach(v => {
+                                    if (v.value === 'Yes') currentOdds[fid]['BTTS'] = parseFloat(v.odd);
+                                    if (v.value === 'No') currentOdds[fid]['BTTS No'] = parseFloat(v.odd);
+                                });
+                            }
+                        });
+                    });
+                }
+
+                const newSnapshot = {};
+                const signals = [];
+
+                for (const fix of fixtures) {
+                    const fid = fix.fixture.id;
+                    const fixOdds = currentOdds[fid];
+                    if (!fixOdds) continue;
+                    const league = leagueMap[fix.league.id];
+                    const kickoff = new Date(fix.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const home = fix.teams.home.name;
+                    const away = fix.teams.away.name;
+
+                    for (const [market, odds] of Object.entries(fixOdds)) {
+                        const snapKey = `${fid}_${market}`;
+                        newSnapshot[snapKey] = { odds, ts: Date.now(), home, away, league: league ? league.name : fix.league.name, kickoff };
+                        if (prevSnapshot[snapKey]) {
+                            const prevOdds = prevSnapshot[snapKey].odds;
+                            const change = odds - prevOdds;
+                            const changePct = (change / prevOdds) * 100;
+                            if (Math.abs(changePct) >= 3) {
+                                signals.push({ home, away, league: league || { name: fix.league.name, flag: '🌍', country: '' }, market, prevOdds, currOdds: odds, change: Math.round(change * 100) / 100, changePct: Math.round(changePct * 10) / 10, kickoff });
+                            }
+                        }
+                    }
+                }
+
+                try { localStorage.setItem('oddsSnapshot', JSON.stringify({ ...prevSnapshot, ...newSnapshot })); } catch(e) {}
+
+                const snapshotAge = (() => {
+                    const vals = Object.values(prevSnapshot);
+                    if (!vals.length) return null;
+                    const oldest = Math.min(...vals.map(v => v.ts || Date.now()));
+                    const mins = Math.round((Date.now() - oldest) / 60000);
+                    return mins;
+                })();
+
+                if (signals.length === 0) {
+                    const noSnap = Object.keys(prevSnapshot).length === 0;
+                    area.innerHTML = `<div style='text-align:center; padding:40px; color:#888;'>
+                        <div style='font-size:2rem; margin-bottom:10px;'>📡</div>
+                        ${noSnap
+                            ? `<p>Odds snapshot saved. Run <strong style='color:white;'>Value Bets</strong> scan first, then check signals later to detect movements.</p><p style='font-size:0.75rem; color:#555; margin-top:8px;'>Odds shift in the hours before kick-off — best to check again 1-2 hours later.</p>`
+                            : `<p>No significant movements detected${snapshotAge !== null ? ` in the last ${snapshotAge} minute${snapshotAge !== 1 ? 's' : ''}` : ''}.</p><p style='font-size:0.75rem; color:#555; margin-top:8px;'>Markets are stable. Check again closer to kick-off when sharp money typically moves lines.</p>`
+                        }
+                    </div>`;
+                    btn.innerText = "📡 ODDS SIGNALS";
+                    btn.disabled = false;
+                    return;
+                }
+
+                signals.sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct));
+
+                let html = `<div style="text-align:center; padding:6px; margin-bottom:10px; color:#888; font-size:0.75rem;">📡 ${signals.length} odds movement${signals.length > 1 ? 's' : ''} detected${snapshotAge !== null ? ` vs snapshot ${snapshotAge}min ago` : ''} · Sorted by magnitude</div>`;
+
+                signals.forEach((sig, idx) => {
+                    const shortened = sig.change < 0;
+                    const sigColor = shortened ? '#58e6a8' : '#f0883e';
+                    const sigBg = shortened ? '88,230,168' : '240,136,62';
+                    const icon = shortened ? '📉' : '📈';
+                    const label = shortened ? 'SHORTENING — Being Backed' : 'DRIFTING — Being Faded';
+                    const interpretation = shortened
+                        ? (Math.abs(sig.changePct) >= 10 ? '🔴 Significant steam move — sharp money backing this heavily' : '🟡 Odds coming in — increased backing activity')
+                        : (Math.abs(sig.changePct) >= 10 ? '🔴 Significant drift — market strongly fading this' : '🟡 Drifting out — reduced confidence from punters');
+
+                    html += `
+                        <div class="match-card" style="border-left:4px solid ${sigColor};">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                                <div style="font-size:0.7rem; color:#888;">${sig.league.flag || '🌍'} ${sig.league.name} · ${sig.league.country || ''}</div>
+                                <div style="font-size:0.7rem; color:#888;">KO ${sig.kickoff}</div>
+                            </div>
+                            <div style="font-weight:bold; font-size:0.9rem; margin-bottom:8px;">${sig.home} vs ${sig.away}</div>
+
+                            <div style="background:rgba(${sigBg},0.08); border:1px solid rgba(${sigBg},0.25); border-radius:8px; padding:10px; margin-bottom:8px;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                                    <div style="font-size:0.78rem; font-weight:bold; color:${sigColor};">${icon} ${sig.market}</div>
+                                    <div style="font-size:0.65rem; color:${sigColor}; font-weight:bold;">${shortened ? '' : '+'}${sig.changePct}%</div>
+                                </div>
+                                <div style="display:flex; gap:12px; align-items:center;">
+                                    <div style="text-align:center;">
+                                        <div style="font-size:0.6rem; color:#888; margin-bottom:1px;">WAS</div>
+                                        <div style="font-size:1rem; font-weight:bold; color:#888;">${sig.prevOdds.toFixed(2)}</div>
+                                    </div>
+                                    <div style="font-size:1.2rem; color:${sigColor};">${shortened ? '→' : '→'}</div>
+                                    <div style="text-align:center;">
+                                        <div style="font-size:0.6rem; color:#888; margin-bottom:1px;">NOW</div>
+                                        <div style="font-size:1.2rem; font-weight:bold; color:${sigColor};">${sig.currOdds.toFixed(2)}</div>
+                                    </div>
+                                    <div style="flex:1; text-align:right; font-size:0.65rem; font-weight:bold; color:${sigColor}; text-transform:uppercase; letter-spacing:0.5px;">${label}</div>
+                                </div>
+                            </div>
+
+                            <div style="font-size:0.7rem; color:#aaa;">${interpretation}</div>
+                        </div>
+                    `;
+                });
+
+                area.innerHTML = html;
+
+            } catch(e) {
+                console.error("Odds Signals Error:", e);
+                area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error fetching odds data. Please try again.</div>";
+            }
+            btn.innerText = "📡 ODDS SIGNALS";
             btn.disabled = false;
         }
 
