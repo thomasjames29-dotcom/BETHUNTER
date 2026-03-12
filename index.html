@@ -107,6 +107,17 @@
         .card-foul-badge.danger { background: rgba(218, 54, 51, 0.3); color: var(--red); border: 2px solid var(--red); animation: pulse-red 1.5s infinite; }
         @keyframes pulse-orange { 0% { box-shadow: 0 0 0 0 rgba(255, 140, 0, 0.4); } 70% { box-shadow: 0 0 0 6px rgba(255, 140, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 140, 0, 0); } }
         .card-scan-btn { width: 100%; background: #da3633; color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; font-size: 1rem; margin-bottom: 20px; cursor: pointer; box-shadow: 0 4px 15px rgba(218, 54, 51, 0.3); }
+        .market-chip { background: #21262d; border: 1px solid #30363d; color: #888; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .market-chip.active { background: rgba(88,230,168,0.15); border-color: #58e6a8; color: #58e6a8; font-weight: bold; }
+        .acca-bar { position: fixed; bottom: 70px; left: 0; right: 0; z-index: 200; background: linear-gradient(135deg,#1a3a5c,#0d1f33); border-top: 2px solid #388bfd; padding: 10px 15px; display: none; align-items: center; gap: 10px; box-shadow: 0 -4px 20px rgba(56,139,253,0.3); }
+        .acca-checkbox { width: 18px; height: 18px; accent-color: #58e6a8; cursor: pointer; flex-shrink: 0; }
+        .value-track-btn { background: rgba(88,230,168,0.1); border: 1px solid rgba(88,230,168,0.3); color: #58e6a8; padding: 5px 10px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .value-track-btn:hover { background: rgba(88,230,168,0.25); }
+        .value-track-btn.tracked { background: rgba(46,160,67,0.2); border-color: #2ea043; color: #2ea043; cursor: default; }
+        .settle-btn { padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: bold; cursor: pointer; border: 1px solid; transition: all 0.2s; }
+        .settle-btn-won { background: rgba(46,160,67,0.15); border-color: #2ea043; color: #2ea043; }
+        .settle-btn-lost { background: rgba(218,54,51,0.15); border-color: #da3633; color: #da3633; }
+        .settle-btn-void { background: rgba(139,148,158,0.15); border-color: #8b949e; color: #8b949e; }
         .ref-badge { font-size: 0.7rem; background: #333; padding: 2px 6px; border-radius: 4px; margin-top: 4px; display: inline-block; color: #bbb; }
         .ref-strict { color: #da3633; border: 1px solid #da3633; background: rgba(218, 54, 51, 0.1); }
         .ref-lenient { color: #2ea043; border: 1px solid #2ea043; background: rgba(46, 160, 67, 0.1); }
@@ -324,6 +335,14 @@
             <h2 style="color:var(--green); margin:0 0 4px 0;">⚽ 2nd Half Goal Predictor</h2>
             <p style="color:#888; font-size:0.78rem; margin:0;">Live matches in the 2nd half — AI confidence ratings for another goal</p>
         </div>
+        <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:0 0 12px 0;">
+            <div style="font-size:0.75rem; color:#aaa; margin-bottom:6px; font-weight:bold;">💰 YOUR BANKROLL (for Kelly stake sizing)</div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <span style="color:#888; font-size:1rem; font-weight:bold;">£</span>
+                <input id="hgBankroll" type="number" min="1" placeholder="e.g. 100" value="100" style="flex:1; background:#21262d; border:1px solid #30363d; border-radius:8px; padding:8px 12px; color:white; font-size:0.9rem; outline:none;"/>
+            </div>
+            <div style="font-size:0.65rem; color:#555; margin-top:5px;">Stake recommendations use ¼ Kelly · Est. odds: 1.50 next-goal market · Only shows edge when confidence &gt; 67%</div>
+        </div>
         <button class="card-scan-btn" style="background:var(--green); color:#000; margin-bottom:15px;" onclick="scan2ndHalfGoals(this)">⚽ SCAN 2ND HALF MATCHES</button>
         <div id="secondHalfGoalContent" style="padding-bottom:100px; text-align:center; color:#888;">Click above to scan all live 2nd half matches for goal probability.</div>
     </div>
@@ -342,7 +361,7 @@
             <h2 style="color:#58e6a8; margin:0 0 4px 0;">🎯 Value Bets</h2>
             <p style="color:#888; font-size:0.78rem; margin:0;">Bets where our model beats the bookmaker's implied odds</p>
         </div>
-        <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:0 0 12px 0;">
+        <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:0 0 10px 0;">
             <div style="font-size:0.75rem; color:#aaa; margin-bottom:6px; font-weight:bold;">💰 YOUR BANKROLL (for stake sizing)</div>
             <div style="display:flex; gap:8px; align-items:center;">
                 <span style="color:#888; font-size:1rem; font-weight:bold;">£</span>
@@ -350,11 +369,32 @@
             </div>
             <div style="font-size:0.65rem; color:#555; margin-top:5px;">Stake recommendations use ¼ Kelly Criterion — the professional standard for bankroll safety</div>
         </div>
+        <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:0 0 12px 0;">
+            <div style="font-size:0.75rem; color:#aaa; margin-bottom:8px; font-weight:bold;">📚 BOOKMAKERS TO CHECK <span style="color:#555; font-weight:normal;">(tap to toggle · best odds shown)</span></div>
+            <div id="bookmakerBtns" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
+        </div>
+        <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:0 0 10px 0;">
+            <div style="font-size:0.75rem; color:#aaa; margin-bottom:8px; font-weight:bold;">🔍 FILTERS</div>
+            <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+                <span style="font-size:0.7rem; color:#888; white-space:nowrap;">Min odds:</span>
+                <input id="valueMinOdds" type="number" min="1.01" max="20" step="0.05" value="1.20" onchange="applyValueFiltersAndRender()" style="width:65px; background:#21262d; border:1px solid #30363d; border-radius:6px; padding:4px 8px; color:white; font-size:0.82rem; outline:none;"/>
+                <span style="font-size:0.7rem; color:#888; white-space:nowrap;">Min EV%:</span>
+                <input id="valueMinEV" type="number" min="1" max="50" step="1" value="3" onchange="applyValueFiltersAndRender()" style="width:52px; background:#21262d; border:1px solid #30363d; border-radius:6px; padding:4px 8px; color:white; font-size:0.82rem; outline:none;"/>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:5px;">
+                <button class="market-chip active" data-filter="all"    onclick="setMarketFilter(this)">All</button>
+                <button class="market-chip"        data-filter="result" onclick="setMarketFilter(this)">1X2</button>
+                <button class="market-chip"        data-filter="goals"  onclick="setMarketFilter(this)">Goals</button>
+                <button class="market-chip"        data-filter="btts"   onclick="setMarketFilter(this)">BTTS</button>
+                <button class="market-chip"        data-filter="combo"  onclick="setMarketFilter(this)">Result+BTTS</button>
+                <button class="market-chip"        data-filter="dc"     onclick="setMarketFilter(this)">Double Chance</button>
+            </div>
+        </div>
         <div style="display:flex; gap:8px; margin-bottom:15px;">
             <button class="card-scan-btn" style="flex:1; background:linear-gradient(135deg,#1a7f4e,#145c38); color:white; margin-bottom:0; border:1px solid #2ea043;" onclick="scanValueBets(this)">🎯 FIND VALUE BETS</button>
             <button class="card-scan-btn" style="flex:1; background:linear-gradient(135deg,#1a4f7f,#123a5c); color:white; margin-bottom:0; border:1px solid #388bfd;" onclick="scanOddsMovement(this)">📡 ODDS SIGNALS</button>
         </div>
-        <div id="valueContent" style="padding-bottom:100px; text-align:center; color:#888;">
+        <div id="valueContent" style="padding-bottom:120px; text-align:center; color:#888;">
             <div style="padding:40px 20px;">
                 <div style="font-size:3rem; margin-bottom:10px;">🎯</div>
                 <p style="margin-bottom:8px;">Value Bets finds where our model gives a <strong style="color:white;">higher probability</strong> than Bet365's odds imply.</p>
@@ -601,8 +641,331 @@
             });
         }
 
-        const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0"; 
-        
+        const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0";
+
+        // ── Value Bets global state ──────────────────────────────────────────
+        window._lastValueScanResults = null;
+        window._valueMarketFilter = 'all';
+        window._accaSelections = {};
+
+        // ── Tracked Value Bets (localStorage) ───────────────────────────────
+        function getTrackedValueBets() {
+            try { return JSON.parse(localStorage.getItem('trackedValueBets') || '[]'); } catch(e) { return []; }
+        }
+        function saveTrackedValueBets(arr) {
+            try { localStorage.setItem('trackedValueBets', JSON.stringify(arr)); } catch(e) {}
+        }
+        function trackValueBet(pick, bankroll) {
+            const bets = getTrackedValueBets();
+            const id = `${pick.fixtureId}_${pick.market}`;
+            if (bets.find(b => b.id === id)) return false;
+            bets.unshift({ id, fixtureId: pick.fixtureId, home: pick.home, away: pick.away, league: pick.league ? pick.league.name : '', market: pick.market, odds: pick.odds, bookie: pick.bookie, modelProb: pick.modelProb, ev: pick.ev, stake: pick.stake, bankroll: bankroll || 100, status: 'pending', trackedAt: Date.now() });
+            saveTrackedValueBets(bets);
+            return true;
+        }
+        function settleTrackedValueBet(id, result) {
+            const bets = getTrackedValueBets();
+            const bet = bets.find(b => b.id === id);
+            if (!bet) return;
+            bet.status = result;
+            bet.settledAt = Date.now();
+            if (result === 'won') bet.pnl = parseFloat((bet.stake * bet.odds - bet.stake).toFixed(2));
+            else if (result === 'lost') bet.pnl = -bet.stake;
+            else bet.pnl = 0;
+            saveTrackedValueBets(bets);
+        }
+        function isTrackedValueBet(fixtureId, market) {
+            const id = `${fixtureId}_${market}`;
+            return getTrackedValueBets().some(b => b.id === id);
+        }
+
+        // ── Market filter chips ──────────────────────────────────────────────
+        function setMarketFilter(btn) {
+            document.querySelectorAll('.market-chip').forEach(c => c.classList.remove('active'));
+            btn.classList.add('active');
+            window._valueMarketFilter = btn.dataset.filter;
+            applyValueFiltersAndRender();
+        }
+        function marketMatchesFilter(market, filter) {
+            if (filter === 'all') return true;
+            const m = market.toLowerCase();
+            if (filter === 'result')  return (m === 'home win' || m === 'away win' || m === 'draw');
+            if (filter === 'goals')   return m.includes('goal') || m.includes('over') || m.includes('under');
+            if (filter === 'btts')    return (m === 'btts' || m === 'btts no');
+            if (filter === 'combo')   return m.includes('& btts');
+            if (filter === 'dc')      return m.includes('home or draw') || m.includes('draw or away') || m.includes('home or away');
+            return true;
+        }
+        function applyValueFiltersAndRender() {
+            if (!window._lastValueScanResults) return;
+            const { picks, bankroll } = window._lastValueScanResults;
+            const minOdds = parseFloat(document.getElementById('valueMinOdds')?.value) || 1.20;
+            const minEV   = parseFloat(document.getElementById('valueMinEV')?.value)   || 3;
+            const filter  = window._valueMarketFilter || 'all';
+            const filtered = picks.filter(p => p.odds >= minOdds && p.ev >= minEV && marketMatchesFilter(p.market, filter));
+            renderValuePicksToDOM(filtered, bankroll);
+        }
+
+        // ── Acca builder ─────────────────────────────────────────────────────
+        function toggleAccaPick(fixtureId, market, odds, home, away, bookieName) {
+            const key = `${fixtureId}_${market}`;
+            if (window._accaSelections[key]) {
+                delete window._accaSelections[key];
+            } else {
+                window._accaSelections[key] = { fixtureId, market, odds, home, away, bookie: bookieName };
+            }
+            updateAccaBar();
+        }
+        function updateAccaBar() {
+            const bar = document.getElementById('accaBar');
+            const info = document.getElementById('accaBarInfo');
+            const picks = Object.values(window._accaSelections);
+            if (picks.length === 0) { bar.style.display = 'none'; return; }
+            bar.style.display = 'flex';
+            const combinedOdds = picks.reduce((acc, p) => acc * p.odds, 1);
+            info.textContent = `${picks.length} pick${picks.length > 1 ? 's' : ''} selected · Combined odds: ${combinedOdds.toFixed(2)}`;
+        }
+        function clearAccaSelections() {
+            window._accaSelections = {};
+            updateAccaBar();
+            document.querySelectorAll('.acca-checkbox').forEach(cb => { cb.checked = false; });
+        }
+        function buildAccaPanel() {
+            const picks = Object.values(window._accaSelections);
+            if (!picks.length) return;
+            const modal = document.getElementById('accaModal');
+            const content = document.getElementById('accaModalContent');
+            const combinedOdds = picks.reduce((acc, p) => acc * p.odds, 1);
+            const bankroll = parseFloat(document.getElementById('valueBankroll')?.value) || 100;
+            const stake = Math.min(bankroll * 0.05, 20);
+            const ret = stake * combinedOdds;
+            let rows = picks.map(p => `
+                <div style="padding:8px 0; border-bottom:1px solid #21262d; font-size:0.82rem;">
+                    <div style="color:#aaa; font-size:0.7rem; margin-bottom:2px;">${p.home} vs ${p.away}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="color:#58e6a8; font-weight:bold;">${p.market}</span>
+                        <span style="color:white; font-weight:bold;">${p.odds.toFixed(2)} <span style="color:#555; font-size:0.65rem;">(${p.bookie||''})</span></span>
+                    </div>
+                </div>`).join('');
+            content.innerHTML = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                    <div style="font-size:1rem; font-weight:bold; color:#388bfd;">🎰 Your Accumulator</div>
+                    <button onclick="document.getElementById('accaModal').style.display='none'" style="background:none; border:none; color:#888; font-size:1.2rem; cursor:pointer;">✕</button>
+                </div>
+                ${rows}
+                <div style="margin-top:14px; background:rgba(56,139,253,0.1); border:1px solid rgba(56,139,253,0.3); border-radius:10px; padding:12px;">
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; text-align:center;">
+                        <div><div style="font-size:0.6rem; color:#888; margin-bottom:2px;">LEGS</div><div style="font-size:1.2rem; font-weight:bold; color:#388bfd;">${picks.length}</div></div>
+                        <div><div style="font-size:0.6rem; color:#888; margin-bottom:2px;">COMBINED ODDS</div><div style="font-size:1.2rem; font-weight:bold; color:#58e6a8;">${combinedOdds.toFixed(2)}</div></div>
+                        <div><div style="font-size:0.6rem; color:#888; margin-bottom:2px;">SUGGESTED STAKE</div><div style="font-size:1.1rem; font-weight:bold; color:white;">£${stake.toFixed(2)}</div></div>
+                    </div>
+                    <div style="margin-top:10px; text-align:center; border-top:1px solid rgba(56,139,253,0.2); padding-top:10px;">
+                        <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">POTENTIAL RETURN</div>
+                        <div style="font-size:1.5rem; font-weight:bold; color:#58e6a8;">£${ret.toFixed(2)}</div>
+                        <div style="font-size:0.65rem; color:#555;">(£${(ret - stake).toFixed(2)} profit)</div>
+                    </div>
+                </div>
+                <div style="font-size:0.62rem; color:#555; margin-top:10px; text-align:center;">Acca stake = 5% of bankroll (conservative for multi-leg bets)</div>`;
+            modal.style.display = 'block';
+        }
+
+        // ── Render value picks to the DOM ─────────────────────────────────────
+        function renderValuePicksToDOM(picks, bankroll) {
+            const area = document.getElementById('valueContent');
+            if (!area) return;
+            if (picks.length === 0) {
+                area.innerHTML = `<div style='text-align:center; padding:30px; color:#888;'><div style='font-size:2rem; margin-bottom:8px;'>🔍</div><p>No picks match the current filters.</p><p style='font-size:0.78rem; color:#555; margin-top:6px;'>Try relaxing the minimum odds or EV, or change the market filter.</p></div>`;
+                return;
+            }
+            let html = `<div style="text-align:center; padding:6px; margin-bottom:10px; color:#888; font-size:0.75rem;">🎯 ${picks.length} pick${picks.length !== 1 ? 's' : ''} · Sorted by EV · Tap checkbox to add to acca</div>`;
+            picks.forEach((pick, idx) => {
+                const evColor = pick.ev >= 15 ? '#58e6a8' : (pick.ev >= 8 ? '#58a6ff' : '#d29922');
+                const evLabel = pick.ev >= 15 ? 'STRONG VALUE' : (pick.ev >= 8 ? 'GOOD VALUE' : 'VALUE');
+                const evBarWidth = Math.min(100, pick.ev * 3);
+                const posText = (pick.homePos && pick.awayPos) ? `${pick.homePos}${getOrdinal(pick.homePos)} vs ${pick.awayPos}${getOrdinal(pick.awayPos)}` : '';
+                const accaKey = `${pick.fixtureId}_${pick.market}`;
+                const inAcca = !!window._accaSelections[accaKey];
+                const isTracked = isTrackedValueBet(pick.fixtureId, pick.market);
+                const bkShort = (SUPPORTED_BOOKMAKERS.find(b => b.name === pick.bookie) || { short: (pick.bookie||'').toUpperCase().slice(0,8) }).short;
+                const bkColor = (SUPPORTED_BOOKMAKERS.find(b => b.name === pick.bookie) || { color: '#58a6ff' }).color;
+
+                html += `
+                    <div class="match-card" style="border-left:4px solid ${evColor}; ${idx === 0 ? 'border:2px solid #58e6a8; box-shadow:0 0 15px rgba(88,230,168,0.12);' : ''}">
+                        ${idx === 0 ? '<div style="text-align:center; font-size:0.7rem; font-weight:bold; color:#58e6a8; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">⭐ HIGHEST VALUE BET TODAY ⭐</div>' : ''}
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                            <div style="font-size:0.7rem; color:#888;">${pick.league.flag||''} ${pick.league.name} · ${pick.league.country||''}</div>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <div style="font-size:0.7rem; color:#888;">KO ${pick.kickoff}</div>
+                                <input type="checkbox" class="acca-checkbox" title="Add to acca" ${inAcca ? 'checked' : ''} onchange="toggleAccaPick(${pick.fixtureId}, '${pick.market.replace(/'/g,"\\'")}', ${pick.odds}, '${pick.home.replace(/'/g,"\\'")}', '${pick.away.replace(/'/g,"\\'")}', '${(pick.bookie||'').replace(/'/g,"\\'")}')"/>
+                            </div>
+                        </div>
+                        <div style="font-weight:bold; font-size:0.95rem; margin-bottom:6px;">${pick.home} vs ${pick.away}</div>
+
+                        ${pick.movement ? (() => {
+                            const shortened = pick.movement.change < 0;
+                            const mc = shortened ? '#58e6a8' : '#f0883e';
+                            const icon = shortened ? '📉' : '📈';
+                            const msg = shortened ? `Odds shortened ${pick.movement.changePct}% (${pick.movement.prev.toFixed(2)} → ${pick.odds.toFixed(2)}) — sharp money signal` : `Odds drifted +${pick.movement.changePct}% (${pick.movement.prev.toFixed(2)} → ${pick.odds.toFixed(2)}) — market fading this`;
+                            return `<div style="background:rgba(${shortened?'88,230,168':'240,136,62'},0.1); border:1px solid rgba(${shortened?'88,230,168':'240,136,62'},0.3); border-radius:6px; padding:5px 8px; margin-bottom:8px; font-size:0.68rem; color:${mc};">${icon} ${msg}</div>`;
+                        })() : ''}
+
+                        <div style="display:flex; gap:8px; margin-bottom:10px;">
+                            <div style="flex:2; background:rgba(88,230,168,0.06); border:1px solid rgba(88,230,168,0.2); border-radius:8px; padding:10px; text-align:center;">
+                                <div style="font-size:0.6rem; color:#888; margin-bottom:3px;">BET</div>
+                                <div style="font-size:0.95rem; font-weight:bold; color:#58e6a8;">${pick.market}</div>
+                            </div>
+                            <div style="flex:1; background:rgba(0,112,60,0.08); border:1px solid rgba(0,112,60,0.25); border-radius:8px; padding:10px; text-align:center;">
+                                <div style="font-size:0.55rem; color:#888; margin-bottom:2px; text-transform:uppercase; letter-spacing:0.3px;">${bkShort}</div>
+                                <div style="font-size:1rem; font-weight:bold; color:${bkColor};">${pick.odds.toFixed(2)}</div>
+                            </div>
+                        </div>
+
+                        <div style="background:rgba(0,0,0,0.3); border-radius:10px; padding:10px; margin-bottom:10px;">
+                            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:10px;">
+                                <div style="text-align:center;"><div style="font-size:0.6rem; color:#888; margin-bottom:2px;">OUR MODEL</div><div style="font-size:1.1rem; font-weight:bold; color:white;">${pick.modelProb}%</div></div>
+                                <div style="text-align:center;"><div style="font-size:0.6rem; color:#888; margin-bottom:2px;">BOOKIE SAYS</div><div style="font-size:1.1rem; font-weight:bold; color:#da3633;">${pick.impliedProb}%</div></div>
+                                <div style="text-align:center;"><div style="font-size:0.6rem; color:#888; margin-bottom:2px;">EDGE</div><div style="font-size:1.1rem; font-weight:bold; color:#58e6a8;">+${pick.edge}%</div></div>
+                            </div>
+                            <div style="margin-bottom:6px;">
+                                <div style="display:flex; justify-content:space-between; font-size:0.62rem; color:#888; margin-bottom:3px;">
+                                    <span>${evLabel}</span><span>EV: +${pick.ev}%</span>
+                                </div>
+                                <div style="background:#21262d; border-radius:4px; height:6px; overflow:hidden;">
+                                    <div style="width:${evBarWidth}%; height:100%; background:${evColor}; border-radius:4px;"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background:rgba(88,230,168,0.06); border:1px solid rgba(88,230,168,0.15); border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <div>
+                                <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">¼ KELLY STAKE</div>
+                                <div style="font-size:1.3rem; font-weight:bold; color:#58e6a8;">£${pick.stake.toFixed(2)}</div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">POTENTIAL RETURN</div>
+                                <div style="font-size:1rem; font-weight:bold; color:white;">£${(pick.stake * pick.odds).toFixed(2)}</div>
+                                <div style="font-size:0.62rem; color:#555;">(£${(pick.stake * pick.odds - pick.stake).toFixed(2)} profit)</div>
+                            </div>
+                        </div>
+
+                        ${posText ? `<div style="font-size:0.65rem; color:#555; margin-bottom:8px;">📍 League Position: ${posText}</div>` : ''}
+
+                        <div style="display:flex; gap:8px; align-items:center; border-top:1px solid #21262d; padding-top:8px;">
+                            <div style="flex:1; font-size:0.6rem; color:#555;">EV = (${pick.modelProb}% × ${pick.odds.toFixed(2)}) − 1 = <span style="color:${evColor}">+${pick.ev}%</span> · ¼ Kelly = ${(pick.stake/bankroll*100).toFixed(1)}%</div>
+                            <button class="value-track-btn ${isTracked ? 'tracked' : ''}" id="trackBtn_${pick.fixtureId}_${pick.market.replace(/\s+/g,'_')}" onclick="handleTrackBet(${pick.fixtureId}, '${pick.market.replace(/'/g,"\\'")}', this)">${isTracked ? '✓ Tracked' : '📌 Track Bet'}</button>
+                        </div>
+                    </div>`;
+            });
+            area.innerHTML = html;
+        }
+
+        function handleTrackBet(fixtureId, market, btn) {
+            if (btn.classList.contains('tracked')) return;
+            const bankroll = parseFloat(document.getElementById('valueBankroll')?.value) || 100;
+            if (!window._lastValueScanResults) return;
+            const pick = window._lastValueScanResults.picks.find(p => p.fixtureId === fixtureId && p.market === market);
+            if (!pick) return;
+            const ok = trackValueBet(pick, bankroll);
+            if (ok) {
+                btn.textContent = '✓ Tracked';
+                btn.classList.add('tracked');
+            }
+        }
+
+        // ── Value Bets Tracker section for Stats ─────────────────────────────
+        function renderValueBetsTrackerSection() {
+            const bets = getTrackedValueBets();
+            if (bets.length === 0) return '';
+            const pending = bets.filter(b => b.status === 'pending');
+            const settled = bets.filter(b => b.status !== 'pending');
+            const wonBets  = settled.filter(b => b.status === 'won');
+            const lostBets = settled.filter(b => b.status === 'lost');
+            const voidBets = settled.filter(b => b.status === 'void');
+            const totalStaked = settled.filter(b => b.status !== 'void').reduce((s, b) => s + b.stake, 0);
+            const totalPnl    = settled.reduce((s, b) => s + (b.pnl || 0), 0);
+            const roi = totalStaked > 0 ? Math.round((totalPnl / totalStaked) * 100) : 0;
+            const roiColor = roi >= 0 ? 'var(--green)' : 'var(--red)';
+            const winRate = (wonBets.length + lostBets.length) > 0 ? Math.round((wonBets.length / (wonBets.length + lostBets.length)) * 100) : 0;
+
+            let html = `<div class="stats-card">
+                <div style="font-size:0.85rem; font-weight:bold; color:#58e6a8; margin-bottom:12px;">🎯 Value Bets Tracker</div>`;
+
+            if (settled.length > 0) {
+                html += `<div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; margin-bottom:14px;">
+                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1rem; font-weight:bold; color:var(--green);">${wonBets.length}</div>
+                        <div style="font-size:0.6rem; color:#888;">Won</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1rem; font-weight:bold; color:var(--red);">${lostBets.length}</div>
+                        <div style="font-size:0.6rem; color:#888;">Lost</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1rem; font-weight:bold; color:${winRate >= 50 ? 'var(--green)' : 'var(--red)'};">${winRate}%</div>
+                        <div style="font-size:0.6rem; color:#888;">Win Rate</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1rem; font-weight:bold; color:${roiColor};">${roi >= 0 ? '+' : ''}${roi}%</div>
+                        <div style="font-size:0.6rem; color:#888;">ROI</div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px; margin-bottom:14px;">
+                    <div style="flex:1; background:rgba(255,255,255,0.03); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">TOTAL STAKED</div>
+                        <div style="font-size:1rem; font-weight:bold; color:white;">£${totalStaked.toFixed(2)}</div>
+                    </div>
+                    <div style="flex:1; background:rgba(255,255,255,0.03); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">P&L</div>
+                        <div style="font-size:1rem; font-weight:bold; color:${totalPnl >= 0 ? 'var(--green)' : 'var(--red)'};">${totalPnl >= 0 ? '+' : ''}£${totalPnl.toFixed(2)}</div>
+                    </div>
+                </div>`;
+            }
+
+            if (pending.length > 0) {
+                html += `<div style="font-size:0.75rem; font-weight:bold; color:#d29922; margin-bottom:8px;">⏳ Pending (${pending.length})</div>`;
+                pending.forEach(bet => {
+                    const d = new Date(bet.trackedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+                    html += `<div style="background:rgba(255,255,255,0.03); border:1px solid #30363d; border-radius:8px; padding:10px; margin-bottom:8px;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
+                            <div>
+                                <div style="font-size:0.78rem; font-weight:bold; color:white; margin-bottom:2px;">${bet.home} vs ${bet.away}</div>
+                                <div style="font-size:0.68rem; color:#58e6a8;">${bet.market} @ ${bet.odds.toFixed(2)} <span style="color:#555;">(${bet.bookie||''})</span></div>
+                                <div style="font-size:0.63rem; color:#555; margin-top:2px;">${bet.league} · Tracked ${d} · Stake £${bet.stake.toFixed(2)}</div>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:6px; margin-top:8px;">
+                            <button class="settle-btn settle-btn-won" onclick="settleTrackedValueBet('${bet.id}','won'); renderStatsDashboard();">✓ Won</button>
+                            <button class="settle-btn settle-btn-lost" onclick="settleTrackedValueBet('${bet.id}','lost'); renderStatsDashboard();">✗ Lost</button>
+                            <button class="settle-btn settle-btn-void" onclick="settleTrackedValueBet('${bet.id}','void'); renderStatsDashboard();">○ Void</button>
+                        </div>
+                    </div>`;
+                });
+            }
+
+            if (settled.length > 0) {
+                html += `<div style="font-size:0.75rem; font-weight:bold; color:#888; margin-bottom:8px; margin-top:${pending.length ? '10px' : '0'};">🏁 Settled (${settled.length})</div>`;
+                settled.slice(0, 20).forEach(bet => {
+                    const d = new Date(bet.settledAt || bet.trackedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+                    const statusColor = bet.status === 'won' ? 'var(--green)' : (bet.status === 'lost' ? 'var(--red)' : '#8b949e');
+                    const statusIcon  = bet.status === 'won' ? '✓' : (bet.status === 'lost' ? '✗' : '○');
+                    const pnlStr = bet.pnl != null ? (bet.pnl >= 0 ? `+£${bet.pnl.toFixed(2)}` : `-£${Math.abs(bet.pnl).toFixed(2)}`) : '';
+                    html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #21262d;">
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:0.75rem; color:white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${bet.home} vs ${bet.away}</div>
+                            <div style="font-size:0.65rem; color:#888;">${bet.market} @ ${bet.odds.toFixed(2)} · ${d}</div>
+                        </div>
+                        <div style="text-align:right; margin-left:10px;">
+                            <div style="font-size:0.8rem; font-weight:bold; color:${statusColor};">${statusIcon} ${bet.status.toUpperCase()}</div>
+                            ${pnlStr ? `<div style="font-size:0.7rem; color:${statusColor};">${pnlStr}</div>` : ''}
+                        </div>
+                    </div>`;
+                });
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
         // ELITE IDS
         const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 137, 188];
         const EU_COUNTRIES = ["Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Ukraine", "Wales"];
@@ -1820,6 +2183,8 @@
             } else if(tab === 'value') {
                 document.getElementById('valueView').style.display = 'block';
                 document.getElementById('tabValue').classList.add('active');
+                renderBookmakerButtons();
+                if (window._lastValueScanResults) applyValueFiltersAndRender();
             } else if(tab === 'stats') {
                 document.getElementById('statsView').style.display = 'block';
                 document.getElementById('tabStats').classList.add('active');
@@ -2790,6 +3155,9 @@
                     return;
                 }
 
+                const hgBankroll = parseFloat(document.getElementById('hgBankroll')?.value) || 100;
+                const HG_EST_ODDS = 1.50;
+
                 const flDB = getFactorLearningDB();
                 const learnedCount = Object.values(flDB).filter(v => v.total >= 6).length;
                 const learnBadge = learnedCount > 0 ? ` · 🧠 ${learnedCount} factors learned` : ' · 🧠 Learning mode (needs 6+ bets)';
@@ -2802,6 +3170,12 @@
                     const confLabel = r.confidence >= 80 ? 'VERY LIKELY' : (r.confidence >= 65 ? 'LIKELY' : (r.confidence >= 50 ? 'POSSIBLE' : 'UNLIKELY'));
                     const timeRemaining = 90 - r.elapsed;
                     const isPlaced = placedBets2hg.includes(fid);
+
+                    const hgModelProb = r.confidence / 100;
+                    const hgFullKelly = (hgModelProb * HG_EST_ODDS - 1) / (HG_EST_ODDS - 1);
+                    const hgQuarterKelly = hgFullKelly / 4;
+                    const hgStake = hgFullKelly > 0 ? Math.min(hgBankroll * 0.15, hgBankroll * hgQuarterKelly) : 0;
+                    const hgReturn = hgStake * HG_EST_ODDS;
 
                     const dataBadges = [];
                     if (r.standingsAvail && r.homePos && r.awayPos) dataBadges.push(`📍 ${r.homePos}${getOrdinal(r.homePos)} vs ${r.awayPos}${getOrdinal(r.awayPos)}`);
@@ -2887,6 +3261,22 @@
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                                 <div style="font-size:0.65rem; color:#555;">${dataBadges.join(' · ')}</div>
                             </div>
+
+                            ${hgStake > 0 ? `
+                            <div style="background:rgba(46,160,67,0.08); border:1px solid rgba(46,160,67,0.25); border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <div>
+                                    <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">¼ KELLY STAKE <span style="color:#555;">(at ~1.50 est.)</span></div>
+                                    <div style="font-size:1.3rem; font-weight:bold; color:var(--green);">£${hgStake.toFixed(2)}</div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">POTENTIAL RETURN</div>
+                                    <div style="font-size:1rem; font-weight:bold; color:white;">£${hgReturn.toFixed(2)}</div>
+                                    <div style="font-size:0.62rem; color:#555;">(£${(hgReturn - hgStake).toFixed(2)} profit)</div>
+                                </div>
+                            </div>` : `
+                            <div style="background:rgba(255,255,255,0.03); border:1px solid #21262d; border-radius:8px; padding:8px 10px; margin-bottom:10px; font-size:0.68rem; color:#555; text-align:center;">
+                                No Kelly edge at 1.50 — confidence below 67% breakeven. Monitor for improvement.
+                            </div>`}
 
                             ${isPlaced ?
                                 `<button disabled style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--gold); background:rgba(210,153,34,0.15); color:var(--gold); font-size:0.8rem; font-weight:bold; cursor:default;">📌 Bet Placed — Tracking</button>` :
@@ -2989,6 +3379,101 @@
             { id: 188, name: 'A-League', country: 'Australia', flag: '🇦🇺' }
         ];
 
+        const SUPPORTED_BOOKMAKERS = [
+            { id: 8,  name: 'Bet365',       short: 'BET365',  color: '#00703c' },
+            { id: 7,  name: 'William Hill', short: 'WM HILL', color: '#7b2d8b' },
+            { id: 10, name: 'Ladbrokes',    short: 'LADBROKES', color: '#e4002b' },
+            { id: 12, name: 'BetFred',      short: 'BETFRED', color: '#f5a623' },
+            { id: 16, name: 'Unibet',       short: 'UNIBET',  color: '#007c41' },
+            { id: 21, name: '888Sport',     short: '888SPORT',color: '#ff8000' },
+            { id: 24, name: 'Betway',       short: 'BETWAY',  color: '#00a859' },
+            { id: 3,  name: 'Betfair',      short: 'BETFAIR', color: '#ffb80c' }
+        ];
+
+        function getSelectedBookmakerIds() {
+            try {
+                const saved = JSON.parse(localStorage.getItem('selectedBookmakers') || 'null');
+                if (Array.isArray(saved) && saved.length > 0) return saved;
+            } catch(e) {}
+            return [8];
+        }
+
+        function saveSelectedBookmakers(ids) {
+            try { localStorage.setItem('selectedBookmakers', JSON.stringify(ids)); } catch(e) {}
+        }
+
+        function toggleBookmakerBtn(id) {
+            let ids = getSelectedBookmakerIds();
+            if (ids.includes(id)) {
+                if (ids.length === 1) return;
+                ids = ids.filter(x => x !== id);
+            } else {
+                ids.push(id);
+            }
+            saveSelectedBookmakers(ids);
+            renderBookmakerButtons();
+        }
+
+        function renderBookmakerButtons() {
+            const container = document.getElementById('bookmakerBtns');
+            if (!container) return;
+            const selected = getSelectedBookmakerIds();
+            container.innerHTML = SUPPORTED_BOOKMAKERS.map(b => {
+                const on = selected.includes(b.id);
+                return `<button onclick="toggleBookmakerBtn(${b.id})" style="padding:5px 10px; border-radius:12px; font-size:0.65rem; font-weight:bold; cursor:pointer; border:1px solid ${on ? b.color : '#30363d'}; background:${on ? b.color + '22' : '#21262d'}; color:${on ? b.color : '#555'}; transition:all 0.2s;">${b.short}</button>`;
+            }).join('');
+        }
+
+        function parseBetsIntoOddsMap(bets, oddsObj, bookmakerName) {
+            bets.forEach(bet => {
+                const name = (bet.name || '').toLowerCase();
+                const updateBest = (market, val) => {
+                    const parsed = parseFloat(val);
+                    if (isNaN(parsed) || parsed < 1.01) return;
+                    if (!oddsObj[market] || parsed > oddsObj[market].odds) {
+                        oddsObj[market] = { odds: parsed, bookie: bookmakerName };
+                    }
+                };
+                if (name === 'match winner' || name === '1x2') {
+                    bet.values.forEach(v => {
+                        if (v.value === 'Home') updateBest('Home Win', v.odd);
+                        if (v.value === 'Away') updateBest('Away Win', v.odd);
+                        if (v.value === 'Draw') updateBest('Draw', v.odd);
+                    });
+                }
+                if (name === 'goals over/under') {
+                    bet.values.forEach(v => {
+                        if (v.value === 'Over 1.5') updateBest('Over 1.5 Goals', v.odd);
+                        if (v.value === 'Over 2.5') updateBest('Over 2.5 Goals', v.odd);
+                        if (v.value === 'Under 2.5') updateBest('Under 2.5 Goals', v.odd);
+                    });
+                }
+                if ((name === 'both teams score' || name === 'both teams to score') && !name.includes('/') && !name.includes('result')) {
+                    bet.values.forEach(v => {
+                        if (v.value === 'Yes') updateBest('BTTS', v.odd);
+                        if (v.value === 'No') updateBest('BTTS No', v.odd);
+                    });
+                }
+                if (name === 'result/both teams to score') {
+                    bet.values.forEach(v => {
+                        if (v.value === 'Home/Yes') updateBest('Home Win & BTTS', v.odd);
+                        if (v.value === 'Draw/Yes') updateBest('Draw & BTTS', v.odd);
+                        if (v.value === 'Away/Yes') updateBest('Away Win & BTTS', v.odd);
+                        if (v.value === 'Home/No')  updateBest('Home Win & BTTS No', v.odd);
+                        if (v.value === 'Draw/No')  updateBest('Draw & BTTS No', v.odd);
+                        if (v.value === 'Away/No')  updateBest('Away Win & BTTS No', v.odd);
+                    });
+                }
+                if (name === 'double chance') {
+                    bet.values.forEach(v => {
+                        if (v.value === 'Home/Draw') updateBest('1X (Home or Draw)', v.odd);
+                        if (v.value === 'Home/Away') updateBest('12 (Home or Away)', v.odd);
+                        if (v.value === 'Draw/Away') updateBest('X2 (Draw or Away)', v.odd);
+                    });
+                }
+            });
+        }
+
         async function scanBetOfTheDay(btn) {
             btn.innerText = "🔍 ANALYZING FIXTURES...";
             btn.disabled = true;
@@ -3040,19 +3525,19 @@
                             botdOddsMap[fid] = {};
                             bookie.bets.forEach(bet => {
                                 const name = (bet.name || '').toLowerCase();
-                                if (name.includes('match winner') || name === 'match winner') {
+                                if (name === 'match winner' || name === '1x2') {
                                     bet.values.forEach(v => {
                                         if (v.value === 'Home') botdOddsMap[fid]['Home Win'] = parseFloat(v.odd);
                                         if (v.value === 'Away') botdOddsMap[fid]['Away Win'] = parseFloat(v.odd);
                                     });
                                 }
-                                if (name.includes('goals over/under') || name.includes('over/under')) {
+                                if (name === 'goals over/under') {
                                     bet.values.forEach(v => {
                                         if (v.value === 'Over 1.5') botdOddsMap[fid]['Over 1.5 Goals'] = parseFloat(v.odd);
                                         if (v.value === 'Over 2.5') botdOddsMap[fid]['Over 2.5 Goals'] = parseFloat(v.odd);
                                     });
                                 }
-                                if (name.includes('both teams score') || name === 'both teams score') {
+                                if ((name === 'both teams score' || name === 'both teams to score') && !name.includes('/') && !name.includes('result')) {
                                     bet.values.forEach(v => {
                                         if (v.value === 'Yes') botdOddsMap[fid]['BTTS'] = parseFloat(v.odd);
                                     });
@@ -3373,41 +3858,20 @@
                     return;
                 }
 
+                const selectedBookmakerIds = getSelectedBookmakerIds();
                 let valueOddsMap = {};
                 try {
                     trackAPI(1);
-                    const oddsRes = await fetch(`https://v3.football.api-sports.io/odds?date=${today}&bookmaker=8`, { headers: { "x-rapidapi-key": API_KEY } });
+                    const oddsRes = await fetch(`https://v3.football.api-sports.io/odds?date=${today}`, { headers: { "x-rapidapi-key": API_KEY } });
                     const oddsData = await oddsRes.json();
                     if (oddsData.response && oddsData.response.length > 0) {
                         oddsData.response.forEach(entry => {
                             const fid = entry.fixture?.id;
-                            if (!fid) return;
-                            const bookie = entry.bookmakers && entry.bookmakers[0];
-                            if (!bookie || !bookie.bets) return;
+                            if (!fid || !entry.bookmakers) return;
                             valueOddsMap[fid] = {};
-                            bookie.bets.forEach(bet => {
-                                const name = (bet.name || '').toLowerCase();
-                                if (name.includes('match winner') || name === 'match winner') {
-                                    bet.values.forEach(v => {
-                                        if (v.value === 'Home') valueOddsMap[fid]['Home Win'] = parseFloat(v.odd);
-                                        if (v.value === 'Away') valueOddsMap[fid]['Away Win'] = parseFloat(v.odd);
-                                        if (v.value === 'Draw') valueOddsMap[fid]['Draw'] = parseFloat(v.odd);
-                                    });
-                                }
-                                if (name.includes('goals over/under') || name.includes('over/under')) {
-                                    bet.values.forEach(v => {
-                                        if (v.value === 'Over 1.5') valueOddsMap[fid]['Over 1.5 Goals'] = parseFloat(v.odd);
-                                        if (v.value === 'Over 2.5') valueOddsMap[fid]['Over 2.5 Goals'] = parseFloat(v.odd);
-                                        if (v.value === 'Under 2.5') valueOddsMap[fid]['Under 2.5 Goals'] = parseFloat(v.odd);
-                                    });
-                                }
-                                if (name.includes('both teams score') || name === 'both teams score') {
-                                    bet.values.forEach(v => {
-                                        if (v.value === 'Yes') valueOddsMap[fid]['BTTS'] = parseFloat(v.odd);
-                                        if (v.value === 'No') valueOddsMap[fid]['BTTS No'] = parseFloat(v.odd);
-                                    });
-                                }
-                            });
+                            entry.bookmakers
+                                .filter(b => selectedBookmakerIds.includes(b.id))
+                                .forEach(b => parseBetsIntoOddsMap(b.bets, valueOddsMap[fid], b.name));
                         });
                     }
                 } catch(e) { console.warn("Value odds fetch failed:", e); }
@@ -3421,7 +3885,8 @@
                     return;
                 }
 
-                area.innerHTML = `<div style='text-align:center; padding:20px; color:#58e6a8;'>Analysing ${fixturesWithOdds.length} matches with live Bet365 odds...</div>`;
+                const selectedBookieNames = SUPPORTED_BOOKMAKERS.filter(b => selectedBookmakerIds.includes(b.id)).map(b => b.name).join(', ');
+                area.innerHTML = `<div style='text-align:center; padding:20px; color:#58e6a8;'>Analysing ${fixturesWithOdds.length} matches · Checking: ${selectedBookieNames}...</div>`;
 
                 const leagueFixtures = {};
                 fixturesWithOdds.forEach(f => {
@@ -3562,6 +4027,16 @@
                         let drawProb = Math.max(10, 100 - homeWinProb - awayWinProb);
                         drawProb = Math.min(40, drawProb);
 
+                        const homeWinBttsPr = Math.round(homeWinProb * bttsPr / 100);
+                        const drawBttsPr    = Math.round(drawProb    * bttsPr / 100);
+                        const awayWinBttsPr = Math.round(awayWinProb * bttsPr / 100);
+                        const homeWinBttsNoPr = Math.round(homeWinProb * bttsNoPr / 100);
+                        const drawBttsNoPr    = Math.round(drawProb    * bttsNoPr / 100);
+                        const awayWinBttsNoPr = Math.round(awayWinProb * bttsNoPr / 100);
+                        const oneXPr = Math.min(95, homeWinProb + drawProb);
+                        const xTwoPr = Math.min(95, drawProb + awayWinProb);
+                        const oneTwoPr = Math.min(95, homeWinProb + awayWinProb);
+
                         const marketProbPairs = [
                             { market: 'Over 1.5 Goals', prob: o15Prob },
                             { market: 'Over 2.5 Goals', prob: o25Prob },
@@ -3570,14 +4045,26 @@
                             { market: 'BTTS No', prob: bttsNoPr },
                             { market: 'Home Win', prob: homeWinProb },
                             { market: 'Away Win', prob: awayWinProb },
-                            { market: 'Draw', prob: drawProb }
+                            { market: 'Draw', prob: drawProb },
+                            { market: 'Home Win & BTTS', prob: homeWinBttsPr },
+                            { market: 'Draw & BTTS', prob: drawBttsPr },
+                            { market: 'Away Win & BTTS', prob: awayWinBttsPr },
+                            { market: 'Home Win & BTTS No', prob: homeWinBttsNoPr },
+                            { market: 'Draw & BTTS No', prob: drawBttsNoPr },
+                            { market: 'Away Win & BTTS No', prob: awayWinBttsNoPr },
+                            { market: '1X (Home or Draw)', prob: oneXPr },
+                            { market: 'X2 (Draw or Away)', prob: xTwoPr },
+                            { market: '12 (Home or Away)', prob: oneTwoPr }
                         ];
 
                         const koTime = new Date(fix.fixture.date);
                         const kickoff = koTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
                         for (const { market, prob } of marketProbPairs) {
-                            const odds = fixtureOdds[market];
+                            const oddsObj = fixtureOdds[market];
+                            if (!oddsObj) continue;
+                            const odds = oddsObj.odds;
+                            const bookieName = oddsObj.bookie || 'Unknown';
                             if (!odds || odds < 1.10) continue;
                             const snapKey = `${fix.fixture.id}_${market}`;
                             newSnapshot[snapKey] = { odds, ts: Date.now(), home: hName, away: aName, league: league.name, kickoff: new Date(fix.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
@@ -3601,6 +4088,7 @@
                             allValuePicks.push({
                                 fixtureId: fix.fixture.id,
                                 home: hName, away: aName,
+                                bookie: bookieName,
                                 homePos, awayPos, totalTeams,
                                 league, market,
                                 modelProb: Math.round(prob),
@@ -3630,102 +4118,10 @@
                     valuePicks.push(pick);
                 }
 
-                if (valuePicks.length === 0) {
-                    area.innerHTML = `<div style='text-align:center; padding:40px; color:#888;'>
-                        <div style='font-size:2rem; margin-bottom:10px;'>🎯</div>
-                        <p>No value bets found today.</p>
-                        <p style='font-size:0.78rem; color:#555; margin-top:8px;'>The bookmaker's prices are accurate today — no edge to exploit. Check again later as markets shift closer to kick-off.</p>
-                    </div>`;
-                    btn.innerText = "🎯 FIND VALUE BETS";
-                    btn.disabled = false;
-                    return;
-                }
-
-                let html = `<div style="text-align:center; padding:6px; margin-bottom:10px; color:#888; font-size:0.75rem;">🎯 ${valuePicks.length} value bet${valuePicks.length > 1 ? 's' : ''} found from ${fixturesWithOdds.length} matches · Sorted by Expected Value</div>`;
-
-                valuePicks.forEach((pick, idx) => {
-                    const evColor = pick.ev >= 15 ? '#58e6a8' : (pick.ev >= 8 ? '#58a6ff' : '#d29922');
-                    const evLabel = pick.ev >= 15 ? 'STRONG VALUE' : (pick.ev >= 8 ? 'GOOD VALUE' : 'VALUE');
-                    const evBarWidth = Math.min(100, pick.ev * 3);
-
-                    const posText = (pick.homePos && pick.awayPos) ? `${pick.homePos}${getOrdinal(pick.homePos)} vs ${pick.awayPos}${getOrdinal(pick.awayPos)}` : '';
-
-                    html += `
-                        <div class="match-card" style="border-left:4px solid ${evColor}; ${idx === 0 ? 'border:2px solid #58e6a8; box-shadow:0 0 15px rgba(88,230,168,0.12);' : ''}">
-                            ${idx === 0 ? '<div style="text-align:center; font-size:0.7rem; font-weight:bold; color:#58e6a8; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">⭐ HIGHEST VALUE BET TODAY ⭐</div>' : ''}
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                                <div style="font-size:0.7rem; color:#888;">${pick.league.flag} ${pick.league.name} · ${pick.league.country}</div>
-                                <div style="font-size:0.7rem; color:#888;">KO ${pick.kickoff}</div>
-                            </div>
-                            <div style="font-weight:bold; font-size:0.95rem; margin-bottom:6px;">${pick.home} vs ${pick.away}</div>
-
-                            ${pick.movement ? (() => {
-                                const shortened = pick.movement.change < 0;
-                                const mc = shortened ? '#58e6a8' : '#f0883e';
-                                const icon = shortened ? '📉' : '📈';
-                                const msg = shortened ? `Odds shortened ${pick.movement.changePct}% (${pick.movement.prev.toFixed(2)} → ${pick.odds.toFixed(2)}) — sharp money signal` : `Odds drifted +${pick.movement.changePct}% (${pick.movement.prev.toFixed(2)} → ${pick.odds.toFixed(2)}) — market fading this`;
-                                return `<div style="background:rgba(${shortened?'88,230,168':'240,136,62'},0.1); border:1px solid rgba(${shortened?'88,230,168':'240,136,62'},0.3); border-radius:6px; padding:5px 8px; margin-bottom:8px; font-size:0.68rem; color:${mc};">${icon} ${msg}</div>`;
-                            })() : ''}
-
-                            <div style="display:flex; gap:8px; margin-bottom:10px;">
-                                <div style="flex:2; background:rgba(88,230,168,0.06); border:1px solid rgba(88,230,168,0.2); border-radius:8px; padding:10px; text-align:center;">
-                                    <div style="font-size:0.6rem; color:#888; margin-bottom:3px;">BET</div>
-                                    <div style="font-size:0.95rem; font-weight:bold; color:#58e6a8;">${pick.market}</div>
-                                </div>
-                                <div style="flex:1; background:rgba(0,112,60,0.1); border:1px solid rgba(0,112,60,0.3); border-radius:8px; padding:10px; text-align:center;">
-                                    <div style="font-size:0.6rem; color:#888; margin-bottom:3px;">BET365</div>
-                                    <div style="font-size:1rem; font-weight:bold; color:#00703c;">${pick.odds.toFixed(2)}</div>
-                                </div>
-                            </div>
-
-                            <div style="background:rgba(0,0,0,0.3); border-radius:10px; padding:10px; margin-bottom:10px;">
-                                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:10px;">
-                                    <div style="text-align:center;">
-                                        <div style="font-size:0.6rem; color:#888; margin-bottom:2px;">OUR MODEL</div>
-                                        <div style="font-size:1.1rem; font-weight:bold; color:white;">${pick.modelProb}%</div>
-                                    </div>
-                                    <div style="text-align:center;">
-                                        <div style="font-size:0.6rem; color:#888; margin-bottom:2px;">BOOKIE SAYS</div>
-                                        <div style="font-size:1.1rem; font-weight:bold; color:#da3633;">${pick.impliedProb}%</div>
-                                    </div>
-                                    <div style="text-align:center;">
-                                        <div style="font-size:0.6rem; color:#888; margin-bottom:2px;">EDGE</div>
-                                        <div style="font-size:1.1rem; font-weight:bold; color:#58e6a8;">+${pick.edge}%</div>
-                                    </div>
-                                </div>
-                                <div style="margin-bottom:6px;">
-                                    <div style="display:flex; justify-content:space-between; font-size:0.62rem; color:#888; margin-bottom:3px;">
-                                        <span>${evLabel}</span>
-                                        <span>EV: +${pick.ev}%</span>
-                                    </div>
-                                    <div style="background:#21262d; border-radius:4px; height:6px; overflow:hidden;">
-                                        <div style="width:${evBarWidth}%; height:100%; background:${evColor}; border-radius:4px; transition:width 0.3s;"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style="background:rgba(88,230,168,0.06); border:1px solid rgba(88,230,168,0.15); border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                                <div>
-                                    <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">¼ KELLY STAKE</div>
-                                    <div style="font-size:1.3rem; font-weight:bold; color:#58e6a8;">£${pick.stake.toFixed(2)}</div>
-                                </div>
-                                <div style="text-align:right;">
-                                    <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">POTENTIAL RETURN</div>
-                                    <div style="font-size:1rem; font-weight:bold; color:white;">£${(pick.stake * pick.odds).toFixed(2)}</div>
-                                    <div style="font-size:0.62rem; color:#555;">(£${(pick.stake * pick.odds - pick.stake).toFixed(2)} profit)</div>
-                                </div>
-                            </div>
-
-                            ${posText ? `<div style="font-size:0.65rem; color:#555; margin-bottom:8px;">📍 League Position: ${posText}</div>` : ''}
-
-                            <div style="font-size:0.62rem; color:#555; border-top:1px solid #21262d; padding-top:6px;">
-                                EV = (${pick.modelProb}% × ${pick.odds.toFixed(2)}) − 1 = <span style="color:${evColor}">+${pick.ev}%</span> · ¼ Kelly = ${(pick.stake/bankroll*100).toFixed(1)}% of bankroll
-                            </div>
-                        </div>
-                    `;
-                });
-
-                area.innerHTML = html;
+                window._lastValueScanResults = { picks: valuePicks, bankroll };
+                window._accaSelections = {};
+                updateAccaBar();
+                applyValueFiltersAndRender();
 
             } catch(e) {
                 console.error("Value Bets Error:", e);
@@ -3761,41 +4157,20 @@
                 const leagueMap = {};
                 VALUE_LEAGUES.forEach(l => { leagueMap[l.id] = l; });
 
+                const selectedBookmakerIds = getSelectedBookmakerIds();
                 trackAPI(1);
-                const oddsRes = await fetch(`https://v3.football.api-sports.io/odds?date=${today}&bookmaker=8`, { headers: { "x-rapidapi-key": API_KEY } });
+                const oddsRes = await fetch(`https://v3.football.api-sports.io/odds?date=${today}`, { headers: { "x-rapidapi-key": API_KEY } });
                 const oddsData = await oddsRes.json();
 
                 const currentOdds = {};
                 if (oddsData.response) {
                     oddsData.response.forEach(entry => {
                         const fid = entry.fixture?.id;
-                        if (!fid) return;
-                        const bookie = entry.bookmakers && entry.bookmakers[0];
-                        if (!bookie || !bookie.bets) return;
+                        if (!fid || !entry.bookmakers) return;
                         currentOdds[fid] = {};
-                        bookie.bets.forEach(bet => {
-                            const name = (bet.name || '').toLowerCase();
-                            if (name.includes('match winner') || name === 'match winner') {
-                                bet.values.forEach(v => {
-                                    if (v.value === 'Home') currentOdds[fid]['Home Win'] = parseFloat(v.odd);
-                                    if (v.value === 'Away') currentOdds[fid]['Away Win'] = parseFloat(v.odd);
-                                    if (v.value === 'Draw') currentOdds[fid]['Draw'] = parseFloat(v.odd);
-                                });
-                            }
-                            if (name.includes('goals over/under') || name.includes('over/under')) {
-                                bet.values.forEach(v => {
-                                    if (v.value === 'Over 1.5') currentOdds[fid]['Over 1.5 Goals'] = parseFloat(v.odd);
-                                    if (v.value === 'Over 2.5') currentOdds[fid]['Over 2.5 Goals'] = parseFloat(v.odd);
-                                    if (v.value === 'Under 2.5') currentOdds[fid]['Under 2.5 Goals'] = parseFloat(v.odd);
-                                });
-                            }
-                            if (name.includes('both teams score') || name === 'both teams score') {
-                                bet.values.forEach(v => {
-                                    if (v.value === 'Yes') currentOdds[fid]['BTTS'] = parseFloat(v.odd);
-                                    if (v.value === 'No') currentOdds[fid]['BTTS No'] = parseFloat(v.odd);
-                                });
-                            }
-                        });
+                        entry.bookmakers
+                            .filter(b => selectedBookmakerIds.includes(b.id))
+                            .forEach(b => parseBetsIntoOddsMap(b.bets, currentOdds[fid], b.name));
                     });
                 }
 
@@ -3811,7 +4186,9 @@
                     const home = fix.teams.home.name;
                     const away = fix.teams.away.name;
 
-                    for (const [market, odds] of Object.entries(fixOdds)) {
+                    for (const [market, oddsObj] of Object.entries(fixOdds)) {
+                        const odds = oddsObj.odds;
+                        const bookieName = oddsObj.bookie || '';
                         const snapKey = `${fid}_${market}`;
                         newSnapshot[snapKey] = { odds, ts: Date.now(), home, away, league: league ? league.name : fix.league.name, kickoff };
                         if (prevSnapshot[snapKey]) {
@@ -3819,7 +4196,7 @@
                             const change = odds - prevOdds;
                             const changePct = (change / prevOdds) * 100;
                             if (Math.abs(changePct) >= 3) {
-                                signals.push({ home, away, league: league || { name: fix.league.name, flag: '🌍', country: '' }, market, prevOdds, currOdds: odds, change: Math.round(change * 100) / 100, changePct: Math.round(changePct * 10) / 10, kickoff });
+                                signals.push({ home, away, league: league || { name: fix.league.name, flag: '🌍', country: '' }, market, prevOdds, currOdds: odds, change: Math.round(change * 100) / 100, changePct: Math.round(changePct * 10) / 10, kickoff, bookie: bookieName });
                             }
                         }
                     }
@@ -3886,7 +4263,10 @@
                                         <div style="font-size:0.6rem; color:#888; margin-bottom:1px;">NOW</div>
                                         <div style="font-size:1.2rem; font-weight:bold; color:${sigColor};">${sig.currOdds.toFixed(2)}</div>
                                     </div>
-                                    <div style="flex:1; text-align:right; font-size:0.65rem; font-weight:bold; color:${sigColor}; text-transform:uppercase; letter-spacing:0.5px;">${label}</div>
+                                    <div style="flex:1; text-align:right;">
+                                        <div style="font-size:0.65rem; font-weight:bold; color:${sigColor}; text-transform:uppercase; letter-spacing:0.5px;">${label}</div>
+                                        ${sig.bookie ? `<div style="font-size:0.55rem; color:#888; margin-top:2px;">${(SUPPORTED_BOOKMAKERS.find(b=>b.name===sig.bookie)||{short:sig.bookie.toUpperCase().slice(0,8)}).short}</div>` : ''}
+                                    </div>
                                 </div>
                             </div>
 
@@ -4104,14 +4484,14 @@
                         oddsMap[fid] = {};
                         bookie.bets.forEach(bet => {
                             const name = bet.name?.toLowerCase() || "";
-                            if (name.includes("over/under") || name.includes("goals over")) {
+                            if (name === "goals over/under") {
                                 bet.values.forEach(v => {
                                     if (v.value === "Over 0.5") oddsMap[fid]['o05'] = v.odd;
                                     if (v.value === "Over 1.5") oddsMap[fid]['o15'] = v.odd;
                                     if (v.value === "Over 2.5") oddsMap[fid]['o25'] = v.odd;
                                 });
                             }
-                            if (name.includes("both teams") || name === "btts") {
+                            if (name === "both teams score" || name === "both teams to score" || name === "btts") {
                                 bet.values.forEach(v => {
                                     if (v.value === "Yes") oddsMap[fid]['btts'] = v.odd;
                                 });
@@ -7103,6 +7483,8 @@
                 </div>`;
             }
 
+            html += renderValueBetsTrackerSection();
+
             html += `<button class="export-btn" onclick="exportCSV()" style="margin-top:10px;">📥 Export All History (CSV)</button>`;
 
             container.innerHTML = html;
@@ -7131,5 +7513,18 @@
             installBtn.addEventListener('click', async () => { if (deferredPrompt) { deferredPrompt.prompt(); deferredPrompt = null; installBtn.style.display = 'none'; } });
         }
     </script>
+    <div id="accaBar" class="acca-bar">
+        <div style="flex:1; min-width:0;">
+            <div style="font-size:0.72rem; color:#388bfd; font-weight:bold; margin-bottom:2px;">🎰 ACCA BUILDER</div>
+            <div id="accaBarInfo" style="font-size:0.7rem; color:#aaa;">Select picks below to build an accumulator</div>
+        </div>
+        <button onclick="buildAccaPanel()" style="background:linear-gradient(135deg,#1a4f7f,#123a5c); border:1px solid #388bfd; color:white; padding:7px 14px; border-radius:8px; font-size:0.75rem; font-weight:bold; cursor:pointer; white-space:nowrap;">BUILD ACCA</button>
+        <button onclick="clearAccaSelections()" style="background:#21262d; border:1px solid #30363d; color:#888; padding:7px 10px; border-radius:8px; font-size:0.75rem; cursor:pointer;">✕</button>
+    </div>
+    <div id="accaModal" style="display:none; position:fixed; inset:0; z-index:300; background:rgba(0,0,0,0.85); overflow-y:auto;">
+        <div style="max-width:500px; margin:20px auto; padding:15px;">
+            <div style="background:#161b22; border:1px solid #30363d; border-radius:12px; padding:20px;" id="accaModalContent"></div>
+        </div>
+    </div>
 </body>
 </html>
