@@ -266,6 +266,7 @@
             <div id="tabCards" class="nav-tab" onclick="switchTab('cards')">🟨 Card Watch</div>
             <div id="tabChallenge" class="nav-tab" onclick="switchTab('challenge')">💷 Challenge</div>
             <div id="tabSched" class="nav-tab" onclick="switchTab('sched')">📅 Elite Schedule</div>
+            <div id="tabPredict" class="nav-tab" onclick="switchTab('predict')">🔮 Score Predictor</div>
             <div id="tabAcc" class="nav-tab" onclick="switchTab('acc')">💰 Acca Tips</div>
             <div id="tab2hg" class="nav-tab" onclick="switchTab('2hg')">⚽ 2nd Half Goal</div>
             <div id="tabBotd" class="nav-tab" onclick="switchTab('botd')">🏆 Bet of the Day</div>
@@ -400,6 +401,27 @@
                 <p style="margin-bottom:8px;">Value Bets finds where our model gives a <strong style="color:white;">higher probability</strong> than Bet365's odds imply.</p>
                 <p style="font-size:0.78rem; color:#555; margin-bottom:4px;">Only bets with positive Expected Value (EV) are shown.</p>
                 <p style="font-size:0.78rem; color:#555;">Positive EV bets are mathematically profitable long-term.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="predictView" style="display:none;">
+        <div style="text-align:center; margin-bottom:15px;">
+            <h2 style="color:#c084fc; margin:0 0 4px 0;">🔮 Score Predictor</h2>
+            <p style="color:#888; font-size:0.78rem; margin:0;">Poisson model predictions for every major fixture today — checks injuries, form, H2H &amp; standings</p>
+        </div>
+        <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:0 0 12px 0;">
+            <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <button class="card-scan-btn" id="predictScanBtn" style="flex:1; background:linear-gradient(135deg,#6b21a8,#4c1d95); color:white; margin-bottom:0; border:1px solid #c084fc; min-width:160px;" onclick="scanScorePredictions(this)">🔮 PREDICT TODAY'S SCORES</button>
+                <button class="card-scan-btn" style="flex:0 0 auto; background:#21262d; color:#888; margin-bottom:0; border:1px solid #30363d; padding:10px 14px; font-size:0.8rem;" onclick="settlePredictions(false, true)">🏁 Settle Results</button>
+            </div>
+            <div id="predictScanInfo" style="font-size:0.68rem; color:#555; margin-top:8px; text-align:center;"></div>
+        </div>
+        <div id="predictContent" style="padding-bottom:100px; text-align:center; color:#888;">
+            <div style="padding:40px 20px;">
+                <div style="font-size:3rem; margin-bottom:10px;">🔮</div>
+                <p style="margin-bottom:8px;">Tap <strong style="color:white;">Predict Today's Scores</strong> to run the model across all major fixtures.</p>
+                <p style="font-size:0.78rem; color:#555;">Uses Poisson simulation, league standings, H2H records &amp; injury reports.</p>
             </div>
         </div>
     </div>
@@ -2147,11 +2169,12 @@
             document.getElementById('apiCounter').innerText = `API: ${current}`;
         }
         trackAPI(0);
+        setTimeout(() => settlePredictions(true), 3000);
 
         function switchTab(tab) {
             stopChallengeAutoRefresh();
-            const views = ['liveView','schedView','histView','cardView','accView','challengeView','statsView','secondHalfGoalView','botdView','valueView'];
-            const tabs = ['tabLive','tabSched','tabHist','tabCards','tabAcc','tabChallenge','tabStats','tab2hg','tabBotd','tabValue'];
+            const views = ['liveView','schedView','histView','cardView','accView','challengeView','statsView','secondHalfGoalView','botdView','valueView','predictView'];
+            const tabs = ['tabLive','tabSched','tabHist','tabCards','tabAcc','tabChallenge','tabStats','tab2hg','tabBotd','tabValue','tabPredict'];
             views.forEach(v => document.getElementById(v).style.display = 'none');
             tabs.forEach(t => document.getElementById(t).classList.remove('active'));
             document.getElementById('filterSelect').style.display = 'none';
@@ -2168,6 +2191,10 @@
                 document.getElementById('schedView').style.display = 'block';
                 document.getElementById('tabSched').classList.add('active');
                 loadSchedule();
+            } else if(tab === 'predict') {
+                document.getElementById('predictView').style.display = 'block';
+                document.getElementById('tabPredict').classList.add('active');
+                renderPredictionsFromCache();
             } else if(tab === 'cards') {
                 document.getElementById('cardView').style.display = 'block';
                 document.getElementById('tabCards').classList.add('active');
@@ -7216,6 +7243,707 @@
         // exportCSV defined earlier, no duplicate needed
 
         // ========== STATS DASHBOARD ==========
+        // ═══════════════════════════════════════════════════════════════
+        // SCORE PREDICTOR
+        // ═══════════════════════════════════════════════════════════════
+
+        const PREDICT_LEAGUES = [
+            { id: 39,  name: 'Premier League',       country: 'England',     flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { id: 40,  name: 'Championship',          country: 'England',     flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { id: 41,  name: 'League One',            country: 'England',     flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { id: 42,  name: 'League Two',            country: 'England',     flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { id: 45,  name: 'FA Cup',                country: 'England',     flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { id: 48,  name: 'EFL Cup',               country: 'England',     flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+            { id: 179, name: 'Scottish Premiership',  country: 'Scotland',    flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+            { id: 180, name: 'Scottish Championship', country: 'Scotland',    flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+            { id: 181, name: 'Scottish League One',   country: 'Scotland',    flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+            { id: 529, name: 'Scottish FA Cup',       country: 'Scotland',    flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
+            { id: 2,   name: 'Champions League',      country: 'Europe',      flag: '🇪🇺' },
+            { id: 3,   name: 'Europa League',         country: 'Europe',      flag: '🇪🇺' },
+            { id: 848, name: 'Conference League',     country: 'Europe',      flag: '🇪🇺' },
+            { id: 140, name: 'La Liga',               country: 'Spain',       flag: '🇪🇸' },
+            { id: 143, name: 'Copa del Rey',          country: 'Spain',       flag: '🇪🇸' },
+            { id: 78,  name: 'Bundesliga',            country: 'Germany',     flag: '🇩🇪' },
+            { id: 79,  name: '2. Bundesliga',         country: 'Germany',     flag: '🇩🇪' },
+            { id: 81,  name: 'DFB Pokal',             country: 'Germany',     flag: '🇩🇪' },
+            { id: 135, name: 'Serie A',               country: 'Italy',       flag: '🇮🇹' },
+            { id: 136, name: 'Serie B',               country: 'Italy',       flag: '🇮🇹' },
+            { id: 137, name: 'Coppa Italia',          country: 'Italy',       flag: '🇮🇹' },
+            { id: 61,  name: 'Ligue 1',               country: 'France',      flag: '🇫🇷' },
+            { id: 62,  name: 'Ligue 2',               country: 'France',      flag: '🇫🇷' },
+            { id: 66,  name: 'Coupe de France',       country: 'France',      flag: '🇫🇷' },
+            { id: 88,  name: 'Eredivisie',            country: 'Netherlands', flag: '🇳🇱' },
+            { id: 94,  name: 'Primeira Liga',         country: 'Portugal',    flag: '🇵🇹' },
+            { id: 144, name: 'Pro League',            country: 'Belgium',     flag: '🇧🇪' },
+            { id: 203, name: 'Süper Lig',             country: 'Turkey',      flag: '🇹🇷' },
+            { id: 253, name: 'MLS',                   country: 'USA',         flag: '🇺🇸' },
+            { id: 188, name: 'A-League',              country: 'Australia',   flag: '🇦🇺' },
+        ];
+        const PREDICT_LEAGUE_IDS = new Set(PREDICT_LEAGUES.map(l => l.id));
+        const PREDICT_LEAGUE_MAP = {};
+        PREDICT_LEAGUES.forEach(l => { PREDICT_LEAGUE_MAP[l.id] = l; });
+
+        // ── Storage ──────────────────────────────────────────────────────────
+        function getDailyPredictions(date) {
+            try { return JSON.parse(localStorage.getItem(`predictions_${date}`) || 'null'); } catch(e) { return null; }
+        }
+        function saveDailyPredictions(date, data) {
+            try { localStorage.setItem(`predictions_${date}`, JSON.stringify(data)); } catch(e) {}
+        }
+        function getPredictionHistory() {
+            try { return JSON.parse(localStorage.getItem('predictionHistory') || '[]'); } catch(e) { return []; }
+        }
+        function savePredictionHistory(arr) {
+            try { localStorage.setItem('predictionHistory', JSON.stringify(arr.slice(0, 500))); } catch(e) {}
+        }
+        function getPredictModelWeights() {
+            try {
+                const w = JSON.parse(localStorage.getItem('predictModelWeights') || 'null');
+                return w || { homeGoalsMult: 1.0, awayGoalsMult: 1.0, sampleCount: 0 };
+            } catch(e) { return { homeGoalsMult: 1.0, awayGoalsMult: 1.0, sampleCount: 0 }; }
+        }
+        function savePredictModelWeights(w) {
+            try { localStorage.setItem('predictModelWeights', JSON.stringify(w)); } catch(e) {}
+        }
+
+        // ── Poisson simulation ───────────────────────────────────────────────
+        function poissonProb(lambda, k) {
+            if (lambda <= 0) return k === 0 ? 1 : 0;
+            let p = Math.exp(-lambda);
+            for (let i = 1; i <= k; i++) p = p * lambda / i;
+            return p;
+        }
+        function simulateMatch(lh, la) {
+            const max = 7;
+            let scores = [];
+            for (let h = 0; h <= max; h++) {
+                for (let a = 0; a <= max; a++) {
+                    scores.push({ h, a, p: poissonProb(lh, h) * poissonProb(la, a) });
+                }
+            }
+            scores.sort((a, b) => b.p - a.p);
+            const homeWin = scores.filter(s => s.h > s.a).reduce((t, s) => t + s.p, 0);
+            const draw    = scores.filter(s => s.h === s.a).reduce((t, s) => t + s.p, 0);
+            const awayWin = scores.filter(s => s.a > s.h).reduce((t, s) => t + s.p, 0);
+            return {
+                top: scores.slice(0, 6),
+                best: scores[0],
+                homeWin: Math.round(homeWin * 100),
+                draw:    Math.round(draw    * 100),
+                awayWin: Math.round(awayWin * 100)
+            };
+        }
+
+        // ── Main scan ────────────────────────────────────────────────────────
+        async function scanScorePredictions(btn) {
+            btn.disabled = true; btn.innerText = '🔮 SCANNING...';
+            const info = document.getElementById('predictScanInfo');
+            const area = document.getElementById('predictContent');
+            const today = new Date().toISOString().split('T')[0];
+            const season = new Date().getMonth() >= 6 ? new Date().getFullYear() : new Date().getFullYear() - 1;
+            const weights = getPredictModelWeights();
+
+            // European competition IDs — teams play fewer games so need special handling
+            const EURO_COMP_IDS = new Set([2, 3, 848]);
+
+            // ── Helper: proper separate home/away league averages (Dixon-Coles baseline) ──
+            // avgH > avgA naturally encodes home advantage — NO multiplier needed.
+            function leagueAverages(lid) {
+                const rows = standingsMap[lid] || [];
+                if (rows.length < 4) return { avgH: 1.45, avgA: 1.05 };
+                const totalHG = rows.reduce((s, r) => s + (r.home && r.home.goals ? (r.home.goals.for || 0) : 0), 0);
+                const totalAG = rows.reduce((s, r) => s + (r.away && r.away.goals ? (r.away.goals.for || 0) : 0), 0);
+                const totalHGames = rows.reduce((s, r) => s + (r.home ? (r.home.played || 0) : 0), 0);
+                const totalAGames = rows.reduce((s, r) => s + (r.away ? (r.away.played || 0) : 0), 0);
+                const avgH = totalHGames > 0 ? totalHG / totalHGames : 1.45;
+                const avgA = totalAGames > 0 ? totalAG / totalAGames : 1.05;
+                return { avgH: Math.max(0.5, avgH), avgA: Math.max(0.4, avgA) };
+            }
+
+            // ── Helper: per-game rates from standings row ──
+            function getStandingsRates(lid, teamId) {
+                const rows = standingsMap[lid] || [];
+                const row = rows.find(r => r.team.id === teamId);
+                if (!row) return null;
+                const h = row.home, a = row.away;
+                return {
+                    pos: row.rank, form: row.form || '',
+                    homeGF: h.goals.for   / Math.max(1, h.played),
+                    homeGA: h.goals.against / Math.max(1, h.played),
+                    awayGF: a.goals.for   / Math.max(1, a.played),
+                    awayGA: a.goals.against / Math.max(1, a.played),
+                    homePlayed: h.played, awayPlayed: a.played
+                };
+            }
+
+            // ── Helper: parse /teams/statistics response ──
+            function parseTeamStats(s) {
+                if (!s || !s.fixtures) return null;
+                const hPlayed = s.fixtures.played ? (s.fixtures.played.home || 0) : 0;
+                const aPlayed = s.fixtures.played ? (s.fixtures.played.away || 0) : 0;
+                if (hPlayed < 2 && aPlayed < 2) return null;
+                const homeGF = parseFloat((s.goals && s.goals.for && s.goals.for.average) ? s.goals.for.average.home : 0) || 0;
+                const homeGA = parseFloat((s.goals && s.goals.against && s.goals.against.average) ? s.goals.against.average.home : 0) || 0;
+                const awayGF = parseFloat((s.goals && s.goals.for && s.goals.for.average) ? s.goals.for.average.away : 0) || 0;
+                const awayGA = parseFloat((s.goals && s.goals.against && s.goals.against.average) ? s.goals.against.average.away : 0) || 0;
+                const form5  = (s.form || '').slice(-5);
+                return { homeGF, homeGA, awayGF, awayGA, homePlayed: hPlayed, awayPlayed: aPlayed, form5 };
+            }
+
+            // ── Helper: Dixon-Coles normalised lambda computation ──
+            // No explicit home advantage multiplier — avgH > avgA encodes it already.
+            function computeLambdas(hRate, aRate, avgH, avgA) {
+                const homeAttStr = hRate.homeGF / avgH;   // how productive home team is vs league avg home
+                const homeDefStr = hRate.homeGA / avgA;   // how well home team defends vs away-side scoring norm
+                const awayAttStr = aRate.awayGF / avgA;   // how productive away team is vs league avg away
+                const awayDefStr = aRate.awayGA / avgH;   // how well away team defends vs home-side scoring norm
+                return {
+                    lh: Math.max(0.25, Math.min(5, homeAttStr * awayDefStr * avgH)),
+                    la: Math.max(0.20, Math.min(4, awayAttStr * homeDefStr * avgA))
+                };
+            }
+
+            // standingsMap must be function-scoped so the helper closures can see it
+            const standingsMap = {};
+
+            // Always start fresh — clear any previously cached results for today
+            // so old-format entries don't cause render errors
+            saveDailyPredictions(today, null);
+            area.innerHTML = '';
+
+            try {
+                info.textContent = 'Fetching today\'s fixtures...';
+                trackAPI(1);
+                const fixtRes = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                const fixtData = await fixtRes.json();
+                const allFix = (fixtData.response || []).filter(f =>
+                    PREDICT_LEAGUE_IDS.has(f.league.id) && ['NS','TBD'].includes(f.fixture.status.short)
+                );
+
+                if (!allFix.length) {
+                    area.innerHTML = `<div style='text-align:center;padding:40px;color:#888;'><div style='font-size:2rem;'>🔮</div><p>No upcoming fixtures found for today across the selected leagues.</p></div>`;
+                    btn.disabled = false; btn.innerText = '🔮 PREDICT TODAY\'S SCORES';
+                    return;
+                }
+
+                // ── Standings per unique league ──
+                const leagueIds = [...new Set(allFix.map(f => f.league.id))];
+                info.textContent = `Fetching standings for ${leagueIds.length} leagues...`;
+                for (const lid of leagueIds) {
+                    try {
+                        trackAPI(1);
+                        const sRes = await fetch(`https://v3.football.api-sports.io/standings?league=${lid}&season=${season}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                        const sData = await sRes.json();
+                        if (sData.response && sData.response[0] && sData.response[0].league && sData.response[0].league.standings && sData.response[0].league.standings[0]) {
+                            standingsMap[lid] = sData.response[0].league.standings[0];
+                        }
+                    } catch(e) {}
+                    await new Promise(r => setTimeout(r, 60));
+                }
+
+                const predictions = [];
+                let idx = 0;
+                for (const fix of allFix) {
+                    idx++;
+                    const homeId  = fix.teams.home.id;
+                    const awayId  = fix.teams.away.id;
+                    const lid     = fix.league.id;
+                    const isEuro  = EURO_COMP_IDS.has(lid);
+                    info.textContent = `[${idx}/${allFix.length}] ${fix.teams.home.name} vs ${fix.teams.away.name}`;
+
+                    const { avgH, avgA } = leagueAverages(lid);
+
+                    // ── Fetch /teams/statistics for each team ──
+                    let homeTeamStats = null, awayTeamStats = null;
+                    try {
+                        trackAPI(1);
+                        const tsH = await fetch(`https://v3.football.api-sports.io/teams/statistics?league=${lid}&season=${season}&team=${homeId}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                        const tsHData = await tsH.json();
+                        homeTeamStats = parseTeamStats(tsHData.response);
+                    } catch(e) {}
+                    await new Promise(r => setTimeout(r, 80));
+                    try {
+                        trackAPI(1);
+                        const tsA = await fetch(`https://v3.football.api-sports.io/teams/statistics?league=${lid}&season=${season}&team=${awayId}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                        const tsAData = await tsA.json();
+                        awayTeamStats = parseTeamStats(tsAData.response);
+                    } catch(e) {}
+                    await new Promise(r => setTimeout(r, 80));
+
+                    // ── For European comps: look up each team's domestic league via API ──
+                    // fix.teams.home.country is undefined in the fixtures response, so we
+                    // must use /leagues?team=X to discover the correct domestic competition.
+                    const MAJOR_DOM_IDS = new Set([39,40,41,42,78,79,135,136,140,61,62,88,94,144,203,179,180,181,253,188]);
+                    let homeDomStats = null, awayDomStats = null;
+                    if (isEuro) {
+                        async function fetchDomesticStats(teamId) {
+                            try {
+                                trackAPI(1);
+                                const leagRes = await fetch(`https://v3.football.api-sports.io/leagues?team=${teamId}&season=${season}&type=League&current=true`, { headers: { 'x-rapidapi-key': API_KEY } });
+                                const leagData = await leagRes.json();
+                                const domLeague = (leagData.response || []).find(l => MAJOR_DOM_IDS.has(l.league.id));
+                                if (!domLeague) return null;
+                                await new Promise(r => setTimeout(r, 60));
+                                trackAPI(1);
+                                const statsRes = await fetch(`https://v3.football.api-sports.io/teams/statistics?league=${domLeague.league.id}&season=${season}&team=${teamId}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                                return parseTeamStats((await statsRes.json()).response);
+                            } catch(e) { return null; }
+                        }
+                        homeDomStats = await fetchDomesticStats(homeId);
+                        await new Promise(r => setTimeout(r, 80));
+                        awayDomStats = await fetchDomesticStats(awayId);
+                        await new Promise(r => setTimeout(r, 80));
+                    }
+
+                    // ── Blend: team stats primary, domestic blend for Euro comps, standings fallback ──
+                    const standH = getStandingsRates(lid, homeId);
+                    const standA = getStandingsRates(lid, awayId);
+
+                    function blend(ts, dom, stand) {
+                        const base = ts || stand;
+                        if (!base) return null;
+                        if (dom && isEuro) {
+                            return {
+                                homeGF: base.homeGF * 0.6 + dom.homeGF * 0.4,
+                                homeGA: base.homeGA * 0.6 + dom.homeGA * 0.4,
+                                awayGF: base.awayGF * 0.6 + dom.awayGF * 0.4,
+                                awayGA: base.awayGA * 0.6 + dom.awayGA * 0.4,
+                                homePlayed: (base.homePlayed||0) + (dom.homePlayed||0),
+                                awayPlayed: (base.awayPlayed||0) + (dom.awayPlayed||0),
+                                form5: base.form5 || ''
+                            };
+                        }
+                        return base;
+                    }
+
+                    const hRate = blend(homeTeamStats, homeDomStats, standH);
+                    const aRate = blend(awayTeamStats, awayDomStats, standA);
+
+                    // ── Compute base lambdas ──
+                    let { lh, la } = (hRate && aRate)
+                        ? computeLambdas(hRate, aRate, avgH, avgA)
+                        : { lh: avgH * 0.9, la: avgA * 0.85 };
+
+                    // ── Form modifier (last 5 games, capped ±12%) ──
+                    const hForm5 = (hRate && hRate.form5) ? hRate.form5 : (standH ? (standH.form || '').slice(-5) : '');
+                    const aForm5 = (aRate && aRate.form5) ? aRate.form5 : (standA ? (standA.form || '').slice(-5) : '');
+                    if (hForm5) {
+                        const wH = (hForm5.match(/W/g)||[]).length;
+                        const lH = (hForm5.match(/L/g)||[]).length;
+                        lh *= Math.min(1.12, Math.max(0.88, 1 + (wH - lH) * 0.04));
+                    }
+                    if (aForm5) {
+                        const wA = (aForm5.match(/W/g)||[]).length;
+                        const lA = (aForm5.match(/L/g)||[]).length;
+                        la *= Math.min(1.12, Math.max(0.88, 1 + (wA - lA) * 0.04));
+                    }
+
+                    // ── H2H (25% blend) + two-leg detection for European knockouts ──
+                    let h2hNote = '', injuryNote = '', aggregateNote = '', twoLegCtx = null;
+                    try {
+                        trackAPI(1);
+                        const h2hRes = await fetch(`https://v3.football.api-sports.io/fixtures/headtohead?h2h=${homeId}-${awayId}&last=12`, { headers: { 'x-rapidapi-key': API_KEY } });
+                        const h2hData = await h2hRes.json();
+                        const allH2H = (h2hData.response || []);
+                        const h2hFin = allH2H.filter(g => ['FT','AET','PEN'].includes(g.fixture.status.short));
+
+                        // ── Two-leg tie detection ──
+                        // For European knockouts: look for a finished game within the past 5 weeks
+                        // that is the first leg of this tie.
+                        if (isEuro && h2hFin.length >= 1) {
+                            const fivWeeksAgo = Date.now() - (35 * 24 * 60 * 60 * 1000);
+                            const firstLeg = h2hFin.find(g => new Date(g.fixture.date).getTime() > fivWeeksAgo);
+                            if (firstLeg) {
+                                // Determine first-leg goals for each team
+                                // homeId = second-leg home; awayId = second-leg away
+                                let flHomeTeamGoals, flAwayTeamGoals;
+                                if (firstLeg.teams.home.id === homeId) {
+                                    // homeId was also home in first leg (unusual)
+                                    flHomeTeamGoals = firstLeg.goals.home || 0;
+                                    flAwayTeamGoals = firstLeg.goals.away || 0;
+                                } else {
+                                    // Normal: awayId hosted first leg, homeId was away
+                                    flHomeTeamGoals = firstLeg.goals.away || 0;  // homeId scored as visitor
+                                    flAwayTeamGoals = firstLeg.goals.home || 0;  // awayId scored at home
+                                }
+                                const aggMargin = flHomeTeamGoals - flAwayTeamGoals;
+                                // aggMargin > 0: second-leg home team leads on aggregate
+                                // aggMargin < 0: second-leg home team trails — MUST attack
+
+                                twoLegCtx = { flHomeTeamGoals, flAwayTeamGoals, aggMargin };
+
+                                if (aggMargin < 0) {
+                                    // Home side needs goals — becomes much more attacking
+                                    const def = Math.abs(aggMargin);
+                                    lh *= (1 + def * 0.20);           // open up and attack
+                                    la *= Math.max(0.88, 1 - def * 0.08); // away can be more conservative
+                                } else if (aggMargin > 0) {
+                                    // Away side needs goals — away team throws caution to wind
+                                    la *= (1 + aggMargin * 0.20);     // away team attacks
+                                    lh *= Math.max(0.88, 1 - aggMargin * 0.08); // home can manage
+                                } else {
+                                    // Level — both push, slightly higher goal expectancy
+                                    lh *= 1.05; la *= 1.05;
+                                }
+                                const leader = aggMargin === 0 ? 'Level on aggregate'
+                                    : aggMargin > 0 ? `${fix.teams.home.name} lead ${flHomeTeamGoals}-${flAwayTeamGoals} agg`
+                                    : `${fix.teams.away.name} lead ${flAwayTeamGoals}-${flHomeTeamGoals} agg`;
+                                aggregateNote = `🔁 2nd leg · ${leader} · ${aggMargin < 0 ? fix.teams.home.name + ' must attack' : aggMargin > 0 ? fix.teams.away.name + ' must attack' : 'Both teams need goals'}`;
+                            }
+                        }
+
+                        // ── Regular H2H blend (use last 6 finished, excluding very recent first leg) ──
+                        const h2hForBlend = h2hFin
+                            .filter(g => !(twoLegCtx && new Date(g.fixture.date).getTime() > Date.now() - 35*24*60*60*1000))
+                            .slice(0, 6);
+                        if (h2hForBlend.length >= 3) {
+                            const h2hHG = h2hForBlend.reduce((s, g) => s + (g.teams.home.id === homeId ? (g.goals.home||0) : (g.goals.away||0)), 0) / h2hForBlend.length;
+                            const h2hAG = h2hForBlend.reduce((s, g) => s + (g.teams.home.id === homeId ? (g.goals.away||0) : (g.goals.home||0)), 0) / h2hForBlend.length;
+                            lh = lh * 0.75 + h2hHG * 0.25;
+                            la = la * 0.75 + h2hAG * 0.25;
+                            const hW = h2hForBlend.filter(g => (g.teams.home.id === homeId ? g.goals.home > g.goals.away : g.goals.away > g.goals.home)).length;
+                            const dr = h2hForBlend.filter(g => g.goals.home === g.goals.away).length;
+                            h2hNote = `H2H last ${h2hForBlend.length}: ${fix.teams.home.name} ${hW}W ${dr}D ${h2hForBlend.length-hW-dr}L · avg ${h2hHG.toFixed(1)}-${h2hAG.toFixed(1)}`;
+                        }
+                    } catch(e) {}
+                    await new Promise(r => setTimeout(r, 80));
+
+                    // ── Injuries ──
+                    try {
+                        trackAPI(1);
+                        const injRes = await fetch(`https://v3.football.api-sports.io/injuries?fixture=${fix.fixture.id}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                        const injData = await injRes.json();
+                        if (injData.response && injData.response.length > 0) {
+                            const homeOut = injData.response.filter(p => p.team.id === homeId);
+                            const awayOut = injData.response.filter(p => p.team.id === awayId);
+                            if (homeOut.length > 0 || awayOut.length > 0) {
+                                injuryNote = [...homeOut.slice(0,3), ...awayOut.slice(0,3)]
+                                    .map(p => `${p.player.name} (${p.team.name.split(' ').slice(-1)[0]})`).join(', ');
+                                if (homeOut.length >= 2) lh *= Math.max(0.85, 1 - homeOut.length * 0.03);
+                                if (awayOut.length >= 2) la *= Math.max(0.85, 1 - awayOut.length * 0.025);
+                            }
+                        }
+                    } catch(e) {}
+                    await new Promise(r => setTimeout(r, 80));
+
+                    // ── Apply learned weight corrections ──
+                    lh = Math.max(0.2, Math.min(5, lh * weights.homeGoalsMult));
+                    la = Math.max(0.2, Math.min(4, la * weights.awayGoalsMult));
+
+                    const sim = simulateMatch(lh, la);
+                    const kickoff = new Date(fix.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const leagueInfo = PREDICT_LEAGUE_MAP[lid] || { name: fix.league.name, flag: '🌍', country: '' };
+                    const hPlayed = hRate ? (hRate.homePlayed||0) : 0;
+                    const aPlayed = aRate ? (aRate.awayPlayed||0) : 0;
+                    const dataQuality = hPlayed >= 6 && aPlayed >= 6 ? 'High' : hPlayed >= 3 ? 'Med' : 'Low';
+
+                    predictions.push({
+                        fixtureId: fix.fixture.id,
+                        date: today,
+                        home: { id: homeId, name: fix.teams.home.name },
+                        away: { id: awayId, name: fix.teams.away.name },
+                        league: leagueInfo,
+                        kickoff,
+                        predictedHome: sim.best.h,
+                        predictedAway: sim.best.a,
+                        homeWin: sim.homeWin,
+                        draw:    sim.draw,
+                        awayWin: sim.awayWin,
+                        topScores: sim.top.map(s => ({ h: s.h, a: s.a, p: Math.round(s.p * 100) })),
+                        lambdaHome: Math.round(lh * 100) / 100,
+                        lambdaAway: Math.round(la * 100) / 100,
+                        homePos:  standH ? (standH.pos || null) : null,
+                        awayPos:  standA ? (standA.pos || null) : null,
+                        homeForm: hForm5 || (standH ? (standH.form || '').slice(-5) : ''),
+                        awayForm: aForm5 || (standA ? (standA.form || '').slice(-5) : ''),
+                        h2hNote, injuryNote, aggregateNote, dataQuality,
+                        settled: false,
+                        scannedAt: Date.now()
+                    });
+                }
+
+                saveDailyPredictions(today, { predictions, scannedAt: Date.now() });
+                info.textContent = `✓ ${predictions.length} predictions · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Weights: home ×${weights.homeGoalsMult.toFixed(2)} away ×${weights.awayGoalsMult.toFixed(2)}`;
+                renderPredictCards(predictions, area);
+
+            } catch(err) {
+                console.error('Score Predictor error:', err);
+                area.innerHTML = `<div style='color:#da3633;text-align:center;padding:20px;'>Error running predictions. Please try again.</div>`;
+            }
+            btn.disabled = false; btn.innerText = '🔮 PREDICT TODAY\'S SCORES';
+        }
+
+
+        // ── Render from cache ────────────────────────────────────────────────
+        function renderPredictionsFromCache() {
+            const today = new Date().toISOString().split('T')[0];
+            const cached = getDailyPredictions(today);
+            const area = document.getElementById('predictContent');
+            const info = document.getElementById('predictScanInfo');
+            if (!cached || !cached.predictions || !cached.predictions.length) return;
+            const t = new Date(cached.scannedAt);
+            info.textContent = `Last scanned at ${t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${cached.predictions.length} predictions cached`;
+            renderPredictCards(cached.predictions, area);
+        }
+
+        // ── Card renderer ────────────────────────────────────────────────────
+        function renderPredictCards(predictions, area) {
+            if (!predictions.length) {
+                area.innerHTML = `<div style='text-align:center;padding:30px;color:#888;'>No predictions to show.</div>`;
+                return;
+            }
+
+            // Group by league
+            const byLeague = {};
+            predictions.forEach(p => {
+                const key = p.league.id || p.league.name;
+                if (!byLeague[key]) byLeague[key] = { league: p.league, fixtures: [] };
+                byLeague[key].fixtures.push(p);
+            });
+
+            // Sort leagues: European first, then by country
+            const leagueOrder = ['Europe','England','Scotland','Spain','Germany','Italy','France','Netherlands','Portugal','Belgium','Turkey','USA','Australia'];
+            const sorted = Object.values(byLeague).sort((a, b) => {
+                const ai = leagueOrder.indexOf(a.league.country);
+                const bi = leagueOrder.indexOf(b.league.country);
+                return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+            });
+
+            let html = '';
+            sorted.forEach(({ league, fixtures }) => {
+                html += `<div style="background:rgba(192,132,252,0.08); border:1px solid rgba(192,132,252,0.25); border-radius:10px; padding:10px 14px; margin-bottom:8px;">
+                    <div style="font-size:0.8rem; font-weight:bold; color:#c084fc;">${league.flag || '🌍'} ${league.name} <span style="color:#555; font-weight:normal;">· ${league.country || ''}</span></div>
+                </div>`;
+
+                fixtures.sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+                fixtures.forEach(p => {
+                    const resultColor  = p.settled ? (p.correctResult ? 'var(--green)' : 'var(--red)') : '#c084fc';
+                    const scoreColor   = p.settled ? (p.correctScore  ? 'var(--green)' : (p.correctResult ? 'var(--gold)' : 'var(--red)')) : 'white';
+                    const formStr = (form) => (form || '').split('').map(c => {
+                        const col = c==='W' ? '#2ea043' : c==='L' ? '#da3633' : '#d29922';
+                        return `<span style="color:${col};font-weight:bold;">${c}</span>`;
+                    }).join('');
+
+                    html += `
+                    <div class="match-card" style="border-left:4px solid ${resultColor}; margin-bottom:12px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <div style="font-size:0.68rem; color:#888;">KO ${p.kickoff}</div>
+                                ${p.dataQuality ? `<span style="font-size:0.58rem; padding:1px 5px; border-radius:4px; background:${p.dataQuality==='High'?'rgba(46,160,67,0.15)':p.dataQuality==='Med'?'rgba(210,153,34,0.15)':'rgba(218,54,51,0.12)'}; color:${p.dataQuality==='High'?'var(--green)':p.dataQuality==='Med'?'var(--gold)':'var(--red)'};">${p.dataQuality} data</span>` : ''}
+                            </div>
+                            ${p.settled ? `<div style="font-size:0.68rem; font-weight:bold; color:${resultColor};">${p.correctScore ? '✓ CORRECT SCORE' : p.correctResult ? '✓ CORRECT RESULT' : '✗ WRONG'}</div>` : '<div style="font-size:0.68rem; color:#555;">Pending</div>'}
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center; margin-bottom:12px;">
+                            <div style="text-align:left;">
+                                <div style="font-size:0.82rem; font-weight:bold; color:white;">${p.home.name}</div>
+                                ${p.homePos ? `<div style="font-size:0.62rem; color:#555;">${p.homePos}${getOrdinal(p.homePos)}</div>` : ''}
+                                ${p.homeForm ? `<div style="font-size:0.7rem; margin-top:2px;">${formStr(p.homeForm)}</div>` : ''}
+                            </div>
+                            <div style="text-align:center;">
+                                <div style="font-size:1.8rem; font-weight:bold; color:${scoreColor}; line-height:1;">${p.predictedHome} - ${p.predictedAway}</div>
+                                <div style="font-size:0.6rem; color:#555; margin-top:2px;">PREDICTED</div>
+                                ${p.settled ? `<div style="font-size:0.75rem; font-weight:bold; color:#888; margin-top:2px;">${p.actualHome} - ${p.actualAway} <span style="font-size:0.6rem;">actual</span></div>` : ''}
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:0.82rem; font-weight:bold; color:white;">${p.away.name}</div>
+                                ${p.awayPos ? `<div style="font-size:0.62rem; color:#555;">${p.awayPos}${getOrdinal(p.awayPos)}</div>` : ''}
+                                ${p.awayForm ? `<div style="font-size:0.7rem; margin-top:2px;">${formStr(p.awayForm)}</div>` : ''}
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; margin-bottom:10px;">
+                            <div style="background:rgba(46,160,67,0.1); border-radius:6px; padding:5px; text-align:center;">
+                                <div style="font-size:0.58rem; color:#888; margin-bottom:1px;">HOME WIN</div>
+                                <div style="font-size:0.9rem; font-weight:bold; color:var(--green);">${p.homeWin}%</div>
+                            </div>
+                            <div style="background:rgba(210,153,34,0.1); border-radius:6px; padding:5px; text-align:center;">
+                                <div style="font-size:0.58rem; color:#888; margin-bottom:1px;">DRAW</div>
+                                <div style="font-size:0.9rem; font-weight:bold; color:var(--gold);">${p.draw}%</div>
+                            </div>
+                            <div style="background:rgba(88,166,255,0.1); border-radius:6px; padding:5px; text-align:center;">
+                                <div style="font-size:0.58rem; color:#888; margin-bottom:1px;">AWAY WIN</div>
+                                <div style="font-size:0.9rem; font-weight:bold; color:var(--blue);">${p.awayWin}%</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom:8px;">
+                            <div style="font-size:0.62rem; color:#555; margin-bottom:4px; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px;">Most Likely Scores</div>
+                            <div style="display:flex; flex-wrap:wrap; gap:4px;">
+                                ${(p.topScores || []).slice(0,5).map((s, i) => `<span style="background:rgba(192,132,252,${i===0?'0.2':'0.07'}); border:1px solid rgba(192,132,252,${i===0?'0.4':'0.2'}); border-radius:6px; padding:3px 8px; font-size:0.72rem; color:${i===0?'#c084fc':'#888'}; font-weight:${i===0?'bold':'normal'};">${s.h}-${s.a} <span style="opacity:0.7;">${s.p}%</span></span>`).join('')}
+                            </div>
+                        </div>
+
+                        ${p.aggregateNote ? `<div style="font-size:0.7rem; font-weight:bold; color:#a78bfa; background:rgba(167,139,250,0.08); border:1px solid rgba(167,139,250,0.25); border-radius:6px; padding:5px 8px; margin-bottom:6px;">${p.aggregateNote}</div>` : ''}
+                        ${p.injuryNote ? `<div style="font-size:0.65rem; color:#d29922; margin-bottom:6px;">⚠️ Injuries/Doubts: ${p.injuryNote}</div>` : ''}
+                        ${p.h2hNote    ? `<div style="font-size:0.62rem; color:#555; margin-bottom:4px;">🔄 ${p.h2hNote}</div>` : ''}
+                        <div style="font-size:0.6rem; color:#444; border-top:1px solid #21262d; padding-top:5px;">
+                            xG model: ${p.home.name} ${p.lambdaHome} · ${p.away.name} ${p.lambdaAway}
+                        </div>
+                    </div>`;
+                });
+            });
+
+            area.innerHTML = html;
+        }
+
+        // ── Settle predictions ───────────────────────────────────────────────
+        async function settlePredictions(silent = false, manual = false) {
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            const today     = new Date().toISOString().split('T')[0];
+            const datesToCheck = manual ? [today, yesterday] : [yesterday];
+
+            let anySettled = false;
+            for (const date of datesToCheck) {
+                const cached = getDailyPredictions(date);
+                if (!cached?.predictions?.length) continue;
+                const unsettled = cached.predictions.filter(p => !p.settled);
+                if (!unsettled.length) continue;
+
+                const ids = unsettled.map(p => p.fixtureId).join('-');
+                try {
+                    trackAPI(1);
+                    const res = await fetch(`https://v3.football.api-sports.io/fixtures?ids=${ids}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                    const data = await res.json();
+                    const resultMap = {};
+                    (data.response || []).forEach(f => {
+                        const status = f.fixture.status.short;
+                        if (['FT','AET','PEN'].includes(status)) {
+                            resultMap[f.fixture.id] = { home: f.goals.home, away: f.goals.away };
+                        }
+                    });
+
+                    let settledCount = 0;
+                    let totalPredH = 0, totalPredA = 0, totalActH = 0, totalActA = 0;
+                    cached.predictions.forEach(p => {
+                        if (p.settled) return;
+                        const result = resultMap[p.fixtureId];
+                        if (result == null || result.home == null) return;
+                        p.settled = true;
+                        p.actualHome = result.home;
+                        p.actualAway = result.away;
+                        const predResult = p.predictedHome > p.predictedAway ? 'H' : p.predictedHome < p.predictedAway ? 'A' : 'D';
+                        const actResult  = result.home > result.away ? 'H' : result.home < result.away ? 'A' : 'D';
+                        p.correctResult = predResult === actResult;
+                        p.correctScore  = p.predictedHome === result.home && p.predictedAway === result.away;
+                        totalPredH += p.lambdaHome; totalPredA += p.lambdaAway;
+                        totalActH  += result.home;  totalActA  += result.away;
+                        settledCount++;
+                        anySettled = true;
+                    });
+                    saveDailyPredictions(date, cached);
+
+                    // Update history
+                    const history = getPredictionHistory();
+                    cached.predictions.filter(p => p.settled).forEach(p => {
+                        if (!history.find(h => h.fixtureId === p.fixtureId)) {
+                            history.unshift({ fixtureId: p.fixtureId, date: p.date, home: p.home.name, away: p.away.name, league: p.league.name, predictedHome: p.predictedHome, predictedAway: p.predictedAway, actualHome: p.actualHome, actualAway: p.actualAway, correctResult: p.correctResult, correctScore: p.correctScore });
+                        }
+                    });
+                    savePredictionHistory(history);
+
+                    // Self-learning weight update
+                    if (settledCount >= 3) {
+                        const avgPredH = totalPredH / settledCount;
+                        const avgPredA = totalPredA / settledCount;
+                        const avgActH  = totalActH  / settledCount;
+                        const avgActA  = totalActA  / settledCount;
+                        const w = getPredictModelWeights();
+                        const alpha = 0.15; // learning rate
+                        if (avgPredH > 0) w.homeGoalsMult = w.homeGoalsMult * (1 - alpha) + (avgActH / avgPredH) * alpha;
+                        if (avgPredA > 0) w.awayGoalsMult = w.awayGoalsMult * (1 - alpha) + (avgActA / avgPredA) * alpha;
+                        w.homeGoalsMult = Math.max(0.6, Math.min(1.6, w.homeGoalsMult));
+                        w.awayGoalsMult = Math.max(0.6, Math.min(1.6, w.awayGoalsMult));
+                        w.sampleCount = (w.sampleCount || 0) + settledCount;
+                        w.updatedAt = Date.now();
+                        savePredictModelWeights(w);
+                    }
+                } catch(e) { console.warn('settlePredictions error:', e); }
+            }
+            if (manual && anySettled) {
+                renderPredictionsFromCache();
+                alert('Results settled! Check the Stats page for accuracy report.');
+            } else if (manual) {
+                alert('No finished results found yet — matches may still be in progress.');
+            }
+        }
+
+        // ── Score predictor stats section ─────────────────────────────────────
+        function renderScorePredictorStats() {
+            const history = getPredictionHistory();
+            if (!history.length) return '';
+            const weights = getPredictModelWeights();
+            const total = history.length;
+            const correctResult = history.filter(h => h.correctResult).length;
+            const correctScore  = history.filter(h => h.correctScore).length;
+            const resultPct = Math.round(correctResult / total * 100);
+            const scorePct  = Math.round(correctScore  / total * 100);
+            const resultColor = resultPct >= 50 ? 'var(--green)' : resultPct >= 40 ? 'var(--gold)' : 'var(--red)';
+
+            // By league
+            const byLeague = {};
+            history.forEach(h => {
+                if (!byLeague[h.league]) byLeague[h.league] = { correct: 0, total: 0 };
+                byLeague[h.league].total++;
+                if (h.correctResult) byLeague[h.league].correct++;
+            });
+            const topLeagues = Object.entries(byLeague).sort((a, b) => b[1].total - a[1].total).slice(0, 6);
+
+            let html = `<div class="stats-card">
+                <div style="font-size:0.85rem; font-weight:bold; color:#c084fc; margin-bottom:12px;">🔮 Score Predictor Accuracy</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:12px;">
+                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.1rem; font-weight:bold; color:${resultColor};">${resultPct}%</div>
+                        <div style="font-size:0.6rem; color:#888;">Correct Result</div>
+                        <div style="font-size:0.58rem; color:#555;">${correctResult}/${total}</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.1rem; font-weight:bold; color:var(--green);">${scorePct}%</div>
+                        <div style="font-size:0.6rem; color:#888;">Correct Score</div>
+                        <div style="font-size:0.58rem; color:#555;">${correctScore}/${total}</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.1rem; font-weight:bold; color:#c084fc;">${total}</div>
+                        <div style="font-size:0.6rem; color:#888;">Total Settled</div>
+                        <div style="font-size:0.58rem; color:#555;">samples</div>
+                    </div>
+                </div>
+                <div style="font-size:0.72rem; color:#555; margin-bottom:10px; padding:6px 8px; background:rgba(255,255,255,0.03); border-radius:6px;">
+                    🧠 Model weights (self-learned from ${weights.sampleCount || 0} games): Home ×${weights.homeGoalsMult.toFixed(3)} · Away ×${weights.awayGoalsMult.toFixed(3)}
+                </div>`;
+
+            if (topLeagues.length) {
+                html += `<div style="font-size:0.72rem; font-weight:bold; color:#888; margin-bottom:6px;">By League</div>`;
+                topLeagues.forEach(([league, data]) => {
+                    const pct = Math.round(data.correct / data.total * 100);
+                    const bc  = pct >= 50 ? 'var(--green)' : pct >= 40 ? 'var(--gold)' : 'var(--red)';
+                    html += `<div class="stats-bar">
+                        <div class="stats-bar-label">${league}</div>
+                        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${pct}%; background:${bc};"></div></div>
+                        <div class="stats-bar-val">${pct}% <span style="color:#666; font-size:0.6rem;">(${data.total})</span></div>
+                    </div>`;
+                });
+            }
+
+            // Recent 10
+            html += `<div style="font-size:0.72rem; font-weight:bold; color:#888; margin-top:10px; margin-bottom:6px;">Recent Predictions</div>`;
+            history.slice(0, 10).forEach(h => {
+                const icon = h.correctScore ? '🎯' : h.correctResult ? '✓' : '✗';
+                const c    = h.correctScore ? 'var(--green)' : h.correctResult ? 'var(--cyan)' : 'var(--red)';
+                html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid #21262d; font-size:0.72rem;">
+                    <div style="flex:1; min-width:0;"><span style="color:${c};">${icon}</span> ${h.home} vs ${h.away} <span style="color:#555; font-size:0.62rem;">(${h.league})</span></div>
+                    <div style="text-align:right; white-space:nowrap; margin-left:8px;">
+                        <span style="color:#888;">${h.predictedHome}-${h.predictedAway}</span>
+                        <span style="color:#555;"> → </span>
+                        <span style="color:${c};">${h.actualHome}-${h.actualAway}</span>
+                    </div>
+                </div>`;
+            });
+
+            html += `</div>`;
+            return html;
+        }
+
         function renderStatsDashboard() {
             const container = document.getElementById('statsContent');
             const challenges = getPlacedChallenges();
@@ -7484,6 +8212,7 @@
             }
 
             html += renderValueBetsTrackerSection();
+            html += renderScorePredictorStats();
 
             html += `<button class="export-btn" onclick="exportCSV()" style="margin-top:10px;">📥 Export All History (CSV)</button>`;
 
