@@ -417,6 +417,14 @@
             </div>
             <div id="predictScanInfo" style="font-size:0.68rem; color:#555; margin-top:8px; text-align:center;"></div>
         </div>
+        <div id="predictFilterBar" style="display:none; gap:6px; margin-bottom:10px; flex-wrap:wrap;">
+            <span style="font-size:0.7rem; color:#888; align-self:center; white-space:nowrap;">Data Quality:</span>
+            <button onclick="setPredictFilter('all')" id="pf-all" class="predict-filter-btn active-pf" style="padding:4px 12px; border-radius:16px; border:1px solid var(--blue); background:rgba(56,139,253,0.15); color:var(--blue); font-size:0.75rem; font-weight:bold; cursor:pointer;">All</button>
+            <button onclick="setPredictFilter('High')" id="pf-High" class="predict-filter-btn" style="padding:4px 12px; border-radius:16px; border:1px solid #30363d; background:#21262d; color:#888; font-size:0.75rem; font-weight:bold; cursor:pointer;">High Data</button>
+            <button onclick="setPredictFilter('Med')" id="pf-Med" class="predict-filter-btn" style="padding:4px 12px; border-radius:16px; border:1px solid #30363d; background:#21262d; color:#888; font-size:0.75rem; font-weight:bold; cursor:pointer;">Med Data</button>
+            <button onclick="setPredictFilter('Low')" id="pf-Low" class="predict-filter-btn" style="padding:4px 12px; border-radius:16px; border:1px solid #30363d; background:#21262d; color:#888; font-size:0.75rem; font-weight:bold; cursor:pointer;">Low Data</button>
+            <span id="predictFilterCount" style="font-size:0.68rem; color:#555; align-self:center; margin-left:4px;"></span>
+        </div>
         <div id="predictContent" style="padding-bottom:100px; text-align:center; color:#888;">
             <div style="padding:40px 20px;">
                 <div style="font-size:3rem; margin-bottom:10px;">🔮</div>
@@ -7713,6 +7721,7 @@
 
                 saveDailyPredictions(today, { predictions, scannedAt: Date.now() });
                 info.textContent = `✓ ${predictions.length} predictions · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Weights: home ×${weights.homeGoalsMult.toFixed(2)} away ×${weights.awayGoalsMult.toFixed(2)}`;
+                document.getElementById('predictFilterBar').style.display = 'flex';
                 renderPredictCards(predictions, area);
 
             } catch(err) {
@@ -7723,6 +7732,26 @@
         }
 
 
+        // ── Data quality filter state ─────────────────────────────────────────
+        let predictDataFilter = 'all';
+
+        function setPredictFilter(val) {
+            predictDataFilter = val;
+            document.querySelectorAll('.predict-filter-btn').forEach(btn => {
+                const isActive = btn.id === `pf-${val}`;
+                const colors = { 'all': 'var(--blue)', 'High': 'var(--green)', 'Med': 'var(--gold)', 'Low': 'var(--red)' };
+                const bgs    = { 'all': 'rgba(56,139,253,0.15)', 'High': 'rgba(46,160,67,0.15)', 'Med': 'rgba(210,153,34,0.15)', 'Low': 'rgba(218,54,51,0.12)' };
+                btn.style.borderColor = isActive ? colors[val] : '#30363d';
+                btn.style.background  = isActive ? bgs[val]   : '#21262d';
+                btn.style.color       = isActive ? colors[val] : '#888';
+            });
+            const today  = new Date().toISOString().split('T')[0];
+            const cached = getDailyPredictions(today);
+            if (cached && cached.predictions) {
+                renderPredictCards(cached.predictions, document.getElementById('predictContent'));
+            }
+        }
+
         // ── Render from cache ────────────────────────────────────────────────
         function renderPredictionsFromCache() {
             const today = new Date().toISOString().split('T')[0];
@@ -7732,6 +7761,7 @@
             if (!cached || !cached.predictions || !cached.predictions.length) return;
             const t = new Date(cached.scannedAt);
             info.textContent = `Last scanned at ${t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${cached.predictions.length} predictions cached`;
+            document.getElementById('predictFilterBar').style.display = 'flex';
             renderPredictCards(cached.predictions, area);
         }
 
@@ -7742,9 +7772,19 @@
                 return;
             }
 
-            // Group by league
+            // Apply data quality filter
+            const filtered = predictDataFilter === 'all' ? predictions : predictions.filter(p => p.dataQuality === predictDataFilter);
+            const countEl = document.getElementById('predictFilterCount');
+            if (countEl) countEl.textContent = predictDataFilter === 'all' ? `${predictions.length} fixtures` : `${filtered.length} of ${predictions.length} fixtures`;
+            if (!filtered.length && predictDataFilter !== 'all') {
+                area.innerHTML = `<div style='text-align:center;padding:30px;color:#888;'>No predictions match the selected data quality filter.</div>`;
+                return;
+            }
+            const toRender = predictDataFilter === 'all' ? predictions : filtered;
+
+            // Group by league (filtered set)
             const byLeague = {};
-            predictions.forEach(p => {
+            toRender.forEach(p => {
                 const key = p.league.id || p.league.name;
                 if (!byLeague[key]) byLeague[key] = { league: p.league, fixtures: [] };
                 byLeague[key].fixtures.push(p);
@@ -7886,7 +7926,7 @@
                     const history = getPredictionHistory();
                     cached.predictions.filter(p => p.settled).forEach(p => {
                         if (!history.find(h => h.fixtureId === p.fixtureId)) {
-                            history.unshift({ fixtureId: p.fixtureId, date: p.date, home: p.home.name, away: p.away.name, league: p.league.name, predictedHome: p.predictedHome, predictedAway: p.predictedAway, actualHome: p.actualHome, actualAway: p.actualAway, correctResult: p.correctResult, correctScore: p.correctScore });
+                            history.unshift({ fixtureId: p.fixtureId, date: p.date, home: p.home.name, away: p.away.name, league: p.league.name, predictedHome: p.predictedHome, predictedAway: p.predictedAway, actualHome: p.actualHome, actualAway: p.actualAway, correctResult: p.correctResult, correctScore: p.correctScore, dataQuality: p.dataQuality || 'Low' });
                         }
                     });
                     savePredictionHistory(history);
@@ -7960,6 +8000,45 @@
                 <div style="font-size:0.72rem; color:#555; margin-bottom:10px; padding:6px 8px; background:rgba(255,255,255,0.03); border-radius:6px;">
                     🧠 Model weights (self-learned from ${weights.sampleCount || 0} games): Home ×${weights.homeGoalsMult.toFixed(3)} · Away ×${weights.awayGoalsMult.toFixed(3)}
                 </div>`;
+
+            // By data quality
+            const byQuality = { High: { correct: 0, score: 0, total: 0 }, Med: { correct: 0, score: 0, total: 0 }, Low: { correct: 0, score: 0, total: 0 } };
+            history.forEach(h => {
+                const q = h.dataQuality || 'Low';
+                if (byQuality[q]) {
+                    byQuality[q].total++;
+                    if (h.correctResult) byQuality[q].correct++;
+                    if (h.correctScore)  byQuality[q].score++;
+                }
+            });
+            const qLabels = {
+                High: { label: 'High Data', color: '#2ea043', border: 'rgba(46,160,67,0.3)',  desc: '6+ games per team' },
+                Med:  { label: 'Med Data',  color: '#d29922', border: 'rgba(210,153,34,0.3)', desc: '3–5 games' },
+                Low:  { label: 'Low Data',  color: '#da3633', border: 'rgba(218,54,51,0.3)',  desc: '<3 games' }
+            };
+            const hasQualityData = Object.values(byQuality).some(q => q.total > 0);
+            if (hasQualityData) {
+                html += `<div style="font-size:0.72rem; font-weight:bold; color:#888; margin-bottom:8px; margin-top:2px;">By Data Quality</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:12px;">`;
+                ['High', 'Med', 'Low'].forEach(q => {
+                    const d = byQuality[q];
+                    const { label, color, border, desc } = qLabels[q];
+                    const resPct   = d.total ? Math.round(d.correct / d.total * 100) : 0;
+                    const scorePct = d.total ? Math.round(d.score  / d.total * 100) : 0;
+                    const resColor = resPct >= 50 ? '#2ea043' : resPct >= 40 ? '#d29922' : '#da3633';
+                    html += `<div style="background:rgba(255,255,255,0.04); border:1px solid ${d.total ? border : '#30363d'}; padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:0.62rem; font-weight:bold; color:${color}; margin-bottom:4px;">${label}</div>
+                        <div style="font-size:0.58rem; color:#555; margin-bottom:6px;">${desc}</div>
+                        ${d.total ? `<div style="font-size:1rem; font-weight:bold; color:${resColor};">${resPct}%</div>
+                        <div style="font-size:0.58rem; color:#888;">Result</div>
+                        <div style="font-size:0.75rem; font-weight:bold; color:#2ea043; margin-top:3px;">${scorePct}%</div>
+                        <div style="font-size:0.58rem; color:#888;">Score</div>
+                        <div style="font-size:0.58rem; color:#555; margin-top:2px;">${d.total} games</div>`
+                        : `<div style="color:#555; font-size:0.65rem; margin-top:6px;">No data yet</div>`}
+                    </div>`;
+                });
+                html += `</div>`;
+            }
 
             if (topLeagues.length) {
                 html += `<div style="font-size:0.72rem; font-weight:bold; color:#888; margin-bottom:6px;">By League</div>`;
