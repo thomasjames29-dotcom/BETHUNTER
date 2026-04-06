@@ -2228,6 +2228,7 @@
                 document.getElementById('predictView').style.display = 'block';
                 document.getElementById('tabPredict').classList.add('active');
                 renderPredictionsFromCache();
+                startPredictAutoSettle();
             } else if(tab === 'cards') {
                 document.getElementById('cardView').style.display = 'block';
                 document.getElementById('tabCards').classList.add('active');
@@ -7772,7 +7773,6 @@
             info.textContent = `Last scanned at ${t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${cached.predictions.length} predictions cached`;
             document.getElementById('predictFilterBar').style.display = 'flex';
             renderPredictCards(cached.predictions, area);
-            startPredictAutoSettle();
         }
 
         // ── Card renderer ────────────────────────────────────────────────────
@@ -7956,18 +7956,24 @@
                 const unsettled = cached.predictions.filter(p => !p.settled);
                 if (!unsettled.length) continue;
 
-                const ids = unsettled.map(p => p.fixtureId).join('-');
+                // API-Football limits ids param to 20 per request — batch accordingly
+                const allIds = unsettled.map(p => p.fixtureId);
+                const BATCH = 20;
+                const resultMap = {};
                 try {
-                    trackAPI(1);
-                    const res = await fetch(`https://v3.football.api-sports.io/fixtures?ids=${ids}`, { headers: { 'x-rapidapi-key': API_KEY } });
-                    const data = await res.json();
-                    const resultMap = {};
-                    (data.response || []).forEach(f => {
-                        const status = f.fixture.status.short;
-                        if (['FT','AET','PEN'].includes(status)) {
-                            resultMap[f.fixture.id] = { home: f.goals.home, away: f.goals.away };
-                        }
-                    });
+                    for (let i = 0; i < allIds.length; i += BATCH) {
+                        const chunk = allIds.slice(i, i + BATCH);
+                        trackAPI(1);
+                        const res = await fetch(`https://v3.football.api-sports.io/fixtures?ids=${chunk.join('-')}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                        const data = await res.json();
+                        (data.response || []).forEach(f => {
+                            const status = f.fixture.status.short;
+                            if (['FT','AET','PEN'].includes(status)) {
+                                resultMap[f.fixture.id] = { home: f.goals.home, away: f.goals.away };
+                            }
+                        });
+                        if (i + BATCH < allIds.length) await new Promise(r => setTimeout(r, 200));
+                    }
 
                     let settledCount = 0;
                     let totalPredH = 0, totalPredA = 0, totalActH = 0, totalActA = 0;
