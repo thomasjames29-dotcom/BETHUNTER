@@ -416,6 +416,10 @@
                 <button class="card-scan-btn" style="flex:0 0 auto; background:#21262d; color:#888; margin-bottom:0; border:1px solid #30363d; padding:10px 14px; font-size:0.8rem;" onclick="settlePredictions(false, true)">🏁 Settle Results</button>
             </div>
             <div id="predictScanInfo" style="font-size:0.68rem; color:#555; margin-top:8px; text-align:center;"></div>
+            <div id="predictAutoSettleStatus" style="display:none; align-items:center; justify-content:center; gap:6px; margin-top:6px; font-size:0.65rem; color:#888;">
+                <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#2ea043; animation:pulse-green 2s infinite;"></span>
+                <span id="predictAutoSettleLabel">Auto-checking results every 30 min</span>
+            </div>
         </div>
         <div id="predictFilterBar" style="display:none; gap:6px; margin-bottom:10px; flex-wrap:wrap;">
             <span style="font-size:0.7rem; color:#888; align-self:center; white-space:nowrap;">Data Quality:</span>
@@ -1006,6 +1010,7 @@
         let pilotMode = false;
         let pilotInterval;
         let cardPilotInterval;
+        let predictAutoSettleInterval = null;
         let alertedGames = new Set();
         let currentStrategy = 'all';
         let momentumHistory = {};
@@ -2194,7 +2199,10 @@
             document.getElementById('apiCounter').innerText = `API: ${current}`;
         }
         trackAPI(0);
-        setTimeout(() => settlePredictions(true), 3000);
+        setTimeout(() => {
+            settlePredictions(true);
+            startPredictAutoSettle();
+        }, 3000);
 
         function switchTab(tab) {
             stopChallengeAutoRefresh();
@@ -7723,6 +7731,7 @@
                 info.textContent = `✓ ${predictions.length} predictions · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · Weights: home ×${weights.homeGoalsMult.toFixed(2)} away ×${weights.awayGoalsMult.toFixed(2)}`;
                 document.getElementById('predictFilterBar').style.display = 'flex';
                 renderPredictCards(predictions, area);
+                startPredictAutoSettle();
 
             } catch(err) {
                 console.error('Score Predictor error:', err);
@@ -7763,6 +7772,7 @@
             info.textContent = `Last scanned at ${t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} · ${cached.predictions.length} predictions cached`;
             document.getElementById('predictFilterBar').style.display = 'flex';
             renderPredictCards(cached.predictions, area);
+            startPredictAutoSettle();
         }
 
         // ── Card renderer ────────────────────────────────────────────────────
@@ -7877,10 +7887,67 @@
         }
 
         // ── Settle predictions ───────────────────────────────────────────────
-        async function settlePredictions(silent = false, manual = false) {
+        // ── Auto-settle management ────────────────────────────────────────────
+        function startPredictAutoSettle() {
+            stopPredictAutoSettle();
+            const today = new Date().toISOString().split('T')[0];
+            const cached = getDailyPredictions(today);
+            if (!cached?.predictions?.length) return;
+            const unsettled = cached.predictions.filter(p => !p.settled);
+            if (!unsettled.length) return;
+
+            const statusEl = document.getElementById('predictAutoSettleStatus');
+            const labelEl  = document.getElementById('predictAutoSettleLabel');
+            if (statusEl) statusEl.style.display = 'flex';
+
+            // Check immediately then every 5 minutes
+            settlePredictions(true, true, true);
+
+            predictAutoSettleInterval = setInterval(async () => {
+                const hour = new Date().getHours();
+                // Only check during active match hours (9am–midnight)
+                if (hour < 9 || hour >= 24) return;
+
+                const now = getDailyPredictions(new Date().toISOString().split('T')[0]);
+                const stillUnsettled = now?.predictions?.filter(p => !p.settled) || [];
+                if (!stillUnsettled.length) {
+                    stopPredictAutoSettle();
+                    if (labelEl) labelEl.textContent = '✓ All results settled';
+                    return;
+                }
+                if (labelEl) {
+                    const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    labelEl.textContent = `Auto-checking · last checked ${t} · ${stillUnsettled.length} pending`;
+                }
+                await settlePredictions(true, true, true);
+            }, 30 * 60 * 1000); // every 30 minutes
+        }
+
+        function stopPredictAutoSettle() {
+            if (predictAutoSettleInterval) {
+                clearInterval(predictAutoSettleInterval);
+                predictAutoSettleInterval = null;
+            }
+        }
+
+        function showPredictToast(msg) {
+            let toast = document.getElementById('predictToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'predictToast';
+                toast.style.cssText = 'position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:#161b22; border:1px solid #2ea043; color:#2ea043; padding:8px 16px; border-radius:20px; font-size:0.75rem; font-weight:bold; z-index:9999; box-shadow:0 4px 12px rgba(0,0,0,0.4); pointer-events:none; opacity:0; transition:opacity 0.3s;';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => { toast.style.opacity = '0'; }, 4000);
+        }
+
+        async function settlePredictions(silent = false, manual = false, auto = false) {
             const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
             const today     = new Date().toISOString().split('T')[0];
-            const datesToCheck = manual ? [today, yesterday] : [yesterday];
+            const datesToCheck = (manual || auto) ? [today, yesterday] : [yesterday];
 
             let anySettled = false;
             for (const date of datesToCheck) {
@@ -7949,10 +8016,29 @@
                     }
                 } catch(e) { console.warn('settlePredictions error:', e); }
             }
-            if (manual && anySettled) {
+            if (auto && anySettled) {
+                // Silently refresh the predict view if it's visible
+                const predictView = document.getElementById('predictView');
+                if (predictView && predictView.style.display !== 'none') {
+                    renderPredictionsFromCache();
+                }
+                const settledNow = (() => {
+                    const d = getDailyPredictions(new Date().toISOString().split('T')[0]);
+                    return (d?.predictions || []).filter(p => p.settled).length;
+                })();
+                const totalNow = (() => {
+                    const d = getDailyPredictions(new Date().toISOString().split('T')[0]);
+                    return (d?.predictions || []).length;
+                })();
+                showPredictToast(`🎯 ${settledNow}/${totalNow} results auto-settled`);
+                // Update status label
+                const labelEl = document.getElementById('predictAutoSettleLabel');
+                const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                if (labelEl) labelEl.textContent = `Auto-checked ${t} · ${totalNow - settledNow} still pending`;
+            } else if (manual && !auto && anySettled) {
                 renderPredictionsFromCache();
                 alert('Results settled! Check the Stats page for accuracy report.');
-            } else if (manual) {
+            } else if (manual && !auto) {
                 alert('No finished results found yet — matches may still be in progress.');
             }
         }
