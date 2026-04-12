@@ -439,11 +439,12 @@
             <div id="scorerScanInfo" style="font-size:0.68rem; color:#555; margin-top:8px; text-align:center;"></div>
         </div>
         <div id="scorerFilterBar" style="display:none; gap:6px; margin-bottom:6px; flex-wrap:wrap; align-items:center;">
-            <span style="font-size:0.7rem; color:#888; white-space:nowrap;">Confidence:</span>
+            <span style="font-size:0.7rem; color:#888; white-space:nowrap;">Filter:</span>
             <button onclick="setScorerFilter('all')" id="sf-all" class="scorer-filter-btn sf-active">All</button>
             <button onclick="setScorerFilter('high')" id="sf-high" class="scorer-filter-btn">🔥 High (70%+)</button>
             <button onclick="setScorerFilter('med')" id="sf-med" class="scorer-filter-btn">⚡ Med (50–69%)</button>
             <button onclick="setScorerFilter('fwd')" id="sf-fwd" class="scorer-filter-btn">👟 Forwards</button>
+            <button onclick="setScorerFilter('starter')" id="sf-starter" class="scorer-filter-btn">🟢 Prob. Starters</button>
             <span id="scorerFilterCount" style="font-size:0.68rem; color:#555; margin-left:4px;"></span>
         </div>
         <div id="scorerKOFilterBar" style="display:none; gap:5px; margin-bottom:6px; flex-wrap:wrap; align-items:center;"></div>
@@ -8380,6 +8381,30 @@
                     } catch(e) { teamPlayers[tid] = []; }
                 }));
 
+                // ── Step 3b: Fetch injury / suspension data per fixture ───────
+                setProgress(`Checking player availability for ${allFixtures.length} fixtures…`);
+                const injuredIds     = {};   // fixtureId → Set of confirmed-out player IDs
+                const questionableIds = {};  // fixtureId → Set of doubtful player IDs
+                await Promise.all(allFixtures.map(async f => {
+                    const fid = f.fixture.id;
+                    injuredIds[fid]      = new Set();
+                    questionableIds[fid] = new Set();
+                    try {
+                        const r = await fetch(`https://v3.football.api-sports.io/injuries?fixture=${fid}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                        const d = await r.json();
+                        (d.response || []).forEach(entry => {
+                            const pid  = entry.player?.id;
+                            const type = (entry.type || '').toLowerCase();
+                            if (!pid) return;
+                            if (type.includes('missing') || type.includes('suspend')) {
+                                injuredIds[fid].add(pid);
+                            } else if (type.includes('question') || type.includes('doubt')) {
+                                questionableIds[fid].add(pid);
+                            }
+                        });
+                    } catch(e) { /* injury data optional */ }
+                }));
+
                 // ── Step 4: Fetch team statistics per playing team (parallel) ──
                 const uniqueTeams = Object.keys(teamLeague).map(Number);
                 setProgress(`Fetching team stats for ${uniqueTeams.length} teams…`);
@@ -8432,9 +8457,15 @@
                     const awayEntries = (teamPlayers[aId] || []).map(p => ({ p, isHome: false }));
                     const seenInFixture = new Set();
 
+                    const fid = fixture.fixture.id;
                     ;[...homeEntries, ...awayEntries].forEach(({ p, isHome }) => {
                         const pid = p.player?.id;
                         if (pid) { if (seenInFixture.has(pid)) return; seenInFixture.add(pid); }
+
+                        // ── Eligibility: skip confirmed injured / suspended ────
+                        if (pid && injuredIds[fid]?.has(pid)) return;
+                        const isQuestionable = !!(pid && questionableIds[fid]?.has(pid));
+
                         // Prefer stats from this exact league+season, then any same-season, then first entry
                         const st = p.statistics?.find(s => s.league?.id === lid && s.league?.season === season)
                                 || p.statistics?.find(s => s.league?.season === season)
@@ -8447,6 +8478,10 @@
                         const goalsPerGame = goals / apps;
                         const pos          = st.games?.position || 'Unknown';
                         const playerTeamId = st.team?.id || (isHome ? hId : aId);
+
+                        // ── Start likelihood: ratio of starts to appearances ──
+                        const starts     = st.games?.lineups || 0;
+                        const startRatio = apps > 0 ? starts / apps : 0;
                         const playerTeam   = isHome ? hName : aName;
                         const oppTeam      = isHome ? aName : hName;
                         const oppTeamId    = isHome ? aId  : hId;
@@ -8508,6 +8543,9 @@
                             isHome,
                             goals,
                             apps,
+                            starts,
+                            startRatio: parseFloat(startRatio.toFixed(2)),
+                            isQuestionable,
                             goalsPerGame: parseFloat(goalsPerGame.toFixed(3)),
                             teamAvgScore: mySt.avgScored,
                             oppAvgConcede: oppSt.avgConceded,
@@ -8607,6 +8645,7 @@
             if (_scorerFilter === 'high') filtered = filtered.filter(p => p.confidence >= 70);
             else if (_scorerFilter === 'med') filtered = filtered.filter(p => p.confidence >= 50 && p.confidence < 70);
             else if (_scorerFilter === 'fwd') filtered = filtered.filter(p => p.pos === 'Attacker');
+            else if (_scorerFilter === 'starter') filtered = filtered.filter(p => p.startRatio >= 0.60);
 
             // ── Build & render kick-off time filter bar ────────────────
             const multiDay = _scorerDateFrom !== _scorerDateTo;
@@ -8703,7 +8742,7 @@
                 html += `<div style="display:grid; grid-template-columns:22px 1fr auto auto auto; gap:4px 8px; align-items:center; padding:6px 4px; border-top:1px solid #21262d; font-size:0.72rem;">
                     <span style="color:${c}; font-weight:bold;">${i < 3 ? medals[i] : (i+1)+'.'}</span>
                     <div style="cursor:pointer;" onclick="document.getElementById('scorer-detail-${_scorerResults.indexOf(p)}').scrollIntoView({behavior:'smooth'})">
-                        <div style="color:white; font-weight:${i < 3 ? 'bold' : 'normal'};">${p.name}</div>
+                        <div style="color:white; font-weight:${i < 3 ? 'bold' : 'normal'};">${p.name}${p.isQuestionable ? ' <span style="color:#f97316; font-size:0.6rem;">⚠️</span>' : ''}${p.startRatio > 0 && p.startRatio < 0.40 ? ' <span style="color:#60a5fa; font-size:0.58rem;">(sub)</span>' : ''}</div>
                         <div style="color:#555; font-size:0.6rem;">${p.team} vs ${p.opponent}</div>
                     </div>
                     <span style="color:#888; font-size:0.68rem;">${p.goalsPerGame.toFixed(2)}</span>
@@ -8730,6 +8769,13 @@
                     return `<span style="display:inline-block; width:16px; height:16px; border-radius:3px; background:${bc}; font-size:0.55rem; color:white; text-align:center; line-height:16px;">${c}</span>`;
                 }).join('');
                 const koTime     = p.kickoff ? new Date(p.kickoff * 1000).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '';
+                const startLabel = p.startRatio >= 0.70 ? ['🟢','Prob. Starter','#22c55e']
+                                 : p.startRatio >= 0.40 ? ['🟡','Squad Player','#fbbf24']
+                                 : p.startRatio >  0    ? ['🔵','Sub/Rotation','#60a5fa']
+                                 :                        ['⬜','No Data','#555'];
+                const availBadge = p.isQuestionable
+                    ? `<span style="font-size:0.6rem; color:#f97316; background:rgba(249,115,22,0.12); padding:2px 6px; border-radius:8px; border:1px solid rgba(249,115,22,0.3);">⚠️ Doubtful</span>`
+                    : '';
 
                 html += `<div class="scorer-card tier-${tier}" id="scorer-detail-${globalIdx}">
 
@@ -8739,6 +8785,8 @@
                             <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px; flex-wrap:wrap;">
                                 <span style="font-size:0.75rem; color:${confColor}; font-weight:bold; background:rgba(0,0,0,0.3); padding:2px 7px; border-radius:10px; border:1px solid ${confColor}44;">${rank <= 3 ? medals[rank-1]+' ' : ''}#${rank}</span>
                                 <span style="font-size:0.62rem; color:#555; padding:2px 6px; background:#21262d; border-radius:8px;">${p.pos}</span>
+                                <span style="font-size:0.6rem; color:${startLabel[2]}; background:${startLabel[2]}18; padding:2px 6px; border-radius:8px; border:1px solid ${startLabel[2]}33;">${startLabel[0]} ${startLabel[1]}${p.startRatio > 0 ? ' (' + Math.round(p.startRatio*100) + '%)' : ''}</span>
+                                ${availBadge}
                                 ${koTime ? `<span style="font-size:0.62rem; color:#555;">KO ${koTime}</span>` : ''}
                                 ${isTracked ? `<span style="font-size:0.62rem; color:#34d399; background:rgba(52,211,153,0.1); padding:2px 7px; border-radius:8px; border:1px solid rgba(52,211,153,0.3);">✓ Tracking</span>` : ''}
                             </div>
