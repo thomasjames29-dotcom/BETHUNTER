@@ -181,6 +181,14 @@
         .stats-bar-track { flex: 1; height: 14px; background: #21262d; border-radius: 4px; overflow: hidden; }
         .stats-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s; min-width: 2px; }
         .stats-bar-val { width: 40px; font-size: 0.75rem; color: #ccc; font-weight: bold; }
+        .scorer-filter-btn { padding:4px 12px; border-radius:16px; border:1px solid #30363d; background:#21262d; color:#888; font-size:0.75rem; font-weight:bold; cursor:pointer; }
+        .scorer-filter-btn.sf-active { border-color:#34d399; background:rgba(52,211,153,0.15); color:#34d399; }
+        .scorer-card { background:var(--card); border:1px solid #30363d; border-radius:12px; padding:14px; margin-bottom:10px; position:relative; overflow:hidden; }
+        .scorer-card.tier-high { border-color:rgba(52,211,153,0.5); }
+        .scorer-card.tier-med  { border-color:rgba(251,191,36,0.4); }
+        .scorer-card.tier-low  { border-color:rgba(156,163,175,0.25); }
+        .scorer-conf-bar { height:6px; border-radius:3px; margin-top:8px; background:#21262d; overflow:hidden; }
+        .scorer-conf-fill { height:100%; border-radius:3px; transition:width 0.6s; }
 
         /* MATCH TIMELINE */
         .match-timeline { display: flex; align-items: center; height: 20px; background: #21262d; border-radius: 4px; margin: 8px 0; position: relative; overflow: hidden; }
@@ -262,15 +270,16 @@
         </div>
         
         <div class="nav-tabs">
-            <div id="tabLive" class="nav-tab active" onclick="switchTab('live')">🔴 Live Hunt</div>
-            <div id="tabCards" class="nav-tab" onclick="switchTab('cards')">🟨 Card Watch</div>
+            <div id="tabBotd" class="nav-tab active" onclick="switchTab('botd')">🏆 Bet of the Day</div>
+            <div id="tabPredict" class="nav-tab" onclick="switchTab('predict')">🔮 Score Predictor</div>
+            <div id="tabScorers" class="nav-tab" onclick="switchTab('scorers')">⚽ Goalscorers</div>
+            <div id="tab2hg" class="nav-tab" onclick="switchTab('2hg')">🕐 Late Goals</div>
+            <div id="tabLive" class="nav-tab" onclick="switchTab('live')">🔴 Live Hunt</div>
             <div id="tabChallenge" class="nav-tab" onclick="switchTab('challenge')">💷 Challenge</div>
             <div id="tabSched" class="nav-tab" onclick="switchTab('sched')">📅 Elite Schedule</div>
-            <div id="tabPredict" class="nav-tab" onclick="switchTab('predict')">🔮 Score Predictor</div>
             <div id="tabAcc" class="nav-tab" onclick="switchTab('acc')">💰 Acca Tips</div>
-            <div id="tab2hg" class="nav-tab" onclick="switchTab('2hg')">⚽ 2nd Half Goal</div>
-            <div id="tabBotd" class="nav-tab" onclick="switchTab('botd')">🏆 Bet of the Day</div>
             <div id="tabValue" class="nav-tab" onclick="switchTab('value')">🎯 Value Bets</div>
+            <div id="tabCards" class="nav-tab" onclick="switchTab('cards')">🟨 Card Watch</div>
             <div id="tabStats" class="nav-tab" onclick="switchTab('stats')">📈 Stats</div>
             <div id="tabHist" class="nav-tab" onclick="switchTab('hist')">📜 History</div>
         </div>
@@ -281,7 +290,7 @@
         </select>
     </header>
 
-        <div id="liveView">
+        <div id="liveView" style="display:none;">
         <div class="chip-container">
             <div class="chip" onclick="setStrategy('challenge', this)" style="background:linear-gradient(135deg, rgba(210,153,34,0.15), rgba(46,160,67,0.1)); border-color:var(--gold);">🎯 Challenge Picks <span id="badge-challenge" class="chip-badge" style="display:none;">0</span></div>
             <div class="chip active" onclick="setStrategy('all', this)">🌍 All Games <span id="badge-all" class="chip-badge">0</span></div>
@@ -333,8 +342,8 @@
 
     <div id="secondHalfGoalView" style="display:none;">
         <div style="text-align:center; margin-bottom:15px;">
-            <h2 style="color:var(--green); margin:0 0 4px 0;">⚽ 2nd Half Goal Predictor</h2>
-            <p style="color:#888; font-size:0.78rem; margin:0;">Live matches in the 2nd half — AI confidence ratings for another goal</p>
+            <h2 style="color:var(--green); margin:0 0 4px 0;">⚽ Late Goal Hunter</h2>
+            <p style="color:#888; font-size:0.78rem; margin:0;">Live matches from 68'+ — AI confidence for a goal in the final 22 minutes</p>
         </div>
         <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:0 0 12px 0;">
             <div style="font-size:0.75rem; color:#aaa; margin-bottom:6px; font-weight:bold;">💰 YOUR BANKROLL (for Kelly stake sizing)</div>
@@ -344,11 +353,11 @@
             </div>
             <div style="font-size:0.65rem; color:#555; margin-top:5px;">Stake recommendations use ¼ Kelly · Est. odds: 1.50 next-goal market · Only shows edge when confidence &gt; 67%</div>
         </div>
-        <button class="card-scan-btn" style="background:var(--green); color:#000; margin-bottom:15px;" onclick="scan2ndHalfGoals(this)">⚽ SCAN 2ND HALF MATCHES</button>
-        <div id="secondHalfGoalContent" style="padding-bottom:100px; text-align:center; color:#888;">Click above to scan all live 2nd half matches for goal probability.</div>
+        <button class="card-scan-btn" style="background:var(--green); color:#000; margin-bottom:15px;" onclick="scan2ndHalfGoals(this)">⚽ SCAN LATE-GAME MATCHES (68'+)</button>
+        <div id="secondHalfGoalContent" style="padding-bottom:100px; text-align:center; color:#888;">Click above to scan live matches from the 68th minute onward for late goal probability.</div>
     </div>
 
-    <div id="botdView" style="display:none;">
+    <div id="botdView">
         <div style="text-align:center; margin-bottom:15px;">
             <h2 style="color:var(--gold); margin:0 0 4px 0;">🏆 Top 10 Picks of the Day</h2>
             <p style="color:#888; font-size:0.78rem; margin:0;">The 10 strongest bets today across all top leagues</p>
@@ -402,6 +411,30 @@
                 <p style="font-size:0.78rem; color:#555; margin-bottom:4px;">Only bets with positive Expected Value (EV) are shown.</p>
                 <p style="font-size:0.78rem; color:#555;">Positive EV bets are mathematically profitable long-term.</p>
             </div>
+        </div>
+    </div>
+
+    <div id="scorersView" style="display:none; padding-bottom:100px;">
+        <div style="text-align:center; margin-bottom:15px;">
+            <h2 style="color:#34d399; margin:0 0 4px 0;">⚽ Goalscorer Tips</h2>
+            <p style="color:#888; font-size:0.78rem; margin:0;">Ranks today's most likely anytime goalscorers across elite leagues using player goal rate, team attack, opponent defensive form &amp; more</p>
+        </div>
+        <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:0 0 12px 0;">
+            <button class="card-scan-btn" id="scorerScanBtn" style="width:100%; background:linear-gradient(135deg,#064e3b,#059669); color:white; margin-bottom:0; border:1px solid #34d399;" onclick="scanGoalscorerTips()">⚽ SCAN TODAY'S GOALSCORER TIPS</button>
+            <div id="scorerScanInfo" style="font-size:0.68rem; color:#555; margin-top:8px; text-align:center;"></div>
+        </div>
+        <div id="scorerFilterBar" style="display:none; gap:6px; margin-bottom:10px; flex-wrap:wrap; align-items:center;">
+            <span style="font-size:0.7rem; color:#888; white-space:nowrap;">Filter:</span>
+            <button onclick="setScorerFilter('all')" id="sf-all" class="scorer-filter-btn sf-active">All</button>
+            <button onclick="setScorerFilter('high')" id="sf-high" class="scorer-filter-btn">🔥 High (70%+)</button>
+            <button onclick="setScorerFilter('med')" id="sf-med" class="scorer-filter-btn">⚡ Med (50–69%)</button>
+            <button onclick="setScorerFilter('fwd')" id="sf-fwd" class="scorer-filter-btn">👟 Forwards</button>
+            <span id="scorerFilterCount" style="font-size:0.68rem; color:#555; margin-left:4px;"></span>
+        </div>
+        <div id="scorerContent" style="text-align:center; color:#888; padding:30px;">
+            <div style="font-size:3rem; margin-bottom:10px;">⚽</div>
+            <p style="margin-bottom:8px;">Tap <strong style="color:white;">Scan Today's Goalscorer Tips</strong> to analyse all elite fixtures.</p>
+            <p style="font-size:0.78rem; color:#555;">Uses player goals per game, team attack strength, opposition defensive form, home/away factor &amp; recent team form.</p>
         </div>
     </div>
 
@@ -2122,6 +2155,7 @@
                 const d = b.placedAt ? new Date(b.placedAt).toLocaleDateString('en-CA') : new Date().toLocaleDateString('en-CA');
                 let sourceLabel = 'Challenge';
                 if (b.source === 'BOTD') sourceLabel = 'BOTD';
+                else if (b.source === 'Scorer') sourceLabel = 'Scorer';
                 else if (b.selection === '2nd Half Goal') sourceLabel = '2nd Half';
                 else if (b.selection && b.selection.startsWith('Anytime Goalscorer')) sourceLabel = 'Player';
                 else if (b.selection && b.selection.startsWith('Anytime Booking')) sourceLabel = 'Player';
@@ -2144,7 +2178,7 @@
                 return acc;
             }, {});
 
-            const sourceColors = { 'Hunt': 'var(--cyan)', 'Challenge': 'var(--gold)', '2nd Half': 'var(--green)', 'Player': 'var(--purple)', 'BOTD': '#e09040' };
+            const sourceColors = { 'Hunt': 'var(--cyan)', 'Challenge': 'var(--gold)', '2nd Half': 'var(--green)', 'Player': 'var(--purple)', 'BOTD': '#e09040', 'Scorer': '#34d399' };
 
             let html = `<button class="export-btn" onclick="exportCSV()">📥 Export to Excel (CSV)</button>`;
             for (const [date, dayBets] of Object.entries(grouped)) {
@@ -2206,8 +2240,8 @@
 
         function switchTab(tab) {
             stopChallengeAutoRefresh();
-            const views = ['liveView','schedView','histView','cardView','accView','challengeView','statsView','secondHalfGoalView','botdView','valueView','predictView'];
-            const tabs = ['tabLive','tabSched','tabHist','tabCards','tabAcc','tabChallenge','tabStats','tab2hg','tabBotd','tabValue','tabPredict'];
+            const views = ['liveView','schedView','histView','cardView','accView','challengeView','statsView','secondHalfGoalView','botdView','valueView','predictView','scorersView'];
+            const tabs = ['tabLive','tabSched','tabHist','tabCards','tabAcc','tabChallenge','tabStats','tab2hg','tabBotd','tabValue','tabPredict','tabScorers'];
             views.forEach(v => document.getElementById(v).style.display = 'none');
             tabs.forEach(t => document.getElementById(t).classList.remove('active'));
             document.getElementById('filterSelect').style.display = 'none';
@@ -2246,6 +2280,10 @@
                 document.getElementById('tabValue').classList.add('active');
                 renderBookmakerButtons();
                 if (window._lastValueScanResults) applyValueFiltersAndRender();
+            } else if(tab === 'scorers') {
+                document.getElementById('scorersView').style.display = 'block';
+                document.getElementById('tabScorers').classList.add('active');
+                renderGoalscorerCache();
             } else if(tab === 'stats') {
                 document.getElementById('statsView').style.display = 'block';
                 document.getElementById('tabStats').classList.add('active');
@@ -2701,10 +2739,10 @@
         }
 
         async function scan2ndHalfGoals(btn) {
-            btn.innerText = "⚽ SCANNING 2ND HALF MATCHES...";
+            btn.innerText = "⚽ SCANNING 68'+ MATCHES...";
             btn.disabled = true;
             const area = document.getElementById('secondHalfGoalContent');
-            area.innerHTML = "<div style='text-align:center; padding:40px;'><div class='pilot-dot' style='width:20px; height:20px; margin:0 auto; background:var(--green); animation:pulse-gold 1s infinite;'></div><p style='margin-top:20px; color:var(--green);'>Fetching live 2nd half matches...</p></div>";
+            area.innerHTML = "<div style='text-align:center; padding:40px;'><div class='pilot-dot' style='width:20px; height:20px; margin:0 auto; background:var(--green); animation:pulse-gold 1s infinite;'></div><p style='margin-top:20px; color:var(--green);'>Fetching live matches from 68' onward...</p></div>";
 
             try {
                 const liveRes = await fetch("https://v3.football.api-sports.io/fixtures?live=all", { headers: { "x-rapidapi-key": API_KEY } });
@@ -2715,21 +2753,21 @@
                 let secondHalfMatches = (liveData.response || []).filter(m => {
                     const elapsed = m.fixture.status.elapsed || 0;
                     const status = m.fixture.status.short;
-                    if (!['2H','ET','BT'].includes(status) && elapsed < 46) return false;
-                    if (elapsed < 46) return false;
+                    if (!['2H','ET','BT'].includes(status) && elapsed < 68) return false;
+                    if (elapsed < 68) return false;
                     const ln = (m.league.name || '').toLowerCase();
                     if (BLACKLIST.some(b => ln.includes(b))) return false;
                     return true;
                 });
 
                 if (secondHalfMatches.length === 0) {
-                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>⚽</div><p>No 2nd half matches currently live.</p><p style='font-size:0.8rem; margin-top:8px;'>Check back when matches are in the second half (46th minute onwards).</p></div>";
-                    btn.innerText = "⚽ SCAN 2ND HALF MATCHES";
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>⚽</div><p>No live matches past the 68th minute right now.</p><p style='font-size:0.8rem; margin-top:8px;'>Check back when matches reach the 68' mark.</p></div>";
+                    btn.innerText = "⚽ SCAN LATE-GAME MATCHES (68'+)";
                     btn.disabled = false;
                     return;
                 }
 
-                area.innerHTML = `<div style='text-align:center; padding:20px; color:var(--green);'>Analyzing ${secondHalfMatches.length} matches — fetching stats, standings, events & form...</div>`;
+                area.innerHTML = `<div style='text-align:center; padding:20px; color:var(--green);'>Analyzing ${secondHalfMatches.length} match${secondHalfMatches.length !== 1 ? 'es' : ''} past 68' — fetching stats, standings, events & form...</div>`;
 
                 const results = [];
                 const standingsCache2hg = {};
@@ -3196,11 +3234,13 @@
                         confidence,
                         factors,
                         factorTags,
+                        events,
                         stats: { homeSoT, awaySoT, homeOffT, awayOffT, homeTotal, awayTotal, homePoss, awayPoss, homeDangerous, awayDangerous, homeExpG, awayExpG, totalxG, totalCorners, homeBlocked, awayBlocked, homeGKSaves, awayGKSaves, homePassAcc, awayPassAcc, homeFouls: gs(hStats, "Fouls"), awayFouls: gs(aStats, "Fouls"), totalYellows: yellowCards.length, totalReds: redCards.length },
                         homePos, awayPos, totalTeams,
                         h2hAvail: h2h && h2h.available,
                         standingsAvail: !!standings,
                         elapsed, homeGoals, awayGoals, totalGoals,
+                        hId, aId,
                         lateSubs, recentGoals
                     });
 
@@ -3210,8 +3250,8 @@
                 results.sort((a, b) => b.confidence - a.confidence);
 
                 if (results.length === 0) {
-                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>⚽</div><p>No 2nd half matches with enough stats to analyze.</p><p style='font-size:0.8rem; margin-top:8px;'>Matches need basic shot/possession data available.</p></div>";
-                    btn.innerText = "⚽ SCAN 2ND HALF MATCHES";
+                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>⚽</div><p>No 68'+ matches with enough stats to analyze.</p><p style='font-size:0.8rem; margin-top:8px;'>Matches need basic shot/possession data available.</p></div>";
+                    btn.innerText = "⚽ SCAN LATE-GAME MATCHES (68'+)";
                     btn.disabled = false;
                     return;
                 }
@@ -3247,6 +3287,38 @@
                     const barWidth = Math.min(100, r.confidence);
                     const barColor = r.confidence >= 80 ? '#2ea043' : (r.confidence >= 65 ? '#58a6ff' : (r.confidence >= 50 ? '#d29922' : '#da3633'));
 
+                    const goalEvts = (r.events || []).filter(e => e.type === 'Goal');
+                    const tlHomeColor = '#58a6ff', tlAwayColor = '#f0883e';
+                    const tlMarkers = goalEvts.map(g => {
+                        const min = g.time.elapsed || 0;
+                        const extra = g.time.extra || 0;
+                        const displayMin = extra > 0 ? `${min}+${extra}'` : `${min}'`;
+                        const pct = Math.min(98, (min / 95) * 100);
+                        const isHome = g.team && g.team.id === r.hId;
+                        const color = isHome ? tlHomeColor : tlAwayColor;
+                        const lastName = g.player ? g.player.name.split(' ').slice(-1)[0] : '';
+                        const ownGoal = (g.detail || '').toLowerCase().includes('own') ? ' OG' : '';
+                        return { pct, color, displayMin, label: lastName + ownGoal, isHome };
+                    });
+                    const tlHtml = `
+                        <div style="background:rgba(255,255,255,0.03); border-radius:8px; padding:8px 10px; margin-bottom:10px;">
+                            <div style="font-size:0.62rem; color:#666; margin-bottom:5px; font-weight:bold; letter-spacing:0.04em;">⚽ GOAL TIMELINE</div>
+                            <div style="position:relative; height:10px; background:#21262d; border-radius:5px; margin-bottom:18px;">
+                                <div title="Half Time" style="position:absolute; left:${(45/95)*100}%; top:-3px; bottom:-3px; width:1px; background:#3d444d;"></div>
+                                <div title="68'" style="position:absolute; left:${(68/95)*100}%; top:-3px; bottom:-3px; width:1px; background:rgba(210,153,34,0.5);"></div>
+                                ${tlMarkers.length === 0 ? `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:0.6rem; color:#444;">no goals yet</div>` : ''}
+                                ${tlMarkers.map(mk => `
+                                    <div style="position:absolute; left:${mk.pct}%; top:50%; transform:translate(-50%,-50%); width:11px; height:11px; background:${mk.color}; border-radius:50%; border:1.5px solid rgba(0,0,0,0.5); z-index:2; box-shadow:0 0 4px ${mk.color}66;"></div>
+                                    <div style="position:absolute; left:${mk.pct}%; top:14px; transform:translateX(-50%); font-size:0.55rem; color:${mk.color}; white-space:nowrap; text-align:center; line-height:1.3;">${mk.displayMin}${mk.label ? '<br>' + mk.label : ''}</div>
+                                `).join('')}
+                            </div>
+                            <div style="display:flex; gap:10px; font-size:0.6rem; color:#555; border-top:1px solid #21262d; padding-top:4px; margin-top:2px;">
+                                <span style="color:${tlHomeColor};">■ ${m.teams.home.name}</span>
+                                <span style="color:${tlAwayColor};">■ ${m.teams.away.name}</span>
+                                <span style="margin-left:auto;">HT <span style="color:rgba(210,153,34,0.7);">│ 68'</span></span>
+                            </div>
+                        </div>`;
+
                     html += `
                         <div class="match-card" style="border-left:4px solid ${confColor};">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
@@ -3257,6 +3329,8 @@
                                 <div style="font-weight:bold; font-size:1rem;">${m.teams.home.name} vs ${m.teams.away.name}</div>
                                 <div style="font-size:1.2rem; font-weight:bold; color:var(--gold);">${r.homeGoals} - ${r.awayGoals}</div>
                             </div>
+
+                            ${tlHtml}
 
                             <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
                                 <div style="flex:1; background:#21262d; border-radius:6px; height:8px; overflow:hidden;">
@@ -3353,7 +3427,7 @@
                 console.error("2nd Half Goal Scan Error:", e);
                 area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error scanning matches. Please try again.</div>";
             }
-            btn.innerText = "⚽ SCAN 2ND HALF MATCHES";
+            btn.innerText = "⚽ SCAN LATE-GAME MATCHES (68'+)";
             btn.disabled = false;
         }
 
@@ -8049,49 +8123,503 @@
             }
         }
 
+        // ══════════════════════════════════════════════════════════════════════
+        // ── GOALSCORER TIPS ──────────────────────────────────────────────────
+        // ══════════════════════════════════════════════════════════════════════
+
+        let _scorerFilter = 'all';
+        let _scorerResults = [];    // Full ranked list for current scan
+
+        function getScorerCacheKey() {
+            const d = new Date();
+            return `scorer_tips_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        function renderGoalscorerCache() {
+            const cached = localStorage.getItem(getScorerCacheKey());
+            if (cached) {
+                try {
+                    _scorerResults = JSON.parse(cached);
+                    document.getElementById('scorerFilterBar').style.display = 'flex';
+                    renderGoalscorerList();
+                } catch(e) { /* show default state */ }
+            }
+        }
+
+        function setScorerFilter(f) {
+            _scorerFilter = f;
+            document.querySelectorAll('.scorer-filter-btn').forEach(b => b.classList.remove('sf-active'));
+            const el = document.getElementById('sf-' + f);
+            if (el) el.classList.add('sf-active');
+            renderGoalscorerList();
+        }
+
+        async function scanGoalscorerTips() {
+            const btn = document.getElementById('scorerScanBtn');
+            const info = document.getElementById('scorerScanInfo');
+            const content = document.getElementById('scorerContent');
+            if (!API_KEY) { showToast('API key required'); return; }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Scanning fixtures...';
+            content.innerHTML = `<div style="padding:30px; text-align:center; color:#888;">
+                <div class="spinner" style="margin:0 auto 12px;"></div>
+                <div id="scorerProgress">Fetching today's elite fixtures…</div>
+            </div>`;
+
+            const setProgress = txt => {
+                const el = document.getElementById('scorerProgress');
+                if (el) el.textContent = txt;
+            };
+
+            try {
+                const season = new Date().getFullYear();
+                const today  = new Date().toISOString().split('T')[0];
+
+                // ── Step 1: Get today's fixtures ──────────────────────────
+                setProgress('Fetching today\'s elite fixtures…');
+                const fixtRes = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                const fixtData = await fixtRes.json();
+                const allFixtures = (fixtData.response || []).filter(f => ELITE_IDS.includes(f.league.id));
+
+                if (!allFixtures.length) {
+                    content.innerHTML = `<div style="padding:30px; text-align:center; color:#888;"><p>No elite fixtures found for today.</p></div>`;
+                    btn.disabled = false; btn.textContent = '⚽ SCAN TODAY\'S GOALSCORER TIPS';
+                    return;
+                }
+
+                info.textContent = `${allFixtures.length} elite fixtures found`;
+
+                // ── Step 2: Group by league, collect unique teams ─────────
+                const leagueMap   = {};   // leagueId → { leagueName, fixtures[] }
+                const teamLeague  = {};   // teamId → leagueId
+                allFixtures.forEach(f => {
+                    const lid = f.league.id;
+                    if (!leagueMap[lid]) leagueMap[lid] = { name: f.league.name, fixtures: [] };
+                    leagueMap[lid].fixtures.push(f);
+                    teamLeague[f.teams.home.id] = lid;
+                    teamLeague[f.teams.away.id] = lid;
+                });
+
+                // ── Step 3: Fetch top scorers per league (parallel) ───────
+                setProgress(`Fetching top scorers for ${Object.keys(leagueMap).length} leagues…`);
+                const leagueScorers = {};  // leagueId → scorers array
+                await Promise.all(Object.keys(leagueMap).map(async lid => {
+                    try {
+                        const r = await fetch(`https://v3.football.api-sports.io/players/topscorers?league=${lid}&season=${season}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                        const d = await r.json();
+                        leagueScorers[lid] = d.response || [];
+                    } catch(e) { leagueScorers[lid] = []; }
+                }));
+
+                // ── Step 4: Fetch team statistics per playing team (parallel) ──
+                const uniqueTeams = Object.keys(teamLeague).map(Number);
+                setProgress(`Fetching team stats for ${uniqueTeams.length} teams…`);
+                const teamStats = {};   // teamId → { avgScored, avgConceded, form }
+                await Promise.all(uniqueTeams.map(async tid => {
+                    const lid = teamLeague[tid];
+                    try {
+                        const r = await fetch(`https://v3.football.api-sports.io/teams/statistics?league=${lid}&season=${season}&team=${tid}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                        const d = await r.json();
+                        const s = d.response;
+                        if (s) {
+                            teamStats[tid] = {
+                                avgScored:    parseFloat(s.goals?.for?.average?.total)    || 1.3,
+                                avgConceded:  parseFloat(s.goals?.against?.average?.total) || 1.3,
+                                form:         s.form || '',
+                                cleanSheets:  s.clean_sheet?.total || 0,
+                                played:       s.fixtures?.played?.total || 1
+                            };
+                        }
+                    } catch(e) {}
+                    if (!teamStats[tid]) teamStats[tid] = { avgScored: 1.3, avgConceded: 1.3, form: '', cleanSheets: 0, played: 1 };
+                }));
+
+                // ── Step 5: Build ranked player list ──────────────────────
+                setProgress('Calculating goalscorer confidence ratings…');
+                const players = [];
+
+                allFixtures.forEach(fixture => {
+                    const hId  = fixture.teams.home.id;
+                    const aId  = fixture.teams.away.id;
+                    const hName = fixture.teams.home.name;
+                    const aName = fixture.teams.away.name;
+                    const lid   = fixture.league.id;
+                    const lName = fixture.league.name;
+                    const ko    = fixture.fixture.timestamp;
+
+                    const hSt = teamStats[hId] || { avgScored: 1.3, avgConceded: 1.3, form: '' };
+                    const aSt = teamStats[aId] || { avgScored: 1.3, avgConceded: 1.3, form: '' };
+
+                    // team form: count wins in last 5 chars of form string
+                    const formWins = fs => (fs || '').split('').slice(-5).filter(c => c === 'W').length;
+                    const hFormWins = formWins(hSt.form);
+                    const aFormWins = formWins(aSt.form);
+                    const hForm5 = (hSt.form || '').slice(-5);
+                    const aForm5 = (aSt.form || '').slice(-5);
+
+                    const scorers = leagueScorers[lid] || [];
+
+                    // Filter to only players in today's teams
+                    const playingTeamIds = new Set([hId, aId]);
+                    const relevantScorers = scorers.filter(p => {
+                        const tid = p.statistics?.[0]?.team?.id;
+                        return tid && playingTeamIds.has(tid);
+                    });
+
+                    // Minimum appearances threshold
+                    const MIN_APPS = 3;
+
+                    relevantScorers.forEach(p => {
+                        const st   = p.statistics?.[0];
+                        if (!st) return;
+                        const apps = st.games?.appearences || 0;
+                        if (apps < MIN_APPS) return;
+                        const goals       = st.goals?.total || 0;
+                        if (goals < 1) return;
+                        const goalsPerGame = goals / apps;
+                        const pos         = st.games?.position || 'Unknown';
+                        const playerTeamId = st.team?.id;
+                        const isHome       = playerTeamId === hId;
+                        const playerTeam   = isHome ? hName : aName;
+                        const oppTeam      = isHome ? aName : hName;
+                        const oppTeamId    = isHome ? aId  : hId;
+                        const mySt         = isHome ? hSt  : aSt;
+                        const oppSt        = isHome ? aSt  : hSt;
+                        const myFormWins   = isHome ? hFormWins : aFormWins;
+                        const myForm5      = isHome ? hForm5 : aForm5;
+
+                        // ── Confidence score (additive, max 95) ───────────
+                        let score = 0;
+
+                        // 1. Goals per game (0–40 pts) — primary signal
+                        score += Math.min(40, goalsPerGame * 60);
+
+                        // 2. Team attacking strength vs league avg 1.5 (0–20 pts)
+                        score += Math.min(20, (mySt.avgScored / 2.2) * 20);
+
+                        // 3. Opposition defensive weakness (0–20 pts)
+                        //    More goals conceded per game = more points
+                        score += Math.min(20, (oppSt.avgConceded / 2.0) * 20);
+
+                        // 4. Home advantage (0–5 pts)
+                        score += isHome ? 5 : 0;
+
+                        // 5. Team form in last 5 (0–10 pts)
+                        score += (myFormWins / 5) * 10;
+
+                        // 6. Position bonus: FWD > MID > DEF (0–5 pts)
+                        if (pos === 'Attacker')  score += 5;
+                        else if (pos === 'Midfielder') score += 2;
+                        else score += 0;
+
+                        // 7. Clean sheet risk: if opp has lots of clean sheets, slight penalty
+                        const oppCSRate = oppSt.cleanSheets / Math.max(1, oppSt.played);
+                        score -= Math.min(5, oppCSRate * 15);
+
+                        score = Math.round(Math.max(10, Math.min(92, score)));
+
+                        // Build factors list
+                        const factors = [];
+                        if (goalsPerGame >= 0.6) factors.push(`${goals} goals in ${apps} games (${(goalsPerGame).toFixed(2)}/game)`);
+                        else factors.push(`${goals} goals in ${apps} apps`);
+                        if (mySt.avgScored >= 1.8) factors.push(`${playerTeam} strong attack (${mySt.avgScored.toFixed(1)} goals/game)`);
+                        if (oppSt.avgConceded >= 1.5) factors.push(`${oppTeam} leaky defence (${oppSt.avgConceded.toFixed(1)} conceded/game)`);
+                        if (isHome) factors.push('Home advantage');
+                        if (myFormWins >= 4) factors.push(`${playerTeam} in great form (${myForm5})`);
+                        else if (myFormWins <= 1) factors.push(`${playerTeam} poor form (${myForm5})`);
+                        if (oppCSRate >= 0.35) factors.push(`${oppTeam} keeps ${Math.round(oppCSRate*100)}% clean sheets`);
+                        if (pos === 'Attacker') factors.push('Striker position');
+
+                        players.push({
+                            name:       p.player?.name || 'Unknown',
+                            photo:      p.player?.photo || '',
+                            team:       playerTeam,
+                            teamId:     playerTeamId,
+                            opponent:   oppTeam,
+                            league:     lName,
+                            leagueId:   lid,
+                            isHome,
+                            goals,
+                            apps,
+                            goalsPerGame: parseFloat(goalsPerGame.toFixed(3)),
+                            teamAvgScore: mySt.avgScored,
+                            oppAvgConcede: oppSt.avgConceded,
+                            teamForm: myForm5,
+                            pos,
+                            confidence: score,
+                            factors,
+                            kickoff: ko,
+                            fixture: `${hName} vs ${aName}`,
+                            fixtureId:  fixture.fixture.id
+                        });
+                    });
+                });
+
+                // Sort by confidence desc, then goals/game desc
+                players.sort((a, b) => b.confidence - a.confidence || b.goalsPerGame - a.goalsPerGame);
+
+                if (!players.length) {
+                    content.innerHTML = `<div style="padding:30px; text-align:center; color:#888;"><p>No scorer data available for today's elite fixtures yet. Try later in the day when team sheets are closer to confirmed.</p></div>`;
+                    btn.disabled = false; btn.textContent = '⚽ SCAN TODAY\'S GOALSCORER TIPS';
+                    return;
+                }
+
+                _scorerResults = players;
+                localStorage.setItem(getScorerCacheKey(), JSON.stringify(players));
+
+                document.getElementById('scorerFilterBar').style.display = 'flex';
+                info.textContent = `${players.length} players ranked across ${allFixtures.length} fixtures`;
+                renderGoalscorerList();
+
+            } catch(err) {
+                content.innerHTML = `<div style="padding:20px; text-align:center; color:var(--red);">Error: ${err.message}</div>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '⚽ SCAN TODAY\'S GOALSCORER TIPS';
+            }
+        }
+
+        function getScorerBetKey(p) {
+            return `${p.fixtureId}_Anytime Goalscorer: ${p.name}`;
+        }
+
+        function trackScorerBet(idx) {
+            const p = _scorerResults[idx];
+            if (!p) return;
+            const bets = getPlacedChallenges();
+            const sel  = `Anytime Goalscorer: ${p.name}`;
+            if (bets.some(b => b.fixtureId === p.fixtureId && b.selection === sel)) {
+                showToast(`${p.name} already tracked!`); return;
+            }
+            bets.push({
+                fixtureId:        p.fixtureId,
+                selection:        sel,
+                match:            p.fixture,
+                league:           p.league,
+                leagueId:         p.leagueId || null,
+                odds:             '~2.50',
+                oddsSource:       'estimate',
+                confidence:       p.confidence,
+                homeGoalsAtPlace: 0,
+                awayGoalsAtPlace: 0,
+                placedAt:         Date.now(),
+                status:           'pending',
+                result:           null,
+                factorTags:       p.factors || [],
+                source:           'Scorer',
+                playerName:       p.name,
+                playerTeam:       p.team
+            });
+            savePlacedChallenges(bets);
+            showToast(`✅ Tracking ${p.name} — Anytime Goalscorer`);
+            renderGoalscorerList();
+        }
+
+        function untrackScorerBet(idx) {
+            const p = _scorerResults[idx];
+            if (!p) return;
+            const sel  = `Anytime Goalscorer: ${p.name}`;
+            const bets = getPlacedChallenges().filter(b => !(b.fixtureId === p.fixtureId && b.selection === sel));
+            savePlacedChallenges(bets);
+            showToast(`Removed tracking for ${p.name}`);
+            renderGoalscorerList();
+        }
+
+        function renderGoalscorerList() {
+            const content = document.getElementById('scorerContent');
+            if (!_scorerResults.length) return;
+
+            // Build a set of already-tracked bet keys
+            const placed = new Set(
+                getPlacedChallenges()
+                    .filter(b => b.source === 'Scorer' || (b.selection && b.selection.startsWith('Anytime Goalscorer')))
+                    .map(b => `${b.fixtureId}_${b.selection}`)
+            );
+
+            let filtered = _scorerResults;
+            if (_scorerFilter === 'high') filtered = filtered.filter(p => p.confidence >= 70);
+            else if (_scorerFilter === 'med') filtered = filtered.filter(p => p.confidence >= 50 && p.confidence < 70);
+            else if (_scorerFilter === 'fwd') filtered = filtered.filter(p => p.pos === 'Attacker');
+
+            const countEl = document.getElementById('scorerFilterCount');
+            if (countEl) countEl.textContent = `${filtered.length} player${filtered.length !== 1 ? 's' : ''}`;
+
+            if (!filtered.length) {
+                content.innerHTML = `<div style="padding:20px; text-align:center; color:#888;">No players match this filter.</div>`;
+                return;
+            }
+
+            let html = `<div style="font-size:0.72rem; color:#555; margin-bottom:12px; padding:8px 10px; background:rgba(52,211,153,0.06); border-radius:8px; border:1px solid rgba(52,211,153,0.15);">
+                ${filtered.length} goalscorer tip${filtered.length !== 1 ? 's' : ''} — sorted by confidence. Bets auto-settle when matches finish.
+            </div>`;
+
+            const medals = ['🥇', '🥈', '🥉'];
+            let rank = 0;
+
+            // ── Summary leaderboard (top 10) ─────────────────────────────
+            const top10 = filtered.slice(0, 10);
+            html += `<div class="stats-card" style="border-color:rgba(52,211,153,0.3); margin-bottom:12px;">
+                <div style="font-size:0.78rem; font-weight:bold; color:#34d399; margin-bottom:10px;">📋 Top ${top10.length} Ranked</div>
+                <div style="display:grid; grid-template-columns:22px 1fr auto auto auto; gap:4px 8px; font-size:0.62rem; color:#555; margin-bottom:6px; padding:0 4px;">
+                    <span>#</span><span>Player</span><span>G/Gm</span><span>Conf</span><span></span>
+                </div>`;
+            top10.forEach((p, i) => {
+                const c = p.confidence >= 70 ? '#34d399' : p.confidence >= 55 ? '#fbbf24' : '#9ca3af';
+                const key = getScorerBetKey(p);
+                const isTracked = placed.has(key);
+                const globalIdx = _scorerResults.indexOf(p);
+                html += `<div style="display:grid; grid-template-columns:22px 1fr auto auto auto; gap:4px 8px; align-items:center; padding:6px 4px; border-top:1px solid #21262d; font-size:0.72rem;">
+                    <span style="color:${c}; font-weight:bold;">${i < 3 ? medals[i] : (i+1)+'.'}</span>
+                    <div style="cursor:pointer;" onclick="document.getElementById('scorer-detail-${_scorerResults.indexOf(p)}').scrollIntoView({behavior:'smooth'})">
+                        <div style="color:white; font-weight:${i < 3 ? 'bold' : 'normal'};">${p.name}</div>
+                        <div style="color:#555; font-size:0.6rem;">${p.team} vs ${p.opponent}</div>
+                    </div>
+                    <span style="color:#888; font-size:0.68rem;">${p.goalsPerGame.toFixed(2)}</span>
+                    <span style="font-weight:bold; color:${c};">${p.confidence}%</span>
+                    <button onclick="${isTracked ? 'untrackScorerBet' : 'trackScorerBet'}(${globalIdx})"
+                        style="padding:3px 8px; border-radius:8px; border:1px solid ${isTracked ? '#da3633' : '#34d399'}; background:${isTracked ? 'rgba(218,54,51,0.15)' : 'rgba(52,211,153,0.12)'}; color:${isTracked ? '#da3633' : '#34d399'}; font-size:0.62rem; font-weight:bold; cursor:pointer; white-space:nowrap;">
+                        ${isTracked ? '✓ On' : '+ Track'}
+                    </button>
+                </div>`;
+            });
+            html += `</div>`;
+
+            // ── Full detail cards ─────────────────────────────────────────
+            filtered.forEach((p, i) => {
+                rank++;
+                const globalIdx  = _scorerResults.indexOf(p);
+                const key        = getScorerBetKey(p);
+                const isTracked  = placed.has(key);
+                const tier       = p.confidence >= 70 ? 'high' : p.confidence >= 50 ? 'med' : 'low';
+                const confColor  = p.confidence >= 70 ? '#34d399' : p.confidence >= 55 ? '#fbbf24' : '#9ca3af';
+                const confLabel  = p.confidence >= 70 ? '🔥 High' : p.confidence >= 55 ? '⚡ Medium' : '📉 Low';
+                const formDots   = (p.teamForm || '').split('').map(c => {
+                    const bc = c === 'W' ? '#2ea043' : c === 'L' ? '#da3633' : '#d29922';
+                    return `<span style="display:inline-block; width:16px; height:16px; border-radius:3px; background:${bc}; font-size:0.55rem; color:white; text-align:center; line-height:16px;">${c}</span>`;
+                }).join('');
+                const koTime     = p.kickoff ? new Date(p.kickoff * 1000).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '';
+
+                html += `<div class="scorer-card tier-${tier}" id="scorer-detail-${globalIdx}">
+
+                    <!-- Header row -->
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px; flex-wrap:wrap;">
+                                <span style="font-size:0.75rem; color:${confColor}; font-weight:bold; background:rgba(0,0,0,0.3); padding:2px 7px; border-radius:10px; border:1px solid ${confColor}44;">${rank <= 3 ? medals[rank-1]+' ' : ''}#${rank}</span>
+                                <span style="font-size:0.62rem; color:#555; padding:2px 6px; background:#21262d; border-radius:8px;">${p.pos}</span>
+                                ${koTime ? `<span style="font-size:0.62rem; color:#555;">KO ${koTime}</span>` : ''}
+                                ${isTracked ? `<span style="font-size:0.62rem; color:#34d399; background:rgba(52,211,153,0.1); padding:2px 7px; border-radius:8px; border:1px solid rgba(52,211,153,0.3);">✓ Tracking</span>` : ''}
+                            </div>
+                            <div style="font-size:1rem; font-weight:bold; color:white;">${p.name}</div>
+                            <div style="font-size:0.72rem; color:#888; margin-top:1px;">${p.team} ${p.isHome ? '🏠' : '✈️'} vs ${p.opponent}</div>
+                            <div style="font-size:0.62rem; color:#555;">${p.league}</div>
+                        </div>
+                        <div style="text-align:center; flex-shrink:0; margin-left:12px;">
+                            <div style="font-size:2rem; font-weight:bold; color:${confColor}; line-height:1;">${p.confidence}%</div>
+                            <div style="font-size:0.6rem; color:${confColor};">${confLabel}</div>
+                        </div>
+                    </div>
+
+                    <!-- Confidence bar -->
+                    <div class="scorer-conf-bar">
+                        <div class="scorer-conf-fill" style="width:${p.confidence}%; background:linear-gradient(90deg,${confColor}88,${confColor});"></div>
+                    </div>
+
+                    <!-- Stats row -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-top:10px; margin-bottom:8px;">
+                        <div style="background:rgba(255,255,255,0.03); border-radius:7px; padding:7px; text-align:center;">
+                            <div style="font-size:1rem; font-weight:bold; color:white;">${p.goals}</div>
+                            <div style="font-size:0.58rem; color:#888;">Season Goals</div>
+                            <div style="font-size:0.6rem; color:#555;">${p.apps} apps</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.03); border-radius:7px; padding:7px; text-align:center;">
+                            <div style="font-size:1rem; font-weight:bold; color:${p.goalsPerGame >= 0.5 ? '#34d399' : p.goalsPerGame >= 0.3 ? '#fbbf24' : '#9ca3af'};">${p.goalsPerGame.toFixed(2)}</div>
+                            <div style="font-size:0.58rem; color:#888;">Goals/Game</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.03); border-radius:7px; padding:7px; text-align:center;">
+                            <div style="font-size:1rem; font-weight:bold; color:${p.teamAvgScore >= 1.8 ? '#34d399' : '#fbbf24'};">${p.teamAvgScore.toFixed(1)}</div>
+                            <div style="font-size:0.58rem; color:#888;">Team G/Game</div>
+                        </div>
+                    </div>
+
+                    <!-- Defence + Form row -->
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-bottom:12px;">
+                        <div style="background:rgba(255,255,255,0.03); border-radius:7px; padding:8px;">
+                            <div style="font-size:0.58rem; color:#888; margin-bottom:3px;">Opp Defence</div>
+                            <div style="font-size:0.88rem; font-weight:bold; color:${p.oppAvgConcede >= 1.5 ? '#34d399' : p.oppAvgConcede >= 1.1 ? '#fbbf24' : '#da3633'};">${p.oppAvgConcede.toFixed(1)} conc/game</div>
+                            <div style="font-size:0.58rem; color:#555; margin-top:1px;">${p.oppAvgConcede >= 1.5 ? '✓ Weak defence' : p.oppAvgConcede >= 1.1 ? '~ Average' : '⚠ Solid defence'}</div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.03); border-radius:7px; padding:8px;">
+                            <div style="font-size:0.58rem; color:#888; margin-bottom:5px;">Team Form (L5)</div>
+                            <div style="display:flex; gap:2px; flex-wrap:wrap;">${formDots || '<span style="color:#555; font-size:0.65rem;">No data</span>'}</div>
+                        </div>
+                    </div>
+
+                    <!-- Key factors -->
+                    <div style="background:rgba(52,211,153,0.05); border:1px solid rgba(52,211,153,0.15); border-radius:8px; padding:8px; margin-bottom:12px;">
+                        <div style="font-size:0.65rem; font-weight:bold; color:#34d399; margin-bottom:5px;">Key Factors</div>
+                        ${p.factors.map(f => `<div style="font-size:0.65rem; color:#888; margin-bottom:2px; display:flex; gap:5px;"><span style="color:#34d399; flex-shrink:0;">✓</span>${f}</div>`).join('')}
+                    </div>
+
+                    <!-- Track Bet button -->
+                    ${isTracked
+                        ? `<div style="display:flex; gap:8px; align-items:center;">
+                            <div style="flex:1; padding:11px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.3); border-radius:10px; text-align:center; font-size:0.8rem; color:#34d399; font-weight:bold;">✓ Bet Tracked — auto-settles after match</div>
+                            <button onclick="untrackScorerBet(${globalIdx})" style="padding:11px 14px; border-radius:10px; border:1px solid rgba(218,54,51,0.4); background:rgba(218,54,51,0.08); color:#da3633; font-size:0.75rem; font-weight:bold; cursor:pointer;">Remove</button>
+                          </div>`
+                        : `<button onclick="trackScorerBet(${globalIdx})" style="width:100%; padding:13px; background:linear-gradient(135deg,#064e3b,#059669); border:1px solid #34d399; border-radius:10px; color:white; font-size:0.88rem; font-weight:bold; cursor:pointer; letter-spacing:0.3px;">
+                            ⚽ Track Bet — ${p.name} Anytime Scorer
+                          </button>`
+                    }
+                </div>`;
+            });
+
+            content.innerHTML = html;
+        }
+
         // ── Score predictor stats section ─────────────────────────────────────
         function renderScorePredictorStats() {
             const history = getPredictionHistory();
-            if (!history.length) return '';
+            if (!history.length) return `<div class="stats-card" style="border-color:rgba(192,132,252,0.3);">
+                <div style="font-size:0.85rem; font-weight:bold; color:#c084fc; margin-bottom:8px;">🔮 Score Predictor</div>
+                <div style="text-align:center; padding:16px; color:#555; font-size:0.78rem;">No settled predictions yet — results appear here once your Score Predictor games finish.</div>
+            </div>`;
+
             const weights = getPredictModelWeights();
             const total = history.length;
             const correctResult = history.filter(h => h.correctResult).length;
             const correctScore  = history.filter(h => h.correctScore).length;
             const resultPct = Math.round(correctResult / total * 100);
             const scorePct  = Math.round(correctScore  / total * 100);
-            const resultColor = resultPct >= 50 ? 'var(--green)' : resultPct >= 40 ? 'var(--gold)' : 'var(--red)';
+            const resultColor = resultPct >= 55 ? 'var(--green)' : resultPct >= 40 ? 'var(--gold)' : 'var(--red)';
 
-            // By league
-            const byLeague = {};
+            // Average goal error per team
+            const settledWithActual = history.filter(h => h.actualHome !== undefined && h.actualAway !== undefined);
+            const avgGoalErr = settledWithActual.length > 0
+                ? (settledWithActual.reduce((s, h) => s + (Math.abs(h.predictedHome - h.actualHome) + Math.abs(h.predictedAway - h.actualAway)) / 2, 0) / settledWithActual.length).toFixed(2)
+                : '—';
+            const errColor = parseFloat(avgGoalErr) <= 0.8 ? 'var(--green)' : parseFloat(avgGoalErr) <= 1.2 ? 'var(--gold)' : 'var(--red)';
+
+            // Trend: last 5, last 10, all-time
+            const last5  = history.slice(0, 5);
+            const last10 = history.slice(0, 10);
+            const last5Pct  = last5.length  ? Math.round(last5.filter(h => h.correctResult).length  / last5.length  * 100) : null;
+            const last10Pct = last10.length ? Math.round(last10.filter(h => h.correctResult).length / last10.length * 100) : null;
+            const trendArrow = (last5Pct !== null && last10Pct !== null)
+                ? (last5Pct > last10Pct ? '▲' : last5Pct < last10Pct ? '▼' : '—')
+                : '';
+            const trendColor = (last5Pct !== null && last10Pct !== null)
+                ? (last5Pct > last10Pct ? 'var(--green)' : last5Pct < last10Pct ? 'var(--red)' : '#888')
+                : '#888';
+
+            // Prediction direction accuracy
+            const byDir = { H: { correct: 0, total: 0 }, D: { correct: 0, total: 0 }, A: { correct: 0, total: 0 } };
             history.forEach(h => {
-                if (!byLeague[h.league]) byLeague[h.league] = { correct: 0, total: 0 };
-                byLeague[h.league].total++;
-                if (h.correctResult) byLeague[h.league].correct++;
+                const pred = h.predictedHome > h.predictedAway ? 'H' : h.predictedHome < h.predictedAway ? 'A' : 'D';
+                byDir[pred].total++;
+                if (h.correctResult) byDir[pred].correct++;
             });
-            const topLeagues = Object.entries(byLeague).sort((a, b) => b[1].total - a[1].total).slice(0, 6);
-
-            let html = `<div class="stats-card">
-                <div style="font-size:0.85rem; font-weight:bold; color:#c084fc; margin-bottom:12px;">🔮 Score Predictor Accuracy</div>
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:12px;">
-                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:1.1rem; font-weight:bold; color:${resultColor};">${resultPct}%</div>
-                        <div style="font-size:0.6rem; color:#888;">Correct Result</div>
-                        <div style="font-size:0.58rem; color:#555;">${correctResult}/${total}</div>
-                    </div>
-                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:1.1rem; font-weight:bold; color:var(--green);">${scorePct}%</div>
-                        <div style="font-size:0.6rem; color:#888;">Correct Score</div>
-                        <div style="font-size:0.58rem; color:#555;">${correctScore}/${total}</div>
-                    </div>
-                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:1.1rem; font-weight:bold; color:#c084fc;">${total}</div>
-                        <div style="font-size:0.6rem; color:#888;">Total Settled</div>
-                        <div style="font-size:0.58rem; color:#555;">samples</div>
-                    </div>
-                </div>
-                <div style="font-size:0.72rem; color:#555; margin-bottom:10px; padding:6px 8px; background:rgba(255,255,255,0.03); border-radius:6px;">
-                    🧠 Model weights (self-learned from ${weights.sampleCount || 0} games): Home ×${weights.homeGoalsMult.toFixed(3)} · Away ×${weights.awayGoalsMult.toFixed(3)}
-                </div>`;
 
             // By data quality
             const byQuality = { High: { correct: 0, score: 0, total: 0 }, Med: { correct: 0, score: 0, total: 0 }, Low: { correct: 0, score: 0, total: 0 } };
@@ -8103,64 +8631,214 @@
                     if (h.correctScore)  byQuality[q].score++;
                 }
             });
+
+            // By league (result + score)
+            const byLeague = {};
+            history.forEach(h => {
+                if (!byLeague[h.league]) byLeague[h.league] = { correct: 0, score: 0, total: 0 };
+                byLeague[h.league].total++;
+                if (h.correctResult) byLeague[h.league].correct++;
+                if (h.correctScore)  byLeague[h.league].score++;
+            });
+            const topLeagues = Object.entries(byLeague).sort((a, b) => b[1].total - a[1].total).slice(0, 8);
+
+            // Goal total accuracy (within 1 goal of actual total)
+            const totalGoalAcc = settledWithActual.length > 0
+                ? Math.round(settledWithActual.filter(h => Math.abs((h.predictedHome + h.predictedAway) - (h.actualHome + h.actualAway)) <= 1).length / settledWithActual.length * 100)
+                : null;
+
+            let html = '';
+
+            // ── CARD 1: Main metrics ──────────────────────────────────────
+            html += `<div class="stats-card" style="border-color:rgba(192,132,252,0.3);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                    <div style="font-size:0.85rem; font-weight:bold; color:#c084fc;">🔮 Score Predictor</div>
+                    <div style="font-size:0.65rem; color:#555;">${total} settled games</div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; margin-bottom:14px;">
+                    <div style="background:rgba(192,132,252,0.07); border:1px solid rgba(192,132,252,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.3rem; font-weight:bold; color:${resultColor};">${resultPct}%</div>
+                        <div style="font-size:0.58rem; color:#888; margin-top:2px;">Result</div>
+                        <div style="font-size:0.55rem; color:#555;">${correctResult}/${total}</div>
+                    </div>
+                    <div style="background:rgba(192,132,252,0.07); border:1px solid rgba(192,132,252,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.3rem; font-weight:bold; color:var(--green);">${scorePct}%</div>
+                        <div style="font-size:0.58rem; color:#888; margin-top:2px;">Exact Score</div>
+                        <div style="font-size:0.55rem; color:#555;">${correctScore}/${total}</div>
+                    </div>
+                    <div style="background:rgba(192,132,252,0.07); border:1px solid rgba(192,132,252,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.3rem; font-weight:bold; color:${errColor};">${avgGoalErr}</div>
+                        <div style="font-size:0.58rem; color:#888; margin-top:2px;">Avg Goal Err</div>
+                        <div style="font-size:0.55rem; color:#555;">per team</div>
+                    </div>
+                    <div style="background:rgba(192,132,252,0.07); border:1px solid rgba(192,132,252,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.3rem; font-weight:bold; color:${trendColor};">${trendArrow || '—'}</div>
+                        <div style="font-size:0.58rem; color:#888; margin-top:2px;">Trend</div>
+                        <div style="font-size:0.55rem; color:#555;">${last5Pct !== null ? last5Pct + '% L5' : 'need 5+'}</div>
+                    </div>
+                </div>
+
+                ${totalGoalAcc !== null ? `<div style="display:flex; gap:8px; margin-bottom:14px;">
+                    <div style="flex:1; background:rgba(255,255,255,0.03); padding:7px 10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-size:0.68rem; color:#888;">Total goals within 1 of actual</div>
+                        <div style="font-size:0.9rem; font-weight:bold; color:${totalGoalAcc >= 60 ? 'var(--green)' : totalGoalAcc >= 45 ? 'var(--gold)' : 'var(--red)'};">${totalGoalAcc}%</div>
+                    </div>
+                </div>` : ''}
+
+                <div style="font-size:0.68rem; color:#555; padding:6px 8px; background:rgba(255,255,255,0.03); border-radius:6px; display:flex; gap:6px; flex-wrap:wrap;">
+                    <span>🧠 Self-learned weights from ${weights.sampleCount || 0} games</span>
+                    <span style="color:#3d444d;">|</span>
+                    <span>Home ×${weights.homeGoalsMult.toFixed(3)}</span>
+                    <span style="color:#3d444d;">|</span>
+                    <span>Away ×${weights.awayGoalsMult.toFixed(3)}</span>
+                </div>
+            </div>`;
+
+            // ── CARD 2: Recent form strip + trend ─────────────────────────
+            const recentForm = history.slice(0, 20);
+            if (recentForm.length >= 3) {
+                html += `<div class="stats-card" style="border-color:rgba(192,132,252,0.2);">
+                    <div style="font-size:0.78rem; font-weight:bold; color:#c084fc; margin-bottom:10px;">📊 Recent Form &amp; Trend</div>
+                    <div style="display:flex; gap:3px; flex-wrap:wrap; margin-bottom:12px;">`;
+                recentForm.forEach(h => {
+                    const bg = h.correctScore ? '#2ea043' : h.correctResult ? '#58a6ff' : '#da3633';
+                    const lbl = h.correctScore ? '🎯' : h.correctResult ? 'W' : 'L';
+                    const tip = `${h.home} vs ${h.away}: ${h.predictedHome}-${h.predictedAway} → ${h.actualHome}-${h.actualAway}`;
+                    html += `<div title="${tip}" style="width:26px; height:26px; border-radius:5px; background:${bg}; display:flex; align-items:center; justify-content:center; font-size:0.62rem; font-weight:bold; color:white; cursor:default;">${lbl}</div>`;
+                });
+                html += `</div>
+                    <div style="display:flex; gap:3px; font-size:0.6rem; color:#555; margin-bottom:12px;">
+                        <span style="background:rgba(46,160,67,0.2); color:var(--green); padding:2px 6px; border-radius:4px;">🎯 Exact score</span>
+                        <span style="background:rgba(88,166,255,0.15); color:var(--blue); padding:2px 6px; border-radius:4px;">W Result only</span>
+                        <span style="background:rgba(218,54,51,0.15); color:var(--red); padding:2px 6px; border-radius:4px;">L Wrong</span>
+                    </div>`;
+
+                const bands = [];
+                if (last5.length >= 5)  bands.push({ label: 'Last 5',   pct: last5Pct });
+                if (last10.length >= 10) bands.push({ label: 'Last 10',  pct: last10Pct });
+                if (history.length > 10) bands.push({ label: 'All-time', pct: resultPct });
+
+                if (bands.length > 1) {
+                    html += `<div style="font-size:0.68rem; font-weight:bold; color:#888; margin-bottom:6px;">Result Accuracy Over Time</div>`;
+                    bands.forEach(b => {
+                        const bc = b.pct >= 55 ? 'var(--green)' : b.pct >= 40 ? 'var(--gold)' : 'var(--red)';
+                        html += `<div class="stats-bar">
+                            <div class="stats-bar-label">${b.label}</div>
+                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${b.pct}%; background:${bc};"></div></div>
+                            <div class="stats-bar-val" style="color:${bc};">${b.pct}%</div>
+                        </div>`;
+                    });
+                }
+                html += `</div>`;
+            }
+
+            // ── CARD 3: Prediction direction accuracy ─────────────────────
+            const dirTotal = Object.values(byDir).reduce((s, v) => s + v.total, 0);
+            if (dirTotal >= 5) {
+                html += `<div class="stats-card" style="border-color:rgba(192,132,252,0.2);">
+                    <div style="font-size:0.78rem; font-weight:bold; color:#c084fc; margin-bottom:10px;">🎯 Accuracy by Predicted Outcome</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:4px;">`;
+                const dirLabels = { H: { icon: '🏠', label: 'Home Win' }, D: { icon: '🤝', label: 'Draw' }, A: { icon: '✈️', label: 'Away Win' } };
+                ['H', 'D', 'A'].forEach(dir => {
+                    const d = byDir[dir];
+                    if (!d.total) { html += `<div style="background:rgba(255,255,255,0.03); padding:8px; border-radius:8px; text-align:center; color:#444; font-size:0.65rem;">No ${dirLabels[dir].label}<br>predictions</div>`; return; }
+                    const pct = Math.round(d.correct / d.total * 100);
+                    const bc = pct >= 55 ? 'var(--green)' : pct >= 40 ? 'var(--gold)' : 'var(--red)';
+                    html += `<div style="background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06); padding:8px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1rem; margin-bottom:2px;">${dirLabels[dir].icon}</div>
+                        <div style="font-size:0.62rem; color:#888; margin-bottom:4px;">${dirLabels[dir].label}</div>
+                        <div style="font-size:1.1rem; font-weight:bold; color:${bc};">${pct}%</div>
+                        <div style="font-size:0.55rem; color:#555; margin-top:2px;">${d.correct}/${d.total}</div>
+                    </div>`;
+                });
+                html += `</div>
+                    <div style="font-size:0.62rem; color:#555; margin-top:6px; padding-top:6px; border-top:1px solid #21262d;">How often each predicted outcome type was correct — helps calibrate where the model is strongest.</div>
+                </div>`;
+            }
+
+            // ── CARD 4: Data quality breakdown ────────────────────────────
             const qLabels = {
-                High: { label: 'High Data', color: '#2ea043', border: 'rgba(46,160,67,0.3)',  desc: '6+ games per team' },
+                High: { label: 'High Data', color: '#2ea043', border: 'rgba(46,160,67,0.3)',  desc: '6+ games/team' },
                 Med:  { label: 'Med Data',  color: '#d29922', border: 'rgba(210,153,34,0.3)', desc: '3–5 games' },
                 Low:  { label: 'Low Data',  color: '#da3633', border: 'rgba(218,54,51,0.3)',  desc: '<3 games' }
             };
             const hasQualityData = Object.values(byQuality).some(q => q.total > 0);
             if (hasQualityData) {
-                html += `<div style="font-size:0.72rem; font-weight:bold; color:#888; margin-bottom:8px; margin-top:2px;">By Data Quality</div>
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:12px;">`;
+                html += `<div class="stats-card" style="border-color:rgba(192,132,252,0.2);">
+                    <div style="font-size:0.78rem; font-weight:bold; color:#c084fc; margin-bottom:10px;">🗂 By Data Quality</div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:6px;">`;
                 ['High', 'Med', 'Low'].forEach(q => {
                     const d = byQuality[q];
                     const { label, color, border, desc } = qLabels[q];
-                    const resPct   = d.total ? Math.round(d.correct / d.total * 100) : 0;
-                    const scorePct = d.total ? Math.round(d.score  / d.total * 100) : 0;
-                    const resColor = resPct >= 50 ? '#2ea043' : resPct >= 40 ? '#d29922' : '#da3633';
+                    const resPct  = d.total ? Math.round(d.correct / d.total * 100) : 0;
+                    const sPct    = d.total ? Math.round(d.score   / d.total * 100) : 0;
+                    const resClr  = resPct >= 55 ? '#2ea043' : resPct >= 40 ? '#d29922' : '#da3633';
                     html += `<div style="background:rgba(255,255,255,0.04); border:1px solid ${d.total ? border : '#30363d'}; padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:0.62rem; font-weight:bold; color:${color}; margin-bottom:4px;">${label}</div>
-                        <div style="font-size:0.58rem; color:#555; margin-bottom:6px;">${desc}</div>
-                        ${d.total ? `<div style="font-size:1rem; font-weight:bold; color:${resColor};">${resPct}%</div>
+                        <div style="font-size:0.62rem; font-weight:bold; color:${color}; margin-bottom:2px;">${label}</div>
+                        <div style="font-size:0.55rem; color:#555; margin-bottom:6px;">${desc}</div>
+                        ${d.total ? `<div style="font-size:1.1rem; font-weight:bold; color:${resClr};">${resPct}%</div>
                         <div style="font-size:0.58rem; color:#888;">Result</div>
-                        <div style="font-size:0.75rem; font-weight:bold; color:#2ea043; margin-top:3px;">${scorePct}%</div>
+                        <div style="height:1px; background:#21262d; margin:4px 0;"></div>
+                        <div style="font-size:0.9rem; font-weight:bold; color:#2ea043;">${sPct}%</div>
                         <div style="font-size:0.58rem; color:#888;">Score</div>
-                        <div style="font-size:0.58rem; color:#555; margin-top:2px;">${d.total} games</div>`
-                        : `<div style="color:#555; font-size:0.65rem; margin-top:6px;">No data yet</div>`}
+                        <div style="font-size:0.55rem; color:#555; margin-top:3px;">${d.total} games</div>`
+                        : `<div style="color:#555; font-size:0.65rem; margin-top:10px;">No data</div>`}
                     </div>`;
                 });
-                html += `</div>`;
+                html += `</div>
+                    <div style="font-size:0.62rem; color:#555; padding-top:6px; border-top:1px solid #21262d;">Use High Data filters in Score Predictor for the most reliable predictions.</div>
+                </div>`;
             }
 
+            // ── CARD 5: By league (result% + score%) ─────────────────────
             if (topLeagues.length) {
-                html += `<div style="font-size:0.72rem; font-weight:bold; color:#888; margin-bottom:6px;">By League</div>`;
+                html += `<div class="stats-card" style="border-color:rgba(192,132,252,0.2);">
+                    <div style="font-size:0.78rem; font-weight:bold; color:#c084fc; margin-bottom:10px;">🌍 By League</div>
+                    <div style="display:grid; grid-template-columns:auto 1fr auto auto; gap:4px 8px; align-items:center; font-size:0.62rem; color:#555; margin-bottom:4px;">
+                        <span></span><span></span><span style="text-align:center;">Result</span><span style="text-align:center;">Score</span>
+                    </div>`;
                 topLeagues.forEach(([league, data]) => {
-                    const pct = Math.round(data.correct / data.total * 100);
-                    const bc  = pct >= 50 ? 'var(--green)' : pct >= 40 ? 'var(--gold)' : 'var(--red)';
-                    html += `<div class="stats-bar">
-                        <div class="stats-bar-label">${league}</div>
-                        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${pct}%; background:${bc};"></div></div>
-                        <div class="stats-bar-val">${pct}% <span style="color:#666; font-size:0.6rem;">(${data.total})</span></div>
+                    const resPct  = Math.round(data.correct / data.total * 100);
+                    const sPct    = Math.round(data.score   / data.total * 100);
+                    const bc      = resPct >= 55 ? 'var(--green)' : resPct >= 40 ? 'var(--gold)' : 'var(--red)';
+                    const sc      = sPct >= 20 ? 'var(--green)' : sPct >= 10 ? 'var(--gold)' : 'var(--red)';
+                    html += `<div class="stats-bar" style="margin-bottom:5px;">
+                        <div class="stats-bar-label" style="width:90px;">${league} <span style="color:#444;">(${data.total})</span></div>
+                        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${resPct}%; background:${bc};"></div></div>
+                        <div class="stats-bar-val" style="color:${bc}; min-width:34px;">${resPct}%</div>
+                        <div style="min-width:30px; text-align:right; font-size:0.65rem; color:${sc}; font-weight:bold;">${sPct}%🎯</div>
                     </div>`;
                 });
+                html += `<div style="font-size:0.6rem; color:#444; margin-top:4px;">Bar = Result% · 🎯 = Exact score%</div>
+                </div>`;
             }
 
-            // Recent 10
-            html += `<div style="font-size:0.72rem; font-weight:bold; color:#888; margin-top:10px; margin-bottom:6px;">Recent Predictions</div>`;
-            history.slice(0, 10).forEach(h => {
-                const icon = h.correctScore ? '🎯' : h.correctResult ? '✓' : '✗';
-                const c    = h.correctScore ? 'var(--green)' : h.correctResult ? 'var(--cyan)' : 'var(--red)';
-                html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:5px 0; border-bottom:1px solid #21262d; font-size:0.72rem;">
-                    <div style="flex:1; min-width:0;"><span style="color:${c};">${icon}</span> ${h.home} vs ${h.away} <span style="color:#555; font-size:0.62rem;">(${h.league})</span></div>
-                    <div style="text-align:right; white-space:nowrap; margin-left:8px;">
-                        <span style="color:#888;">${h.predictedHome}-${h.predictedAway}</span>
-                        <span style="color:#555;"> → </span>
-                        <span style="color:${c};">${h.actualHome}-${h.actualAway}</span>
+            // ── CARD 6: Recent 15 predictions ─────────────────────────────
+            const recent15 = history.slice(0, 15);
+            html += `<div class="stats-card" style="border-color:rgba(192,132,252,0.2);">
+                <div style="font-size:0.78rem; font-weight:bold; color:#c084fc; margin-bottom:10px;">🕐 Recent Predictions (last ${recent15.length})</div>`;
+            recent15.forEach(h => {
+                const icon   = h.correctScore ? '🎯' : h.correctResult ? '✓' : '✗';
+                const c      = h.correctScore ? 'var(--green)' : h.correctResult ? 'var(--cyan)' : 'var(--red)';
+                const qColor = h.dataQuality === 'High' ? '#2ea043' : h.dataQuality === 'Med' ? '#d29922' : '#da3633';
+                const goalErrH = h.actualHome !== undefined ? Math.abs(h.predictedHome - h.actualHome) : null;
+                const goalErrA = h.actualAway !== undefined ? Math.abs(h.predictedAway - h.actualAway) : null;
+                const errStr  = goalErrH !== null ? `±${((goalErrH + goalErrA) / 2).toFixed(1)}` : '';
+                html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid #21262d; font-size:0.7rem; gap:6px;">
+                    <div style="width:18px; text-align:center; font-size:0.85rem; flex-shrink:0;">${icon}</div>
+                    <div style="flex:1; min-width:0;">
+                        <div style="color:white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${h.home} vs ${h.away}</div>
+                        <div style="color:#555; font-size:0.6rem;">${h.league} <span style="color:${qColor}; margin-left:4px;">${h.dataQuality || ''}</span></div>
+                    </div>
+                    <div style="text-align:right; flex-shrink:0;">
+                        <div><span style="color:#888;">${h.predictedHome}-${h.predictedAway}</span><span style="color:#555; margin:0 2px;">→</span><span style="color:${c}; font-weight:bold;">${h.actualHome}-${h.actualAway}</span></div>
+                        ${errStr ? `<div style="font-size:0.58rem; color:#555;">${errStr} avg goal err</div>` : ''}
                     </div>
                 </div>`;
             });
-
             html += `</div>`;
+
             return html;
         }
 
@@ -8179,19 +8857,359 @@
 
             let html = `<h3 style="color:var(--blue); margin:0 0 15px;">📈 Performance Dashboard</h3>`;
 
+            // ── Overall overview tiles ────────────────────────────────────
             html += `<div class="stats-grid">
                 <div class="stat-tile"><div class="stat-tile-value" style="color:var(--blue);">${totalBets}</div><div class="stat-tile-label">Total Bets</div></div>
                 <div class="stat-tile"><div class="stat-tile-value" style="color:${winColor};">${winRate}%</div><div class="stat-tile-label">Win Rate</div></div>
                 <div class="stat-tile"><div class="stat-tile-value" style="color:var(--green);">${totalWins}</div><div class="stat-tile-label">Wins</div></div>
                 <div class="stat-tile"><div class="stat-tile-value" style="color:var(--red);">${totalLosses}</div><div class="stat-tile-label">Losses</div></div>
             </div>`;
-
             html += `<div class="stats-grid">
                 <div class="stat-tile"><div class="stat-tile-value" style="color:var(--gold);">${streak.currentStreak}</div><div class="stat-tile-label">Current Streak</div></div>
                 <div class="stat-tile"><div class="stat-tile-value" style="color:var(--green);">${streak.bestStreak}</div><div class="stat-tile-label">Best Streak</div></div>
             </div>`;
 
-            // Market performance
+            if (totalBets === 0) {
+                html += `<div style="text-align:center; color:#666; padding:30px;">
+                    <p style="font-size:1.5rem;">📊</p>
+                    <p>No betting data yet. Start placing bets to see your performance stats here.</p>
+                </div>`;
+            }
+
+            // ── PRIORITY 1: Score Predictor (most used) ───────────────────
+            html += renderScorePredictorStats();
+
+            // ── PRIORITY 2: Bet of the Day ────────────────────────────────
+            const botdBets = resolved.filter(b => b.source === 'BOTD');
+            if (botdBets.length > 0) {
+                const botdWins = botdBets.filter(b => b.result).length;
+                const botdLosses = botdBets.filter(b => b.result === false).length;
+                const botdRate = Math.round((botdWins / botdBets.length) * 100);
+                const botdColor = botdRate >= 60 ? 'var(--green)' : (botdRate >= 45 ? 'var(--gold)' : 'var(--red)');
+
+                // ROI estimate (assume avg odds ~1.80)
+                const BOTDEstOdds = 1.80;
+                const botdROI = Math.round(((botdWins * BOTDEstOdds - botdBets.length) / botdBets.length) * 100);
+                const roiColor = botdROI >= 0 ? 'var(--green)' : 'var(--red)';
+
+                html += `<div class="stats-card" style="border-color:rgba(224,144,64,0.3);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                        <div style="font-size:0.85rem; font-weight:bold; color:#e09040;">🏆 Bet of the Day</div>
+                        <div style="font-size:0.65rem; color:#555;">${botdBets.length} placed</div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; margin-bottom:14px;">
+                        <div style="background:rgba(224,144,64,0.07); border:1px solid rgba(224,144,64,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                            <div style="font-size:1.3rem; font-weight:bold; color:${botdColor};">${botdRate}%</div>
+                            <div style="font-size:0.58rem; color:#888; margin-top:2px;">Hit Rate</div>
+                            <div style="font-size:0.55rem; color:#555;">${botdWins}/${botdBets.length}</div>
+                        </div>
+                        <div style="background:rgba(224,144,64,0.07); border:1px solid rgba(224,144,64,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                            <div style="font-size:1.3rem; font-weight:bold; color:var(--green);">${botdWins}</div>
+                            <div style="font-size:0.58rem; color:#888; margin-top:2px;">Wins</div>
+                        </div>
+                        <div style="background:rgba(224,144,64,0.07); border:1px solid rgba(224,144,64,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                            <div style="font-size:1.3rem; font-weight:bold; color:var(--red);">${botdLosses}</div>
+                            <div style="font-size:0.58rem; color:#888; margin-top:2px;">Losses</div>
+                        </div>
+                        <div style="background:rgba(224,144,64,0.07); border:1px solid rgba(224,144,64,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                            <div style="font-size:1.3rem; font-weight:bold; color:${roiColor};">${botdROI >= 0 ? '+' : ''}${botdROI}%</div>
+                            <div style="font-size:0.58rem; color:#888; margin-top:2px;">Est. ROI</div>
+                            <div style="font-size:0.55rem; color:#555;">@~1.80</div>
+                        </div>
+                    </div>`;
+
+                // Recent BOTD form strip
+                const recentBotd = botdBets.slice().reverse().slice(-15);
+                if (recentBotd.length >= 3) {
+                    html += `<div style="font-size:0.68rem; font-weight:bold; color:#888; margin-bottom:6px;">Recent Form</div>
+                        <div style="display:flex; gap:3px; flex-wrap:wrap; margin-bottom:12px;">`;
+                    recentBotd.forEach(b => {
+                        const bg = b.result ? '#2ea043' : '#da3633';
+                        html += `<div title="${b.match||''}: ${b.selection||''}" style="width:24px; height:24px; border-radius:4px; background:${bg}; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:bold; color:white; cursor:default;">${b.result ? 'W' : 'L'}</div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                // By confidence band
+                const botdConfBands = {};
+                botdBets.forEach(b => {
+                    const band = b.confidence >= 80 ? '80%+' : (b.confidence >= 70 ? '70-79%' : (b.confidence >= 60 ? '60-69%' : '<60%'));
+                    if (!botdConfBands[band]) botdConfBands[band] = { wins: 0, total: 0 };
+                    botdConfBands[band].total++;
+                    if (b.result) botdConfBands[band].wins++;
+                });
+                const bandOrder = ['80%+', '70-79%', '60-69%', '<60%'];
+                const availBands = bandOrder.filter(b => botdConfBands[b]);
+                if (availBands.length > 0) {
+                    html += `<div style="font-size:0.68rem; font-weight:bold; color:#888; margin-bottom:6px;">By Confidence Band</div>`;
+                    availBands.forEach(band => {
+                        const data = botdConfBands[band];
+                        const rate = Math.round((data.wins / data.total) * 100);
+                        const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
+                        html += `<div class="stats-bar">
+                            <div class="stats-bar-label">${band}</div>
+                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
+                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
+                        </div>`;
+                    });
+                }
+
+                // By market
+                const botdMarketStats = {};
+                botdBets.forEach(b => {
+                    const key = b.selection || 'Unknown';
+                    if (!botdMarketStats[key]) botdMarketStats[key] = { wins: 0, total: 0 };
+                    botdMarketStats[key].total++;
+                    if (b.result) botdMarketStats[key].wins++;
+                });
+                const sortedBotdM = Object.entries(botdMarketStats).sort((a, b) => b[1].total - a[1].total);
+                if (sortedBotdM.length > 0) {
+                    html += `<div style="font-size:0.68rem; font-weight:bold; color:#888; margin:10px 0 6px 0;">By Market</div>`;
+                    sortedBotdM.forEach(([market, data]) => {
+                        const rate = Math.round((data.wins / data.total) * 100);
+                        const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
+                        html += `<div class="stats-bar">
+                            <div class="stats-bar-label">${market}</div>
+                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
+                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
+                        </div>`;
+                    });
+                }
+
+                // By league
+                const botdLeagueStats = {};
+                botdBets.forEach(b => {
+                    const key = b.league || 'Unknown';
+                    if (!botdLeagueStats[key]) botdLeagueStats[key] = { wins: 0, total: 0 };
+                    botdLeagueStats[key].total++;
+                    if (b.result) botdLeagueStats[key].wins++;
+                });
+                const sortedBotdL = Object.entries(botdLeagueStats).sort((a, b) => b[1].total - a[1].total);
+                if (sortedBotdL.length > 0) {
+                    html += `<div style="font-size:0.68rem; font-weight:bold; color:#888; margin:10px 0 6px 0;">By League</div>`;
+                    sortedBotdL.forEach(([league, data]) => {
+                        const rate = Math.round((data.wins / data.total) * 100);
+                        const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
+                        html += `<div class="stats-bar">
+                            <div class="stats-bar-label">${league}</div>
+                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
+                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
+                        </div>`;
+                    });
+                }
+
+                html += `</div>`;
+            } else {
+                html += `<div class="stats-card" style="border-color:rgba(224,144,64,0.2);">
+                    <div style="font-size:0.85rem; font-weight:bold; color:#e09040; margin-bottom:8px;">🏆 Bet of the Day</div>
+                    <div style="text-align:center; padding:12px; color:#555; font-size:0.78rem;">No BOTD bets tracked yet — place bets from the Bet of the Day tab to build your record here.</div>
+                </div>`;
+            }
+
+            // ── PRIORITY 3: Late Goals (68'+) ─────────────────────────────
+            const hgBets = resolved.filter(b => b.selection === '2nd Half Goal');
+            if (hgBets.length > 0) {
+                const hgWins = hgBets.filter(b => b.result).length;
+                const hgLosses = hgBets.filter(b => b.result === false).length;
+                const hgRate = Math.round((hgWins / hgBets.length) * 100);
+                const hgColor = hgRate >= 60 ? 'var(--green)' : (hgRate >= 45 ? 'var(--gold)' : 'var(--red)');
+                const hgROI = Math.round(((hgWins * 1.50 - hgBets.length) / hgBets.length) * 100);
+                const hgROIColor = hgROI >= 0 ? 'var(--green)' : 'var(--red)';
+
+                html += `<div class="stats-card" style="border-color:rgba(46,160,67,0.3);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                        <div style="font-size:0.85rem; font-weight:bold; color:var(--green);">⚽ Late Goals (68'+)</div>
+                        <div style="font-size:0.65rem; color:#555;">${hgBets.length} placed</div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; margin-bottom:14px;">
+                        <div style="background:rgba(46,160,67,0.07); border:1px solid rgba(46,160,67,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                            <div style="font-size:1.3rem; font-weight:bold; color:${hgColor};">${hgRate}%</div>
+                            <div style="font-size:0.58rem; color:#888; margin-top:2px;">Hit Rate</div>
+                            <div style="font-size:0.55rem; color:#555;">${hgWins}/${hgBets.length}</div>
+                        </div>
+                        <div style="background:rgba(46,160,67,0.07); border:1px solid rgba(46,160,67,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                            <div style="font-size:1.3rem; font-weight:bold; color:var(--green);">${hgWins}</div>
+                            <div style="font-size:0.58rem; color:#888; margin-top:2px;">Wins</div>
+                        </div>
+                        <div style="background:rgba(46,160,67,0.07); border:1px solid rgba(46,160,67,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                            <div style="font-size:1.3rem; font-weight:bold; color:var(--red);">${hgLosses}</div>
+                            <div style="font-size:0.58rem; color:#888; margin-top:2px;">Losses</div>
+                        </div>
+                        <div style="background:rgba(46,160,67,0.07); border:1px solid rgba(46,160,67,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                            <div style="font-size:1.3rem; font-weight:bold; color:${hgROIColor};">${hgROI >= 0 ? '+' : ''}${hgROI}%</div>
+                            <div style="font-size:0.58rem; color:#888; margin-top:2px;">Est. ROI</div>
+                            <div style="font-size:0.55rem; color:#555;">@1.50</div>
+                        </div>
+                    </div>`;
+
+                // Recent form strip
+                const recentHg = hgBets.slice().reverse().slice(-15);
+                if (recentHg.length >= 3) {
+                    html += `<div style="font-size:0.68rem; font-weight:bold; color:#888; margin-bottom:6px;">Recent Form</div>
+                        <div style="display:flex; gap:3px; flex-wrap:wrap; margin-bottom:12px;">`;
+                    recentHg.forEach(b => {
+                        const bg = b.result ? '#2ea043' : '#da3633';
+                        html += `<div title="${b.match||''}" style="width:24px; height:24px; border-radius:4px; background:${bg}; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:bold; color:white; cursor:default;">${b.result ? 'W' : 'L'}</div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                // By league
+                const hgLeagueStats = {};
+                hgBets.forEach(b => {
+                    const key = b.league || 'Unknown';
+                    if (!hgLeagueStats[key]) hgLeagueStats[key] = { wins: 0, total: 0 };
+                    hgLeagueStats[key].total++;
+                    if (b.result) hgLeagueStats[key].wins++;
+                });
+                const sortedHgL = Object.entries(hgLeagueStats).sort((a, b) => b[1].total - a[1].total);
+                if (sortedHgL.length > 0) {
+                    html += `<div style="font-size:0.68rem; font-weight:bold; color:#888; margin-bottom:6px;">By League</div>`;
+                    sortedHgL.forEach(([league, data]) => {
+                        const rate = Math.round((data.wins / data.total) * 100);
+                        const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
+                        html += `<div class="stats-bar">
+                            <div class="stats-bar-label">${league}</div>
+                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
+                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
+                        </div>`;
+                    });
+                }
+                html += `</div>`;
+            } else {
+                html += `<div class="stats-card" style="border-color:rgba(46,160,67,0.2);">
+                    <div style="font-size:0.85rem; font-weight:bold; color:var(--green); margin-bottom:8px;">⚽ Late Goals (68'+)</div>
+                    <div style="text-align:center; padding:12px; color:#555; font-size:0.78rem;">No Late Goal bets tracked yet — place bets from the Late Goals tab to build your record here.</div>
+                </div>`;
+            }
+
+            // ── PRIORITY 4: Goalscorer Tips ───────────────────────────────
+            const scorerBets = resolved.filter(b => b.source === 'Scorer' || (b.selection && b.selection.startsWith('Anytime Goalscorer') && b.source !== 'BOTD'));
+            if (scorerBets.length > 0) {
+                const scorerWins   = scorerBets.filter(b => b.result).length;
+                const scorerLosses = scorerBets.filter(b => b.result === false).length;
+                const scorerRate   = Math.round((scorerWins / scorerBets.length) * 100);
+                const scorerColor  = scorerRate >= 50 ? 'var(--green)' : scorerRate >= 35 ? 'var(--gold)' : 'var(--red)';
+                // ROI estimate at typical anytime scorer odds ~2.50
+                const scorerROI    = Math.round(((scorerWins * 2.50 - scorerBets.length) / scorerBets.length) * 100);
+                const scorerROIColor = scorerROI >= 0 ? 'var(--green)' : 'var(--red)';
+
+                html += `<div class="stats-card" style="border-color:rgba(52,211,153,0.3);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                        <div style="font-size:0.85rem; font-weight:bold; color:#34d399;">⚽ Goalscorer Tips</div>
+                        <div style="font-size:0.65rem; color:#555;">${scorerBets.length} tracked</div>
+                    </div>
+                    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; margin-bottom:14px;">
+                        <div style="background:rgba(52,211,153,0.07); border:1px solid rgba(52,211,153,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                            <div style="font-size:1.3rem; font-weight:bold; color:${scorerColor};">${scorerRate}%</div>
+                            <div style="font-size:0.58rem; color:#888; margin-top:2px;">Hit Rate</div>
+                            <div style="font-size:0.55rem; color:#555;">${scorerWins}/${scorerBets.length}</div>
+                        </div>
+                        <div style="background:rgba(52,211,153,0.07); border:1px solid rgba(52,211,153,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                            <div style="font-size:1.3rem; font-weight:bold; color:var(--green);">${scorerWins}</div>
+                            <div style="font-size:0.58rem; color:#888; margin-top:2px;">Wins</div>
+                        </div>
+                        <div style="background:rgba(52,211,153,0.07); border:1px solid rgba(52,211,153,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                            <div style="font-size:1.3rem; font-weight:bold; color:var(--red);">${scorerLosses}</div>
+                            <div style="font-size:0.58rem; color:#888; margin-top:2px;">Losses</div>
+                        </div>
+                        <div style="background:rgba(52,211,153,0.07); border:1px solid rgba(52,211,153,0.2); padding:8px 4px; border-radius:8px; text-align:center;">
+                            <div style="font-size:1.3rem; font-weight:bold; color:${scorerROIColor};">${scorerROI >= 0 ? '+' : ''}${scorerROI}%</div>
+                            <div style="font-size:0.58rem; color:#888; margin-top:2px;">Est. ROI</div>
+                            <div style="font-size:0.55rem; color:#555;">@~2.50</div>
+                        </div>
+                    </div>`;
+
+                // Recent form strip
+                const recentScorer = scorerBets.slice().reverse().slice(-15);
+                if (recentScorer.length >= 2) {
+                    html += `<div style="font-size:0.68rem; font-weight:bold; color:#888; margin-bottom:6px;">Recent Form</div>
+                        <div style="display:flex; gap:3px; flex-wrap:wrap; margin-bottom:12px;">`;
+                    recentScorer.forEach(b => {
+                        const bg = b.result ? '#2ea043' : '#da3633';
+                        const pName = (b.playerName || b.selection || '').replace('Anytime Goalscorer: ', '');
+                        html += `<div title="${pName}: ${b.match||''}" style="width:24px; height:24px; border-radius:4px; background:${bg}; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:bold; color:white; cursor:default;">${b.result ? 'W' : 'L'}</div>`;
+                    });
+                    html += `</div>`;
+                }
+
+                // By player (top scorers)
+                const byPlayer = {};
+                scorerBets.forEach(b => {
+                    const pn = b.playerName || b.selection?.replace('Anytime Goalscorer: ','') || 'Unknown';
+                    if (!byPlayer[pn]) byPlayer[pn] = { wins: 0, total: 0, team: b.playerTeam || '' };
+                    byPlayer[pn].total++;
+                    if (b.result) byPlayer[pn].wins++;
+                });
+                const topPlayers = Object.entries(byPlayer).sort((a, b) => b[1].total - a[1].total).slice(0, 8);
+                if (topPlayers.length > 0) {
+                    html += `<div style="font-size:0.68rem; font-weight:bold; color:#888; margin-bottom:6px;">By Player</div>`;
+                    topPlayers.forEach(([name, data]) => {
+                        const rate = Math.round((data.wins / data.total) * 100);
+                        const bc   = rate >= 50 ? 'var(--green)' : rate >= 35 ? 'var(--gold)' : 'var(--red)';
+                        html += `<div class="stats-bar">
+                            <div class="stats-bar-label">${name}${data.team ? ' <span style="color:#444; font-size:0.58rem;">'+data.team+'</span>' : ''}</div>
+                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${bc};"></div></div>
+                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
+                        </div>`;
+                    });
+                }
+
+                // By league
+                const byLeague = {};
+                scorerBets.forEach(b => {
+                    const key = b.league || 'Unknown';
+                    if (!byLeague[key]) byLeague[key] = { wins: 0, total: 0 };
+                    byLeague[key].total++;
+                    if (b.result) byLeague[key].wins++;
+                });
+                const topLeagues = Object.entries(byLeague).sort((a, b) => b[1].total - a[1].total).slice(0, 5);
+                if (topLeagues.length > 0) {
+                    html += `<div style="font-size:0.68rem; font-weight:bold; color:#888; margin:10px 0 6px 0;">By League</div>`;
+                    topLeagues.forEach(([league, data]) => {
+                        const rate = Math.round((data.wins / data.total) * 100);
+                        const bc   = rate >= 50 ? 'var(--green)' : rate >= 35 ? 'var(--gold)' : 'var(--red)';
+                        html += `<div class="stats-bar">
+                            <div class="stats-bar-label">${league}</div>
+                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${bc};"></div></div>
+                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
+                        </div>`;
+                    });
+                }
+
+                // Confidence band breakdown
+                const confBands = {};
+                scorerBets.forEach(b => {
+                    const band = (b.confidence||0) >= 70 ? '70%+ (High)' : (b.confidence||0) >= 55 ? '55–69% (Med)' : '<55% (Low)';
+                    if (!confBands[band]) confBands[band] = { wins: 0, total: 0 };
+                    confBands[band].total++;
+                    if (b.result) confBands[band].wins++;
+                });
+                const availConfBands = ['70%+ (High)', '55–69% (Med)', '<55% (Low)'].filter(b => confBands[b]);
+                if (availConfBands.length > 1) {
+                    html += `<div style="font-size:0.68rem; font-weight:bold; color:#888; margin:10px 0 6px 0;">By Confidence Band</div>`;
+                    availConfBands.forEach(band => {
+                        const data = confBands[band];
+                        const rate = Math.round((data.wins / data.total) * 100);
+                        const bc   = rate >= 50 ? 'var(--green)' : rate >= 35 ? 'var(--gold)' : 'var(--red)';
+                        html += `<div class="stats-bar">
+                            <div class="stats-bar-label">${band}</div>
+                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${bc};"></div></div>
+                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
+                        </div>`;
+                    });
+                    html += `<div style="font-size:0.62rem; color:#555; margin-top:6px; padding-top:6px; border-top:1px solid #21262d;">Use the 70%+ confidence filter in Scorers tab for the strongest tips.</div>`;
+                }
+
+                html += `</div>`;
+            } else {
+                html += `<div class="stats-card" style="border-color:rgba(52,211,153,0.2);">
+                    <div style="font-size:0.85rem; font-weight:bold; color:#34d399; margin-bottom:8px;">⚽ Goalscorer Tips</div>
+                    <div style="text-align:center; padding:12px; color:#555; font-size:0.78rem;">No goalscorer bets tracked yet — track bets from the Scorers tab to build your record here.</div>
+                </div>`;
+            }
+
+            // ── General market breakdown ──────────────────────────────────
             const marketStats = {};
             resolved.forEach(b => {
                 const key = getMarketLabel(b.selection);
@@ -8206,11 +9224,9 @@
                 marketStats[key].total++;
                 if (b.status === 'WIN') marketStats[key].wins++;
             });
-
             if (Object.keys(marketStats).length > 0) {
                 html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:var(--gold); margin-bottom:12px;">By Market Type</div>`;
-                const sorted = Object.entries(marketStats).sort((a, b) => b[1].total - a[1].total);
-                sorted.forEach(([market, data]) => {
+                Object.entries(marketStats).sort((a, b) => b[1].total - a[1].total).forEach(([market, data]) => {
                     const rate = Math.round((data.wins / data.total) * 100);
                     const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
                     html += `<div class="stats-bar">
@@ -8222,7 +9238,7 @@
                 html += `</div>`;
             }
 
-            // League performance
+            // ── General league breakdown ──────────────────────────────────
             const leagueStats = {};
             resolved.forEach(b => {
                 const key = b.league || 'Unknown';
@@ -8230,11 +9246,9 @@
                 leagueStats[key].total++;
                 if (b.result) leagueStats[key].wins++;
             });
-
             if (Object.keys(leagueStats).length > 0) {
-                html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:var(--purple); margin-bottom:12px;">By League</div>`;
-                const sortedL = Object.entries(leagueStats).sort((a, b) => b[1].total - a[1].total);
-                sortedL.forEach(([league, data]) => {
+                html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:var(--purple); margin-bottom:12px;">By League (All Bets)</div>`;
+                Object.entries(leagueStats).sort((a, b) => b[1].total - a[1].total).forEach(([league, data]) => {
                     const rate = Math.round((data.wins / data.total) * 100);
                     const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
                     html += `<div class="stats-bar">
@@ -8246,141 +9260,11 @@
                 html += `</div>`;
             }
 
-            // 2nd Half Goal performance by league
-            const hgBets = resolved.filter(b => b.selection === '2nd Half Goal');
-            if (hgBets.length > 0) {
-                const hgWins = hgBets.filter(b => b.result).length;
-                const hgRate = Math.round((hgWins / hgBets.length) * 100);
-                const hgColor = hgRate >= 60 ? 'var(--green)' : (hgRate >= 45 ? 'var(--gold)' : 'var(--red)');
-                html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:var(--green); margin-bottom:12px;">⚽ 2nd Half Goal Predictions</div>`;
-                html += `<div style="display:flex; gap:10px; margin-bottom:12px;">
-                    <div style="flex:1; background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:1.1rem; font-weight:bold; color:${hgColor};">${hgRate}%</div>
-                        <div style="font-size:0.65rem; color:#888;">Hit Rate</div>
-                    </div>
-                    <div style="flex:1; background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:1.1rem; font-weight:bold; color:var(--green);">${hgWins}</div>
-                        <div style="font-size:0.65rem; color:#888;">Wins</div>
-                    </div>
-                    <div style="flex:1; background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:1.1rem; font-weight:bold; color:var(--red);">${hgBets.length - hgWins}</div>
-                        <div style="font-size:0.65rem; color:#888;">Losses</div>
-                    </div>
-                </div>`;
-                const hgLeagueStats = {};
-                hgBets.forEach(b => {
-                    const key = b.league || 'Unknown';
-                    if (!hgLeagueStats[key]) hgLeagueStats[key] = { wins: 0, total: 0 };
-                    hgLeagueStats[key].total++;
-                    if (b.result) hgLeagueStats[key].wins++;
-                });
-                const sortedHgL = Object.entries(hgLeagueStats).sort((a, b) => b[1].total - a[1].total);
-                sortedHgL.forEach(([league, data]) => {
-                    const rate = Math.round((data.wins / data.total) * 100);
-                    const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
-                    html += `<div class="stats-bar">
-                        <div class="stats-bar-label">${league}</div>
-                        <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
-                        <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.total})</span></div>
-                    </div>`;
-                });
-                html += `</div>`;
-            }
-
-            const botdBets = resolved.filter(b => b.source === 'BOTD');
-            if (botdBets.length > 0) {
-                const botdWins = botdBets.filter(b => b.result).length;
-                const botdRate = Math.round((botdWins / botdBets.length) * 100);
-                const botdColor = botdRate >= 60 ? 'var(--green)' : (botdRate >= 45 ? 'var(--gold)' : 'var(--red)');
-                html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:#e09040; margin-bottom:12px;">🏆 Bet of the Day Performance</div>`;
-                html += `<div style="display:flex; gap:10px; margin-bottom:12px;">
-                    <div style="flex:1; background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:1.1rem; font-weight:bold; color:${botdColor};">${botdRate}%</div>
-                        <div style="font-size:0.65rem; color:#888;">Hit Rate</div>
-                    </div>
-                    <div style="flex:1; background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:1.1rem; font-weight:bold; color:var(--green);">${botdWins}</div>
-                        <div style="font-size:0.65rem; color:#888;">Wins</div>
-                    </div>
-                    <div style="flex:1; background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:1.1rem; font-weight:bold; color:var(--red);">${botdBets.length - botdWins}</div>
-                        <div style="font-size:0.65rem; color:#888;">Losses</div>
-                    </div>
-                </div>`;
-
-                const botdMarketStats = {};
-                botdBets.forEach(b => {
-                    const key = b.selection || 'Unknown';
-                    if (!botdMarketStats[key]) botdMarketStats[key] = { wins: 0, total: 0 };
-                    botdMarketStats[key].total++;
-                    if (b.result) botdMarketStats[key].wins++;
-                });
-                const sortedBotdM = Object.entries(botdMarketStats).sort((a, b) => b[1].total - a[1].total);
-                if (sortedBotdM.length > 0) {
-                    html += `<div style="font-size:0.7rem; font-weight:bold; color:#888; margin-bottom:6px;">By Market</div>`;
-                    sortedBotdM.forEach(([market, data]) => {
-                        const rate = Math.round((data.wins / data.total) * 100);
-                        const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
-                        html += `<div class="stats-bar">
-                            <div class="stats-bar-label">${market}</div>
-                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
-                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
-                        </div>`;
-                    });
-                }
-
-                const botdLeagueStats = {};
-                botdBets.forEach(b => {
-                    const key = b.league || 'Unknown';
-                    if (!botdLeagueStats[key]) botdLeagueStats[key] = { wins: 0, total: 0 };
-                    botdLeagueStats[key].total++;
-                    if (b.result) botdLeagueStats[key].wins++;
-                });
-                const sortedBotdL = Object.entries(botdLeagueStats).sort((a, b) => b[1].total - a[1].total);
-                if (sortedBotdL.length > 0) {
-                    html += `<div style="font-size:0.7rem; font-weight:bold; color:#888; margin:10px 0 6px 0;">By League</div>`;
-                    sortedBotdL.forEach(([league, data]) => {
-                        const rate = Math.round((data.wins / data.total) * 100);
-                        const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
-                        html += `<div class="stats-bar">
-                            <div class="stats-bar-label">${league}</div>
-                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
-                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
-                        </div>`;
-                    });
-                }
-
-                const botdConfBands = {};
-                botdBets.forEach(b => {
-                    const band = b.confidence >= 80 ? '80%+' : (b.confidence >= 70 ? '70-79%' : (b.confidence >= 60 ? '60-69%' : '<60%'));
-                    if (!botdConfBands[band]) botdConfBands[band] = { wins: 0, total: 0 };
-                    botdConfBands[band].total++;
-                    if (b.result) botdConfBands[band].wins++;
-                });
-                const bandOrder = ['80%+', '70-79%', '60-69%', '<60%'];
-                const availBands = bandOrder.filter(b => botdConfBands[b]);
-                if (availBands.length > 1) {
-                    html += `<div style="font-size:0.7rem; font-weight:bold; color:#888; margin:10px 0 6px 0;">By Confidence Band</div>`;
-                    availBands.forEach(band => {
-                        const data = botdConfBands[band];
-                        const rate = Math.round((data.wins / data.total) * 100);
-                        const barColor = rate >= 60 ? 'var(--green)' : (rate >= 45 ? 'var(--gold)' : 'var(--red)');
-                        html += `<div class="stats-bar">
-                            <div class="stats-bar-label">${band}</div>
-                            <div class="stats-bar-track"><div class="stats-bar-fill" style="width:${rate}%; background:${barColor};"></div></div>
-                            <div class="stats-bar-val">${rate}% <span style="color:#666; font-size:0.6rem;">(${data.wins}/${data.total})</span></div>
-                        </div>`;
-                    });
-                }
-
-                html += `</div>`;
-            }
-
+            // ── Factor learning ───────────────────────────────────────────
             const flSummary = getFactorLearningSummary();
             if (flSummary) {
                 html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:var(--cyan); margin-bottom:12px;">🧠 Smart Learning — Factor Insights</div>`;
                 html += `<div style="font-size:0.7rem; color:#888; margin-bottom:10px;">${flSummary.totalFactors} factors tracked across ${flSummary.totalSamples} data points</div>`;
-
                 if (flSummary.best.length > 0) {
                     html += `<div style="font-size:0.75rem; font-weight:bold; color:var(--green); margin-bottom:6px;">Best Predictors</div>`;
                     flSummary.best.forEach(([tag, data]) => {
@@ -8393,7 +9277,6 @@
                         </div>`;
                     });
                 }
-
                 if (flSummary.worst.length > 0) {
                     html += `<div style="font-size:0.75rem; font-weight:bold; color:var(--red); margin:10px 0 6px 0;">Weakest Predictors</div>`;
                     flSummary.worst.forEach(([tag, data]) => {
@@ -8406,33 +9289,25 @@
                         </div>`;
                     });
                 }
-
                 html += `<div style="font-size:0.65rem; color:#555; margin-top:10px; padding-top:8px; border-top:1px solid #21262d;">Weights auto-adjust after 6+ samples per factor. Strong predictors get boosted, weak ones get reduced.</div>`;
                 html += `</div>`;
             }
 
-            // Recent results timeline
+            // ── Recent form strip (all bets) ──────────────────────────────
             const recentBets = resolved.sort((a, b) => b.placedAt - a.placedAt).slice(0, 20);
             if (recentBets.length > 0) {
-                html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:var(--blue); margin-bottom:12px;">Recent Form (Last ${recentBets.length})</div>`;
+                html += `<div class="stats-card"><div style="font-size:0.85rem; font-weight:bold; color:var(--blue); margin-bottom:12px;">Recent Form — All Bets (Last ${recentBets.length})</div>`;
                 html += `<div style="display:flex; gap:3px; flex-wrap:wrap;">`;
                 recentBets.forEach(b => {
                     const color = b.result ? 'var(--green)' : 'var(--red)';
                     const letter = b.result ? 'W' : 'L';
-                    html += `<div style="width:22px; height:22px; border-radius:4px; background:${color}; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:bold; color:white;" title="${b.match}: ${b.selection}">${letter}</div>`;
+                    html += `<div style="width:22px; height:22px; border-radius:4px; background:${color}; display:flex; align-items:center; justify-content:center; font-size:0.65rem; font-weight:bold; color:white; cursor:default;" title="${b.match||''}: ${b.selection||''}">${letter}</div>`;
                 });
                 html += `</div></div>`;
             }
 
-            if (totalBets === 0) {
-                html += `<div style="text-align:center; color:#666; padding:30px;">
-                    <p style="font-size:1.5rem;">📊</p>
-                    <p>No betting data yet. Start placing bets to see your performance stats here.</p>
-                </div>`;
-            }
-
+            // ── Value Bets tracker ────────────────────────────────────────
             html += renderValueBetsTrackerSection();
-            html += renderScorePredictorStats();
 
             html += `<button class="export-btn" onclick="exportCSV()" style="margin-top:10px;">📥 Export All History (CSV)</button>`;
 
