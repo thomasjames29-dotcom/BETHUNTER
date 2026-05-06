@@ -270,18 +270,16 @@
         </div>
         
         <div class="nav-tabs">
-            <div id="tabBotd" class="nav-tab active" onclick="switchTab('botd')">🏆 Bet of the Day</div>
+            <div id="tabSched" class="nav-tab active" onclick="switchTab('sched')">📅 Elite Schedule</div>
+            <div id="tabBotd" class="nav-tab" onclick="switchTab('botd')">🏆 Bet of the Day</div>
             <div id="tabPredict" class="nav-tab" onclick="switchTab('predict')">🔮 Score Predictor</div>
-            <div id="tabScorers" class="nav-tab" onclick="switchTab('scorers')">⚽ Goalscorers</div>
             <div id="tab2hg" class="nav-tab" onclick="switchTab('2hg')">🕐 Late Goals</div>
-            <div id="tabLive" class="nav-tab" onclick="switchTab('live')">🔴 Live Hunt</div>
             <div id="tabChallenge" class="nav-tab" onclick="switchTab('challenge')">💷 Challenge</div>
-            <div id="tabSched" class="nav-tab" onclick="switchTab('sched')">📅 Elite Schedule</div>
-            <div id="tabAcc" class="nav-tab" onclick="switchTab('acc')">💰 Acca Tips</div>
-            <div id="tabValue" class="nav-tab" onclick="switchTab('value')">🎯 Value Bets</div>
+            <div id="tabNextBet" class="nav-tab" onclick="switchTab('nextbet')">🎯 Next Bet</div>
+            <div id="tabLive" class="nav-tab" onclick="switchTab('live')">🔴 Live Hunt</div>
             <div id="tabCards" class="nav-tab" onclick="switchTab('cards')">🟨 Card Watch</div>
+            <div id="tabScorers" class="nav-tab" onclick="switchTab('scorers')">⚽ Goalscorers</div>
             <div id="tabStats" class="nav-tab" onclick="switchTab('stats')">📈 Stats</div>
-            <div id="tabHist" class="nav-tab" onclick="switchTab('hist')">📜 History</div>
         </div>
 
         <select id="filterSelect" onchange="applyFilter()">
@@ -318,7 +316,7 @@
         <button class="scan-btn" onclick="runScan()" id="mainBtn">🎯 SCAN MARKETS</button>
     </div>
 
-    <div id="schedView" style="display:none;">
+    <div id="schedView">
         <div id="schedContent" style="padding-bottom:100px;"></div>
     </div>
 
@@ -357,7 +355,7 @@
         <div id="secondHalfGoalContent" style="padding-bottom:100px; text-align:center; color:#888;">Click above to scan live matches from the 68th minute onward for late goal probability.</div>
     </div>
 
-    <div id="botdView">
+    <div id="botdView" style="display:none;">
         <div style="text-align:center; margin-bottom:15px;">
             <h2 style="color:var(--gold); margin:0 0 4px 0;">🏆 Top 10 Picks of the Day</h2>
             <p style="color:#888; font-size:0.78rem; margin:0;">The 10 strongest bets today across all top leagues</p>
@@ -366,50 +364,26 @@
         <div id="botdContent" style="padding-bottom:100px; text-align:center; color:#888;">Click above to analyze today's fixtures across Europe's top leagues.</div>
     </div>
 
-    <div id="valueView" style="display:none;">
+    <div id="nextBetView" style="display:none;">
         <div style="text-align:center; margin-bottom:15px;">
-            <h2 style="color:#58e6a8; margin:0 0 4px 0;">🎯 Value Bets</h2>
-            <p style="color:#888; font-size:0.78rem; margin:0;">Bets where our model beats the bookmaker's implied odds</p>
-        </div>
-        <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:0 0 10px 0;">
-            <div style="font-size:0.75rem; color:#aaa; margin-bottom:6px; font-weight:bold;">💰 YOUR BANKROLL (for stake sizing)</div>
-            <div style="display:flex; gap:8px; align-items:center;">
-                <span style="color:#888; font-size:1rem; font-weight:bold;">£</span>
-                <input id="valueBankroll" type="number" min="1" placeholder="e.g. 100" value="100" style="flex:1; background:#21262d; border:1px solid #30363d; border-radius:8px; padding:8px 12px; color:white; font-size:0.9rem; outline:none;"/>
-            </div>
-            <div style="font-size:0.65rem; color:#555; margin-top:5px;">Stake recommendations use ¼ Kelly Criterion — the professional standard for bankroll safety</div>
+            <h2 style="color:#58e6a8; margin:0 0 4px 0;">🎯 Next Bet</h2>
+            <p style="color:#888; font-size:0.78rem; margin:0;">Best live bet right now + best upcoming bet in the next 2 hours</p>
         </div>
         <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:0 0 12px 0;">
-            <div style="font-size:0.75rem; color:#aaa; margin-bottom:8px; font-weight:bold;">📚 BOOKMAKERS TO CHECK <span style="color:#555; font-weight:normal;">(tap to toggle · best odds shown)</span></div>
-            <div id="bookmakerBtns" style="display:flex; flex-wrap:wrap; gap:6px;"></div>
-        </div>
-        <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:0 0 10px 0;">
-            <div style="font-size:0.75rem; color:#aaa; margin-bottom:8px; font-weight:bold;">🔍 FILTERS</div>
-            <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
-                <span style="font-size:0.7rem; color:#888; white-space:nowrap;">Min odds:</span>
-                <input id="valueMinOdds" type="number" min="1.01" max="20" step="0.05" value="1.20" onchange="applyValueFiltersAndRender()" style="width:65px; background:#21262d; border:1px solid #30363d; border-radius:6px; padding:4px 8px; color:white; font-size:0.82rem; outline:none;"/>
-                <span style="font-size:0.7rem; color:#888; white-space:nowrap;">Min EV%:</span>
-                <input id="valueMinEV" type="number" min="1" max="50" step="1" value="3" onchange="applyValueFiltersAndRender()" style="width:52px; background:#21262d; border:1px solid #30363d; border-radius:6px; padding:4px 8px; color:white; font-size:0.82rem; outline:none;"/>
+            <div style="font-size:0.75rem; color:#aaa; margin-bottom:6px; font-weight:bold;">💷 YOUR STAKE</div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <span style="color:#888; font-size:1rem; font-weight:bold;">£</span>
+                <input id="nextBetStake" type="number" min="1" placeholder="e.g. 10" value="10" style="flex:1; background:#21262d; border:1px solid #30363d; border-radius:8px; padding:8px 12px; color:white; font-size:0.9rem; outline:none;"/>
             </div>
-            <div style="display:flex; flex-wrap:wrap; gap:5px;">
-                <button class="market-chip active" data-filter="all"    onclick="setMarketFilter(this)">All</button>
-                <button class="market-chip"        data-filter="result" onclick="setMarketFilter(this)">1X2</button>
-                <button class="market-chip"        data-filter="goals"  onclick="setMarketFilter(this)">Goals</button>
-                <button class="market-chip"        data-filter="btts"   onclick="setMarketFilter(this)">BTTS</button>
-                <button class="market-chip"        data-filter="combo"  onclick="setMarketFilter(this)">Result+BTTS</button>
-                <button class="market-chip"        data-filter="dc"     onclick="setMarketFilter(this)">Double Chance</button>
-            </div>
+            <div style="font-size:0.65rem; color:#555; margin-top:5px;">In-play stake is automatically reduced based on time remaining — the less time left, the smaller the suggested stake</div>
         </div>
-        <div style="display:flex; gap:8px; margin-bottom:15px;">
-            <button class="card-scan-btn" style="flex:1; background:linear-gradient(135deg,#1a7f4e,#145c38); color:white; margin-bottom:0; border:1px solid #2ea043;" onclick="scanValueBets(this)">🎯 FIND VALUE BETS</button>
-            <button class="card-scan-btn" style="flex:1; background:linear-gradient(135deg,#1a4f7f,#123a5c); color:white; margin-bottom:0; border:1px solid #388bfd;" onclick="scanOddsMovement(this)">📡 ODDS SIGNALS</button>
-        </div>
-        <div id="valueContent" style="padding-bottom:120px; text-align:center; color:#888;">
+        <button class="card-scan-btn" onclick="scanNextBet(this)" style="margin-bottom:15px; background:linear-gradient(135deg,#1a7f4e,#145c38); border:1px solid #2ea043;">🎯 FIND NEXT BET</button>
+        <div id="nextBetContent" style="padding-bottom:100px; text-align:center; color:#888;">
             <div style="padding:40px 20px;">
                 <div style="font-size:3rem; margin-bottom:10px;">🎯</div>
-                <p style="margin-bottom:8px;">Value Bets finds where our model gives a <strong style="color:white;">higher probability</strong> than Bet365's odds imply.</p>
-                <p style="font-size:0.78rem; color:#555; margin-bottom:4px;">Only bets with positive Expected Value (EV) are shown.</p>
-                <p style="font-size:0.78rem; color:#555;">Positive EV bets are mathematically profitable long-term.</p>
+                <p style="margin-bottom:8px;">Finds the <strong style="color:white;">single best bet available right now</strong> — one live pick and one upcoming match.</p>
+                <p style="font-size:0.78rem; color:#555; margin-bottom:4px;">Live picks show a <strong style="color:#fbbf24;">time-risk stake suggestion</strong> based on minutes remaining.</p>
+                <p style="font-size:0.78rem; color:#555;">Uses smart factor learning to improve recommendations over time.</p>
             </div>
         </div>
     </div>
@@ -420,20 +394,38 @@
             <p style="color:#888; font-size:0.78rem; margin:0;">Ranks today's most likely anytime goalscorers across elite leagues using player goal rate, team attack, opponent defensive form &amp; more</p>
         </div>
         <div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:12px; margin:0 0 12px 0;">
-            <button class="card-scan-btn" id="scorerScanBtn" style="width:100%; background:linear-gradient(135deg,#064e3b,#059669); color:white; margin-bottom:0; border:1px solid #34d399;" onclick="scanGoalscorerTips()">⚽ SCAN TODAY'S GOALSCORER TIPS</button>
+            <div style="font-size:0.7rem; color:#888; margin-bottom:6px; font-weight:600; letter-spacing:0.03em;">SEARCH PERIOD</div>
+            <div style="display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px;">
+                <button onclick="setScorerDatePreset('today')" id="sdp-today" class="scorer-filter-btn sf-active">Today</button>
+                <button onclick="setScorerDatePreset('tomorrow')" id="sdp-tomorrow" class="scorer-filter-btn">Tomorrow</button>
+                <button onclick="setScorerDatePreset('3days')" id="sdp-3days" class="scorer-filter-btn">Next 3 Days</button>
+                <button onclick="setScorerDatePreset('7days')" id="sdp-7days" class="scorer-filter-btn">Next 7 Days</button>
+                <button onclick="setScorerDatePreset('custom')" id="sdp-custom" class="scorer-filter-btn">📅 Custom</button>
+            </div>
+            <div id="scorerCustomDates" style="display:none; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:8px;">
+                <label style="font-size:0.7rem; color:#aaa;">From:</label>
+                <input type="date" id="scorerDateFrom" onchange="applyCustomScorerDates()" style="background:#161b22; border:1px solid #30363d; border-radius:6px; color:white; padding:4px 8px; font-size:0.8rem;">
+                <label style="font-size:0.7rem; color:#aaa;">To:</label>
+                <input type="date" id="scorerDateTo" onchange="applyCustomScorerDates()" style="background:#161b22; border:1px solid #30363d; border-radius:6px; color:white; padding:4px 8px; font-size:0.8rem;">
+            </div>
+            <div id="scorerDateLabel" style="font-size:0.72rem; color:#34d399; margin-bottom:10px; text-align:center;"></div>
+            <button class="card-scan-btn" id="scorerScanBtn" style="width:100%; background:linear-gradient(135deg,#064e3b,#059669); color:white; margin-bottom:0; border:1px solid #34d399;" onclick="scanGoalscorerTips()">⚽ SCAN GOALSCORER TIPS</button>
             <div id="scorerScanInfo" style="font-size:0.68rem; color:#555; margin-top:8px; text-align:center;"></div>
         </div>
-        <div id="scorerFilterBar" style="display:none; gap:6px; margin-bottom:10px; flex-wrap:wrap; align-items:center;">
+        <div id="scorerFilterBar" style="display:none; gap:6px; margin-bottom:6px; flex-wrap:wrap; align-items:center;">
             <span style="font-size:0.7rem; color:#888; white-space:nowrap;">Filter:</span>
             <button onclick="setScorerFilter('all')" id="sf-all" class="scorer-filter-btn sf-active">All</button>
             <button onclick="setScorerFilter('high')" id="sf-high" class="scorer-filter-btn">🔥 High (70%+)</button>
             <button onclick="setScorerFilter('med')" id="sf-med" class="scorer-filter-btn">⚡ Med (50–69%)</button>
             <button onclick="setScorerFilter('fwd')" id="sf-fwd" class="scorer-filter-btn">👟 Forwards</button>
+            <button onclick="setScorerFilter('starter')" id="sf-starter" class="scorer-filter-btn">🟢 Prob. Starters</button>
             <span id="scorerFilterCount" style="font-size:0.68rem; color:#555; margin-left:4px;"></span>
         </div>
+        <div id="scorerKOFilterBar" style="display:none; gap:5px; margin-bottom:6px; flex-wrap:wrap; align-items:center;"></div>
+        <div id="scorerLeagueFilterBar" style="display:none; gap:5px; margin-bottom:10px; flex-wrap:wrap; align-items:center;"></div>
         <div id="scorerContent" style="text-align:center; color:#888; padding:30px;">
             <div style="font-size:3rem; margin-bottom:10px;">⚽</div>
-            <p style="margin-bottom:8px;">Tap <strong style="color:white;">Scan Today's Goalscorer Tips</strong> to analyse all elite fixtures.</p>
+            <p style="margin-bottom:8px;">Select a period above then tap <strong style="color:white;">Scan Goalscorer Tips</strong> to analyse elite fixtures.</p>
             <p style="font-size:0.78rem; color:#555;">Uses player goals per game, team attack strength, opposition defensive form, home/away factor &amp; recent team form.</p>
         </div>
     </div>
@@ -710,68 +702,9 @@
 
         const API_KEY = "0f29a2f96e9dd4231cee515cc5ec52b0";
 
-        // ── Value Bets global state ──────────────────────────────────────────
-        window._lastValueScanResults = null;
-        window._valueMarketFilter = 'all';
+        // ── Next Bet global state ────────────────────────────────────────────
+        window._lastNextBetResults = null;
         window._accaSelections = {};
-
-        // ── Tracked Value Bets (localStorage) ───────────────────────────────
-        function getTrackedValueBets() {
-            try { return JSON.parse(localStorage.getItem('trackedValueBets') || '[]'); } catch(e) { return []; }
-        }
-        function saveTrackedValueBets(arr) {
-            try { localStorage.setItem('trackedValueBets', JSON.stringify(arr)); } catch(e) {}
-        }
-        function trackValueBet(pick, bankroll) {
-            const bets = getTrackedValueBets();
-            const id = `${pick.fixtureId}_${pick.market}`;
-            if (bets.find(b => b.id === id)) return false;
-            bets.unshift({ id, fixtureId: pick.fixtureId, home: pick.home, away: pick.away, league: pick.league ? pick.league.name : '', market: pick.market, odds: pick.odds, bookie: pick.bookie, modelProb: pick.modelProb, ev: pick.ev, stake: pick.stake, bankroll: bankroll || 100, status: 'pending', trackedAt: Date.now() });
-            saveTrackedValueBets(bets);
-            return true;
-        }
-        function settleTrackedValueBet(id, result) {
-            const bets = getTrackedValueBets();
-            const bet = bets.find(b => b.id === id);
-            if (!bet) return;
-            bet.status = result;
-            bet.settledAt = Date.now();
-            if (result === 'won') bet.pnl = parseFloat((bet.stake * bet.odds - bet.stake).toFixed(2));
-            else if (result === 'lost') bet.pnl = -bet.stake;
-            else bet.pnl = 0;
-            saveTrackedValueBets(bets);
-        }
-        function isTrackedValueBet(fixtureId, market) {
-            const id = `${fixtureId}_${market}`;
-            return getTrackedValueBets().some(b => b.id === id);
-        }
-
-        // ── Market filter chips ──────────────────────────────────────────────
-        function setMarketFilter(btn) {
-            document.querySelectorAll('.market-chip').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            window._valueMarketFilter = btn.dataset.filter;
-            applyValueFiltersAndRender();
-        }
-        function marketMatchesFilter(market, filter) {
-            if (filter === 'all') return true;
-            const m = market.toLowerCase();
-            if (filter === 'result')  return (m === 'home win' || m === 'away win' || m === 'draw');
-            if (filter === 'goals')   return m.includes('goal') || m.includes('over') || m.includes('under');
-            if (filter === 'btts')    return (m === 'btts' || m === 'btts no');
-            if (filter === 'combo')   return m.includes('& btts');
-            if (filter === 'dc')      return m.includes('home or draw') || m.includes('draw or away') || m.includes('home or away');
-            return true;
-        }
-        function applyValueFiltersAndRender() {
-            if (!window._lastValueScanResults) return;
-            const { picks, bankroll } = window._lastValueScanResults;
-            const minOdds = parseFloat(document.getElementById('valueMinOdds')?.value) || 1.20;
-            const minEV   = parseFloat(document.getElementById('valueMinEV')?.value)   || 3;
-            const filter  = window._valueMarketFilter || 'all';
-            const filtered = picks.filter(p => p.odds >= minOdds && p.ev >= minEV && marketMatchesFilter(p.market, filter));
-            renderValuePicksToDOM(filtered, bankroll);
-        }
 
         // ── Acca builder ─────────────────────────────────────────────────────
         function toggleAccaPick(fixtureId, market, odds, home, away, bookieName) {
@@ -803,8 +736,8 @@
             const modal = document.getElementById('accaModal');
             const content = document.getElementById('accaModalContent');
             const combinedOdds = picks.reduce((acc, p) => acc * p.odds, 1);
-            const bankroll = parseFloat(document.getElementById('valueBankroll')?.value) || 100;
-            const stake = Math.min(bankroll * 0.05, 20);
+            const bankroll = parseFloat(document.getElementById('nextBetStake')?.value) || 20;
+            const stake = Math.min(bankroll * 0.25, 20);
             const ret = stake * combinedOdds;
             let rows = picks.map(p => `
                 <div style="padding:8px 0; border-bottom:1px solid #21262d; font-size:0.82rem;">
@@ -836,197 +769,243 @@
             modal.style.display = 'block';
         }
 
-        // ── Render value picks to the DOM ─────────────────────────────────────
-        function renderValuePicksToDOM(picks, bankroll) {
-            const area = document.getElementById('valueContent');
-            if (!area) return;
-            if (picks.length === 0) {
-                area.innerHTML = `<div style='text-align:center; padding:30px; color:#888;'><div style='font-size:2rem; margin-bottom:8px;'>🔍</div><p>No picks match the current filters.</p><p style='font-size:0.78rem; color:#555; margin-top:6px;'>Try relaxing the minimum odds or EV, or change the market filter.</p></div>`;
-                return;
+        // ── Time-risk factor for in-play bets ────────────────────────────────
+        function getTimeRisk(elapsed) {
+            const minLeft = Math.max(0, 90 - elapsed);
+            if (minLeft >= 30) return { riskFactor:1.00, stakeMultiplier:1.00, riskLabel:'Low Risk',      riskColor:'#22c55e', riskDesc:'Plenty of time — full stake' };
+            if (minLeft >= 20) return { riskFactor:0.90, stakeMultiplier:0.90, riskLabel:'Slight Caution', riskColor:'#86efac', riskDesc:'~20-30 mins — slight reduction' };
+            if (minLeft >= 15) return { riskFactor:0.80, stakeMultiplier:0.80, riskLabel:'Moderate Risk',  riskColor:'#fbbf24', riskDesc:'15-20 mins — moderate reduction' };
+            if (minLeft >= 10) return { riskFactor:0.65, stakeMultiplier:0.65, riskLabel:'Higher Risk',    riskColor:'#f97316', riskDesc:'Under 15 mins — reduce stake' };
+            if (minLeft >= 5)  return { riskFactor:0.45, stakeMultiplier:0.45, riskLabel:'High Risk',      riskColor:'#ef4444', riskDesc:'Final 10 mins — small stake only' };
+            return               { riskFactor:0.25, stakeMultiplier:0.25, riskLabel:'Extreme Risk',   riskColor:'#dc2626', riskDesc:'Injury time — extreme caution' };
+        }
+
+        // ── Analyse a live match for the best in-play bet ─────────────────────
+        function analyzeInPlayBet(match, hStatsArr, aStatsArr) {
+            const getStat = (arr, type) => {
+                if (!arr) return 0;
+                const item = arr.find(s => s.type === type);
+                if (!item || item.value === null || item.value === undefined) return 0;
+                const v = typeof item.value === 'string' ? parseFloat(item.value.replace('%','')) : item.value;
+                return isNaN(v) ? 0 : v;
+            };
+            const elapsed   = match.fixture.status.elapsed || 0;
+            if (elapsed < 5) return null;
+            const homeGoals = match.goals.home || 0;
+            const awayGoals = match.goals.away || 0;
+            const totalGoals = homeGoals + awayGoals;
+            const homeSoT    = getStat(hStatsArr, 'Shots on Goal');
+            const awaySoT    = getStat(aStatsArr, 'Shots on Goal');
+            const homeXG     = getStat(hStatsArr, 'expected_goals');
+            const awayXG     = getStat(aStatsArr, 'expected_goals');
+            const homeCorners = getStat(hStatsArr, 'Corner Kicks');
+            const awayCorners = getStat(aStatsArr, 'Corner Kicks');
+            const homeTotal  = getStat(hStatsArr, 'Total Shots');
+            const awayTotal  = getStat(aStatsArr, 'Total Shots');
+            const totalSoT   = homeSoT + awaySoT;
+            const totalXG    = homeXG + awayXG;
+            const totalCorners = homeCorners + awayCorners;
+            const minLeft    = Math.max(0, 90 - elapsed);
+            const safeEl     = Math.max(elapsed, 1);
+            if (totalSoT < 1 && totalXG < 0.15 && minLeft < 5) return null;
+            const xgPerMin   = totalXG / safeEl;
+            const projXG     = xgPerMin * minLeft;
+            const convRate   = (totalSoT > 0 && totalGoals > 0) ? Math.min(0.20, totalGoals / totalSoT) : 0.09;
+            const homeAtk    = homeXG*3 + homeSoT*2 + homeCorners*0.5 + homeTotal*0.3;
+            const awayAtk    = awayXG*3 + awaySoT*2 + awayCorners*0.5 + awayTotal*0.3;
+            const homeShare  = (homeAtk + awayAtk) > 0 ? homeAtk / (homeAtk + awayAtk) : 0.5;
+            const timeRisk   = getTimeRisk(elapsed);
+            const candidates = [];
+
+            // Market 1: Over 0.5 remaining goals
+            if (minLeft >= 5) {
+                const projGoals = Math.max(projXG * 0.8, (totalSoT / safeEl) * minLeft * convRate);
+                const prob = Math.min(0.93, Math.max(0.05, 1 - Math.exp(-projGoals)));
+                if (prob >= 0.52) {
+                    const facs = []; const fTags = [];
+                    if (totalXG >= 0.5)  { facs.push(`xG combined: ${totalXG.toFixed(1)}`); fTags.push('nb_high_xg'); }
+                    if (totalSoT >= 3)   { facs.push(`${totalSoT} shots on target`); fTags.push('nb_high_sot'); }
+                    if (totalGoals === 0 && elapsed >= 30) { facs.push('Goalless — pressure building'); fTags.push('nb_goalless'); }
+                    if (totalCorners >= 5) { facs.push(`${totalCorners} corners — sustained pressure`); fTags.push('nb_corners'); }
+                    if (!facs.length) facs.push(`${projXG.toFixed(1)} xG projected remaining`);
+                    candidates.push({ market:'Over 0.5 Goals (Remaining)', selection:'Over 0.5 Goals', prob, impliedOdds:parseFloat(Math.max(1.05,1/prob).toFixed(2)), factors:facs, factorTags:fTags });
+                }
             }
-            let html = `<div style="text-align:center; padding:6px; margin-bottom:10px; color:#888; font-size:0.75rem;">🎯 ${picks.length} pick${picks.length !== 1 ? 's' : ''} · Sorted by EV · Tap checkbox to add to acca</div>`;
-            picks.forEach((pick, idx) => {
-                const evColor = pick.ev >= 15 ? '#58e6a8' : (pick.ev >= 8 ? '#58a6ff' : '#d29922');
-                const evLabel = pick.ev >= 15 ? 'STRONG VALUE' : (pick.ev >= 8 ? 'GOOD VALUE' : 'VALUE');
-                const evBarWidth = Math.min(100, pick.ev * 3);
-                const posText = (pick.homePos && pick.awayPos) ? `${pick.homePos}${getOrdinal(pick.homePos)} vs ${pick.awayPos}${getOrdinal(pick.awayPos)}` : '';
-                const accaKey = `${pick.fixtureId}_${pick.market}`;
-                const inAcca = !!window._accaSelections[accaKey];
-                const isTracked = isTrackedValueBet(pick.fixtureId, pick.market);
-                const bkShort = (SUPPORTED_BOOKMAKERS.find(b => b.name === pick.bookie) || { short: (pick.bookie||'').toUpperCase().slice(0,8) }).short;
-                const bkColor = (SUPPORTED_BOOKMAKERS.find(b => b.name === pick.bookie) || { color: '#58a6ff' }).color;
 
-                html += `
-                    <div class="match-card" style="border-left:4px solid ${evColor}; ${idx === 0 ? 'border:2px solid #58e6a8; box-shadow:0 0 15px rgba(88,230,168,0.12);' : ''}">
-                        ${idx === 0 ? '<div style="text-align:center; font-size:0.7rem; font-weight:bold; color:#58e6a8; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">⭐ HIGHEST VALUE BET TODAY ⭐</div>' : ''}
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                            <div style="font-size:0.7rem; color:#888;">${pick.league.flag||''} ${pick.league.name} · ${pick.league.country||''}</div>
-                            <div style="display:flex; align-items:center; gap:6px;">
-                                <div style="font-size:0.7rem; color:#888;">KO ${pick.kickoff}</div>
-                                <input type="checkbox" class="acca-checkbox" title="Add to acca" ${inAcca ? 'checked' : ''} onchange="toggleAccaPick(${pick.fixtureId}, '${pick.market.replace(/'/g,"\\'")}', ${pick.odds}, '${pick.home.replace(/'/g,"\\'")}', '${pick.away.replace(/'/g,"\\'")}', '${(pick.bookie||'').replace(/'/g,"\\'")}')"/>
-                            </div>
-                        </div>
-                        <div style="font-weight:bold; font-size:0.95rem; margin-bottom:6px;">${pick.home} vs ${pick.away}</div>
+            // Market 2: Both Teams to Score
+            if ((homeGoals === 0 || awayGoals === 0) && minLeft >= 8) {
+                const hProj = homeXG > 0 ? 1-Math.exp(-homeXG*(minLeft/safeEl)) : 1-Math.exp(-(homeSoT/safeEl)*minLeft*0.09);
+                const aProj = awayXG > 0 ? 1-Math.exp(-awayXG*(minLeft/safeEl)) : 1-Math.exp(-(awaySoT/safeEl)*minLeft*0.09);
+                let bttsProb = 1.0;
+                if (homeGoals === 0) bttsProb *= Math.min(0.88, Math.max(0.05, hProj));
+                if (awayGoals === 0) bttsProb *= Math.min(0.88, Math.max(0.05, aProj));
+                const prob = Math.min(0.88, bttsProb);
+                if (prob >= 0.40) {
+                    const facs = []; const fTags = [];
+                    if (homeGoals >= 1 && awayXG >= 0.3) { facs.push(`${match.teams.away.name} xG: ${awayXG.toFixed(1)}`); fTags.push('nb_btts_away_threat'); }
+                    if (awayGoals >= 1 && homeXG >= 0.3) { facs.push(`${match.teams.home.name} xG: ${homeXG.toFixed(1)}`); fTags.push('nb_btts_home_threat'); }
+                    if (totalSoT >= 4) { facs.push(`${totalSoT} shots on target`); fTags.push('nb_high_sot'); }
+                    if (!facs.length) facs.push('Both teams creating chances');
+                    candidates.push({ market:'Both Teams to Score', selection:'Both Teams to Score', prob, impliedOdds:parseFloat(Math.max(1.05,1/prob).toFixed(2)), factors:facs, factorTags:fTags });
+                }
+            }
 
-                        ${pick.movement ? (() => {
-                            const shortened = pick.movement.change < 0;
-                            const mc = shortened ? '#58e6a8' : '#f0883e';
-                            const icon = shortened ? '📉' : '📈';
-                            const msg = shortened ? `Odds shortened ${pick.movement.changePct}% (${pick.movement.prev.toFixed(2)} → ${pick.odds.toFixed(2)}) — sharp money signal` : `Odds drifted +${pick.movement.changePct}% (${pick.movement.prev.toFixed(2)} → ${pick.odds.toFixed(2)}) — market fading this`;
-                            return `<div style="background:rgba(${shortened?'88,230,168':'240,136,62'},0.1); border:1px solid rgba(${shortened?'88,230,168':'240,136,62'},0.3); border-radius:6px; padding:5px 8px; margin-bottom:8px; font-size:0.68rem; color:${mc};">${icon} ${msg}</div>`;
-                        })() : ''}
+            // Market 3: Next Goal (dominant team)
+            if (minLeft >= 5) {
+                const domShare = Math.max(homeShare, 1-homeShare);
+                const domTeam  = homeShare >= 0.5 ? match.teams.home : match.teams.away;
+                const domXG    = homeShare >= 0.5 ? homeXG : awayXG;
+                const domSoT   = homeShare >= 0.5 ? homeSoT : awaySoT;
+                if (domShare >= 0.55) {
+                    const projGoals = Math.max(projXG*0.8, (totalSoT/safeEl)*minLeft*convRate);
+                    const probGoal  = Math.min(0.92, Math.max(0.1, 1-Math.exp(-projGoals)));
+                    const prob = Math.min(0.87, probGoal * domShare);
+                    if (prob >= 0.32) {
+                        const facs = []; const fTags = [];
+                        if (domXG >= 0.4)   { facs.push(`${domTeam.name} xG: ${domXG.toFixed(1)}`); fTags.push('nb_next_goal_xg'); }
+                        if (domSoT >= 2)    { facs.push(`${domSoT} SoT for ${domTeam.name}`); fTags.push('nb_next_goal_sot'); }
+                        if (domShare >= 0.65) { facs.push(`${Math.round(domShare*100)}% attacking dominance`); fTags.push('nb_next_goal_dominant'); }
+                        if (!facs.length) facs.push(`${domTeam.name} leading chance creation`);
+                        candidates.push({ market:`Next Goal: ${domTeam.name}`, selection:`Next Goal: ${domTeam.name}`, prob, impliedOdds:parseFloat(Math.max(1.10,1/prob).toFixed(2)), factors:facs, factorTags:fTags });
+                    }
+                }
+            }
 
-                        <div style="display:flex; gap:8px; margin-bottom:10px;">
-                            <div style="flex:2; background:rgba(88,230,168,0.06); border:1px solid rgba(88,230,168,0.2); border-radius:8px; padding:10px; text-align:center;">
-                                <div style="font-size:0.6rem; color:#888; margin-bottom:3px;">BET</div>
-                                <div style="font-size:0.95rem; font-weight:bold; color:#58e6a8;">${pick.market}</div>
-                            </div>
-                            <div style="flex:1; background:rgba(0,112,60,0.08); border:1px solid rgba(0,112,60,0.25); border-radius:8px; padding:10px; text-align:center;">
-                                <div style="font-size:0.55rem; color:#888; margin-bottom:2px; text-transform:uppercase; letter-spacing:0.3px;">${bkShort}</div>
-                                <div style="font-size:1rem; font-weight:bold; color:${bkColor};">${pick.odds.toFixed(2)}</div>
-                            </div>
-                        </div>
+            if (!candidates.length) return null;
 
-                        <div style="background:rgba(0,0,0,0.3); border-radius:10px; padding:10px; margin-bottom:10px;">
-                            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:6px; margin-bottom:10px;">
-                                <div style="text-align:center;"><div style="font-size:0.6rem; color:#888; margin-bottom:2px;">OUR MODEL</div><div style="font-size:1.1rem; font-weight:bold; color:white;">${pick.modelProb}%</div></div>
-                                <div style="text-align:center;"><div style="font-size:0.6rem; color:#888; margin-bottom:2px;">BOOKIE SAYS</div><div style="font-size:1.1rem; font-weight:bold; color:#da3633;">${pick.impliedProb}%</div></div>
-                                <div style="text-align:center;"><div style="font-size:0.6rem; color:#888; margin-bottom:2px;">EDGE</div><div style="font-size:1.1rem; font-weight:bold; color:#58e6a8;">+${pick.edge}%</div></div>
-                            </div>
-                            <div style="margin-bottom:6px;">
-                                <div style="display:flex; justify-content:space-between; font-size:0.62rem; color:#888; margin-bottom:3px;">
-                                    <span>${evLabel}</span><span>EV: +${pick.ev}%</span>
-                                </div>
-                                <div style="background:#21262d; border-radius:4px; height:6px; overflow:hidden;">
-                                    <div style="width:${evBarWidth}%; height:100%; background:${evColor}; border-radius:4px;"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style="background:rgba(88,230,168,0.06); border:1px solid rgba(88,230,168,0.15); border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-                            <div>
-                                <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">¼ KELLY STAKE</div>
-                                <div style="font-size:1.3rem; font-weight:bold; color:#58e6a8;">£${pick.stake.toFixed(2)}</div>
-                            </div>
-                            <div style="text-align:right;">
-                                <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">POTENTIAL RETURN</div>
-                                <div style="font-size:1rem; font-weight:bold; color:white;">£${(pick.stake * pick.odds).toFixed(2)}</div>
-                                <div style="font-size:0.62rem; color:#555;">(£${(pick.stake * pick.odds - pick.stake).toFixed(2)} profit)</div>
-                            </div>
-                        </div>
-
-                        ${posText ? `<div style="font-size:0.65rem; color:#555; margin-bottom:8px;">📍 League Position: ${posText}</div>` : ''}
-
-                        <div style="display:flex; gap:8px; align-items:center; border-top:1px solid #21262d; padding-top:8px;">
-                            <div style="flex:1; font-size:0.6rem; color:#555;">EV = (${pick.modelProb}% × ${pick.odds.toFixed(2)}) − 1 = <span style="color:${evColor}">+${pick.ev}%</span> · ¼ Kelly = ${(pick.stake/bankroll*100).toFixed(1)}%</div>
-                            <button class="value-track-btn ${isTracked ? 'tracked' : ''}" id="trackBtn_${pick.fixtureId}_${pick.market.replace(/\s+/g,'_')}" onclick="handleTrackBet(${pick.fixtureId}, '${pick.market.replace(/'/g,"\\'")}', this)">${isTracked ? '✓ Tracked' : '📌 Track Bet'}</button>
-                        </div>
-                    </div>`;
+            candidates.forEach(c => {
+                const fw = c.factorTags.reduce((s,t) => s + getFactorWeight(t,10), 0) / Math.max(1, c.factorTags.length);
+                c.adjustedScore = c.prob * 100 * timeRisk.riskFactor * (fw / 10);
             });
-            area.innerHTML = html;
+            candidates.sort((a,b) => b.adjustedScore - a.adjustedScore);
+            const best = candidates[0];
+            return { ...best, matchLabel:`${match.teams.home.name} vs ${match.teams.away.name}`, homeTeam:match.teams.home.name, awayTeam:match.teams.away.name, score:`${homeGoals}-${awayGoals}`, elapsed, minLeft, ...timeRisk, league:match.league.name, leagueId:match.league.id, fixtureId:match.fixture.id, homeGoals, awayGoals, totalSoT, totalXG, isInPlay:true };
         }
 
-        function handleTrackBet(fixtureId, market, btn) {
-            if (btn.classList.contains('tracked')) return;
-            const bankroll = parseFloat(document.getElementById('valueBankroll')?.value) || 100;
-            if (!window._lastValueScanResults) return;
-            const pick = window._lastValueScanResults.picks.find(p => p.fixtureId === fixtureId && p.market === market);
-            if (!pick) return;
-            const ok = trackValueBet(pick, bankroll);
-            if (ok) {
-                btn.textContent = '✓ Tracked';
-                btn.classList.add('tracked');
+        // ── Analyse an upcoming match for the best pre-match bet ──────────────
+        function analyzeUpcomingBet(match, standings) {
+            const hId=match.teams.home.id, aId=match.teams.away.id;
+            const hName=match.teams.home.name, aName=match.teams.away.name;
+            let homePos=10,awayPos=10,totalTeams=20,homeForm=0.5,awayForm=0.5;
+            let homeGF=1.3,homeGA=1.2,awayGF=1.2,awayGA=1.3;
+            if (standings && standings.length) {
+                const hSt=standings.find(s=>s.team.id===hId), aSt=standings.find(s=>s.team.id===aId);
+                totalTeams=standings.length;
+                if (hSt) { homePos=hSt.rank; homeGF=hSt.all.goals.for/Math.max(1,hSt.all.played); homeGA=hSt.all.goals.against/Math.max(1,hSt.all.played); homeForm=((hSt.form||'').slice(-5).match(/W/g)||[]).length/5; }
+                if (aSt) { awayPos=aSt.rank; awayGF=aSt.all.goals.for/Math.max(1,aSt.all.played); awayGA=aSt.all.goals.against/Math.max(1,aSt.all.played); awayForm=((aSt.form||'').slice(-5).match(/W/g)||[]).length/5; }
             }
+            const homeLambda = Math.max(0.3,(homeGF*0.6+awayGA*0.4)*(1+homeForm*0.25)*1.1);
+            const awayLambda = Math.max(0.3,(awayGF*0.6+homeGA*0.4)*(1+awayForm*0.25)*0.9);
+            const candidates = [];
+
+            // Over 2.5 Goals
+            let pU25=0;
+            for (let h=0;h<=7;h++) for (let a=0;a<=7;a++) if (h+a<=2) pU25+=poissonProb(h,homeLambda)*poissonProb(a,awayLambda);
+            const o25p=Math.min(0.88,Math.max(0.05,1-pU25));
+            if (o25p>=0.48) { const io=parseFloat(Math.max(1.10,1/o25p).toFixed(2)); const facs=[]; const fTags=[]; if(homeLambda>=1.4){facs.push(`${hName} avg ${homeGF.toFixed(1)} goals/game`);fTags.push('nb_home_goals');} if(awayLambda>=1.2){facs.push(`${aName} avg ${awayGF.toFixed(1)} goals/game`);fTags.push('nb_away_goals');} if(homeForm>=0.6){facs.push(`${hName} form: ${Math.round(homeForm*5)}/5`);fTags.push('nb_form_strong');} if(!facs.length)facs.push(`Combined avg: ${(homeLambda+awayLambda).toFixed(1)} goals/game`); candidates.push({market:'Over 2.5 Goals',selection:'Over 2.5 Goals',prob:o25p,impliedOdds:io,factors:facs,factorTags:fTags,score:o25p*100}); }
+
+            // Over 1.5 Goals
+            let pU15=0;
+            for (let h=0;h<=7;h++) for (let a=0;a<=7;a++) if (h+a<=1) pU15+=poissonProb(h,homeLambda)*poissonProb(a,awayLambda);
+            const o15p=Math.min(0.92,Math.max(0.05,1-pU15));
+            if (o15p>=0.62) { const io=parseFloat(Math.max(1.05,1/o15p).toFixed(2)); const facs=[`Combined avg: ${(homeLambda+awayLambda).toFixed(1)} goals/game`]; const fTags=['nb_o15']; if(homeForm>=0.5||awayForm>=0.5){facs.push('Both sides in reasonable form');fTags.push('nb_form_ok');} candidates.push({market:'Over 1.5 Goals',selection:'Over 1.5 Goals',prob:o15p,impliedOdds:io,factors:facs,factorTags:fTags,score:o15p*100*0.85}); }
+
+            // BTTS
+            const hBTTS=1-Math.exp(-homeLambda), aBTTS=1-Math.exp(-awayLambda);
+            const bttsP=Math.min(0.85,hBTTS*aBTTS);
+            if (bttsP>=0.42) { const io=parseFloat(Math.max(1.10,1/bttsP).toFixed(2)); candidates.push({market:'Both Teams to Score',selection:'Both Teams to Score',prob:bttsP,impliedOdds:io,factors:[`${hName} scores ~${Math.round(hBTTS*100)}% of games`,`${aName} scores ~${Math.round(aBTTS*100)}% of games`],factorTags:['nb_btts_both_scoring'],score:bttsP*100}); }
+
+            // Home Win
+            if (homeForm>=0.55 && (awayPos===10||homePos<awayPos-2)) {
+                const posBonus=totalTeams>0?Math.min(0.15,(awayPos-homePos)/totalTeams*0.3):0;
+                const hwP=Math.min(0.78,0.32+homeForm*0.25+posBonus+(homeLambda-awayLambda)*0.08);
+                if (hwP>=0.42) { const io=parseFloat(Math.max(1.20,1/hwP).toFixed(2)); candidates.push({market:'Home Win',selection:'Home Win',prob:hwP,impliedOdds:io,factors:[`${hName} form: ${Math.round(homeForm*5)}/5`,`${hName} rank ${homePos} vs ${aName} rank ${awayPos}`],factorTags:['nb_home_win','nb_form_strong'],score:hwP*100*0.95}); }
+            }
+
+            // Away Win
+            if (awayForm>=0.55 && (homePos===10||awayPos<homePos-2)) {
+                const posBonus=totalTeams>0?Math.min(0.12,(homePos-awayPos)/totalTeams*0.25):0;
+                const awP=Math.min(0.70,0.28+awayForm*0.22+posBonus+(awayLambda-homeLambda)*0.08);
+                if (awP>=0.38) { const io=parseFloat(Math.max(1.30,1/awP).toFixed(2)); candidates.push({market:'Away Win',selection:'Away Win',prob:awP,impliedOdds:io,factors:[`${aName} form: ${Math.round(awayForm*5)}/5`,`${aName} rank ${awayPos} vs ${hName} rank ${homePos}`],factorTags:['nb_away_win','nb_form_strong'],score:awP*100*0.90}); }
+            }
+
+            if (!candidates.length) return null;
+            candidates.forEach(c => { const fw=c.factorTags.reduce((s,t)=>s+getFactorWeight(t,10),0)/Math.max(1,c.factorTags.length); c.score=c.prob*100*(fw/10); });
+            candidates.sort((a,b)=>b.score-a.score);
+            const best=candidates[0];
+            const ko=new Date(match.fixture.date);
+            const koStr=ko.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+            const minsToKO=Math.max(0,Math.round((ko.getTime()-Date.now())/60000));
+            return { ...best, matchLabel:`${hName} vs ${aName}`, homeTeam:hName, awayTeam:aName, score:'0-0', homeGoals:0, awayGoals:0, koStr, minsToKO, league:match.league.name, leagueId:match.league.id, fixtureId:match.fixture.id, isInPlay:false };
         }
 
-        // ── Value Bets Tracker section for Stats ─────────────────────────────
-        function renderValueBetsTrackerSection() {
-            const bets = getTrackedValueBets();
+        // ── Next Bet Stats section ─────────────────────────────────────────────
+        function renderNextBetStatsSection() {
+            const bets = getPlacedChallenges().filter(b => b.source === 'NextBet');
             if (bets.length === 0) return '';
-            const pending = bets.filter(b => b.status === 'pending');
-            const settled = bets.filter(b => b.status !== 'pending');
-            const wonBets  = settled.filter(b => b.status === 'won');
-            const lostBets = settled.filter(b => b.status === 'lost');
-            const voidBets = settled.filter(b => b.status === 'void');
-            const totalStaked = settled.filter(b => b.status !== 'void').reduce((s, b) => s + b.stake, 0);
-            const totalPnl    = settled.reduce((s, b) => s + (b.pnl || 0), 0);
-            const roi = totalStaked > 0 ? Math.round((totalPnl / totalStaked) * 100) : 0;
-            const roiColor = roi >= 0 ? 'var(--green)' : 'var(--red)';
-            const winRate = (wonBets.length + lostBets.length) > 0 ? Math.round((wonBets.length / (wonBets.length + lostBets.length)) * 100) : 0;
+            const resolved = bets.filter(b => b.status === 'resolved');
+            const won      = resolved.filter(b => b.result === true);
+            const lost     = resolved.filter(b => b.result === false);
+            const pending  = bets.filter(b => b.status === 'pending');
+            const winRate  = resolved.length > 0 ? Math.round(won.length / resolved.length * 100) : 0;
+            const winColor = winRate >= 60 ? 'var(--green)' : (winRate >= 45 ? 'var(--gold)' : 'var(--red)');
 
-            let html = `<div class="stats-card">
-                <div style="font-size:0.85rem; font-weight:bold; color:#58e6a8; margin-bottom:12px;">🎯 Value Bets Tracker</div>`;
+            const ipBets  = resolved.filter(b => b.selection.startsWith('Next Goal:') || b.selection.startsWith('Over 0.5') || (b.selection === 'Both Teams to Score' && b.isInPlay));
+            const preBets = resolved.filter(b => b.selection === 'Home Win' || b.selection === 'Away Win' || b.selection === 'Over 2.5 Goals' || b.selection === 'Over 1.5 Goals' || (b.selection === 'Both Teams to Score' && !b.isInPlay));
+            const ipWon   = ipBets.filter(b => b.result).length;
+            const preWon  = preBets.filter(b => b.result).length;
+            const ipRate  = ipBets.length  > 0 ? Math.round(ipWon  / ipBets.length  * 100) : null;
+            const preRate = preBets.length > 0 ? Math.round(preWon / preBets.length * 100) : null;
+            const recentForm = resolved.slice(-12).map(b => b.result ? '🟢' : '🔴').join(' ');
 
-            if (settled.length > 0) {
-                html += `<div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; margin-bottom:14px;">
-                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:1rem; font-weight:bold; color:var(--green);">${wonBets.length}</div>
-                        <div style="font-size:0.6rem; color:#888;">Won</div>
+            let html = `<div class="stats-card" style="border-color:rgba(88,230,168,0.3);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <div style="font-size:0.85rem; font-weight:bold; color:#58e6a8;">🎯 Next Bet Tracker</div>
+                    <div style="font-size:0.65rem; color:#555;">${bets.length} placed · ${resolved.length} resolved</div>
+                </div>`;
+
+            if (resolved.length > 0) {
+                html += `<div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; margin-bottom:12px;">
+                    <div style="background:rgba(88,230,168,0.06); border:1px solid rgba(88,230,168,0.15); padding:8px 4px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.2rem; font-weight:bold; color:${winColor};">${winRate}%</div>
+                        <div style="font-size:0.58rem; color:#888; margin-top:2px;">Win Rate</div>
+                        <div style="font-size:0.55rem; color:#555;">${won.length}/${resolved.length}</div>
                     </div>
-                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:1rem; font-weight:bold; color:var(--red);">${lostBets.length}</div>
-                        <div style="font-size:0.6rem; color:#888;">Lost</div>
+                    <div style="background:rgba(88,230,168,0.06); border:1px solid rgba(88,230,168,0.15); padding:8px 4px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.2rem; font-weight:bold; color:var(--green);">${won.length}</div>
+                        <div style="font-size:0.58rem; color:#888; margin-top:2px;">Wins</div>
                     </div>
-                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:1rem; font-weight:bold; color:${winRate >= 50 ? 'var(--green)' : 'var(--red)'};">${winRate}%</div>
-                        <div style="font-size:0.6rem; color:#888;">Win Rate</div>
+                    <div style="background:rgba(88,230,168,0.06); border:1px solid rgba(88,230,168,0.15); padding:8px 4px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.2rem; font-weight:bold; color:var(--red);">${lost.length}</div>
+                        <div style="font-size:0.58rem; color:#888; margin-top:2px;">Losses</div>
                     </div>
-                    <div style="background:rgba(255,255,255,0.04); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:1rem; font-weight:bold; color:${roiColor};">${roi >= 0 ? '+' : ''}${roi}%</div>
-                        <div style="font-size:0.6rem; color:#888;">ROI</div>
-                    </div>
-                </div>
-                <div style="display:flex; gap:8px; margin-bottom:14px;">
-                    <div style="flex:1; background:rgba(255,255,255,0.03); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">TOTAL STAKED</div>
-                        <div style="font-size:1rem; font-weight:bold; color:white;">£${totalStaked.toFixed(2)}</div>
-                    </div>
-                    <div style="flex:1; background:rgba(255,255,255,0.03); padding:8px; border-radius:8px; text-align:center;">
-                        <div style="font-size:0.65rem; color:#888; margin-bottom:2px;">P&L</div>
-                        <div style="font-size:1rem; font-weight:bold; color:${totalPnl >= 0 ? 'var(--green)' : 'var(--red)'};">${totalPnl >= 0 ? '+' : ''}£${totalPnl.toFixed(2)}</div>
+                    <div style="background:rgba(88,230,168,0.06); border:1px solid rgba(88,230,168,0.15); padding:8px 4px; border-radius:8px; text-align:center;">
+                        <div style="font-size:1.2rem; font-weight:bold; color:#888;">${pending.length}</div>
+                        <div style="font-size:0.58rem; color:#888; margin-top:2px;">Pending</div>
                     </div>
                 </div>`;
             }
 
-            if (pending.length > 0) {
-                html += `<div style="font-size:0.75rem; font-weight:bold; color:#d29922; margin-bottom:8px;">⏳ Pending (${pending.length})</div>`;
-                pending.forEach(bet => {
-                    const d = new Date(bet.trackedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
-                    html += `<div style="background:rgba(255,255,255,0.03); border:1px solid #30363d; border-radius:8px; padding:10px; margin-bottom:8px;">
-                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px;">
-                            <div>
-                                <div style="font-size:0.78rem; font-weight:bold; color:white; margin-bottom:2px;">${bet.home} vs ${bet.away}</div>
-                                <div style="font-size:0.68rem; color:#58e6a8;">${bet.market} @ ${bet.odds.toFixed(2)} <span style="color:#555;">(${bet.bookie||''})</span></div>
-                                <div style="font-size:0.63rem; color:#555; margin-top:2px;">${bet.league} · Tracked ${d} · Stake £${bet.stake.toFixed(2)}</div>
-                            </div>
-                        </div>
-                        <div style="display:flex; gap:6px; margin-top:8px;">
-                            <button class="settle-btn settle-btn-won" onclick="settleTrackedValueBet('${bet.id}','won'); renderStatsDashboard();">✓ Won</button>
-                            <button class="settle-btn settle-btn-lost" onclick="settleTrackedValueBet('${bet.id}','lost'); renderStatsDashboard();">✗ Lost</button>
-                            <button class="settle-btn settle-btn-void" onclick="settleTrackedValueBet('${bet.id}','void'); renderStatsDashboard();">○ Void</button>
-                        </div>
-                    </div>`;
-                });
+            if (ipBets.length > 0 || preBets.length > 0) {
+                html += `<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid #21262d; border-radius:8px; padding:8px; text-align:center;">
+                        <div style="font-size:0.6rem; color:#888; margin-bottom:4px;">🔴 IN-PLAY</div>
+                        <div style="font-size:1.1rem; font-weight:bold; color:${ipRate !== null ? (ipRate>=60?'var(--green)':(ipRate>=45?'var(--gold)':'var(--red)')) : '#555'};">${ipRate !== null ? ipRate+'%' : '—'}</div>
+                        <div style="font-size:0.58rem; color:#555;">${ipWon}/${ipBets.length} settled</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid #21262d; border-radius:8px; padding:8px; text-align:center;">
+                        <div style="font-size:0.6rem; color:#888; margin-bottom:4px;">📅 PRE-MATCH</div>
+                        <div style="font-size:1.1rem; font-weight:bold; color:${preRate !== null ? (preRate>=60?'var(--green)':(preRate>=45?'var(--gold)':'var(--red)')) : '#555'};">${preRate !== null ? preRate+'%' : '—'}</div>
+                        <div style="font-size:0.58rem; color:#555;">${preWon}/${preBets.length} settled</div>
+                    </div>
+                </div>`;
             }
 
-            if (settled.length > 0) {
-                html += `<div style="font-size:0.75rem; font-weight:bold; color:#888; margin-bottom:8px; margin-top:${pending.length ? '10px' : '0'};">🏁 Settled (${settled.length})</div>`;
-                settled.slice(0, 20).forEach(bet => {
-                    const d = new Date(bet.settledAt || bet.trackedAt).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
-                    const statusColor = bet.status === 'won' ? 'var(--green)' : (bet.status === 'lost' ? 'var(--red)' : '#8b949e');
-                    const statusIcon  = bet.status === 'won' ? '✓' : (bet.status === 'lost' ? '✗' : '○');
-                    const pnlStr = bet.pnl != null ? (bet.pnl >= 0 ? `+£${bet.pnl.toFixed(2)}` : `-£${Math.abs(bet.pnl).toFixed(2)}`) : '';
-                    html += `<div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid #21262d;">
-                        <div style="flex:1; min-width:0;">
-                            <div style="font-size:0.75rem; color:white; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${bet.home} vs ${bet.away}</div>
-                            <div style="font-size:0.65rem; color:#888;">${bet.market} @ ${bet.odds.toFixed(2)} · ${d}</div>
-                        </div>
-                        <div style="text-align:right; margin-left:10px;">
-                            <div style="font-size:0.8rem; font-weight:bold; color:${statusColor};">${statusIcon} ${bet.status.toUpperCase()}</div>
-                            ${pnlStr ? `<div style="font-size:0.7rem; color:${statusColor};">${pnlStr}</div>` : ''}
-                        </div>
-                    </div>`;
-                });
+            if (recentForm.length > 0) {
+                html += `<div>
+                    <div style="font-size:0.65rem; color:#888; margin-bottom:4px;">Recent Form (last ${Math.min(12,resolved.length)})</div>
+                    <div style="font-size:0.9rem; letter-spacing:2px;">${recentForm}</div>
+                </div>`;
             }
 
             html += `</div>`;
@@ -1034,8 +1013,23 @@
         }
 
         // ELITE IDS
-        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 253, 137, 188,
+        const ELITE_IDS = [39, 40, 45, 48, 179, 180, 140, 78, 135, 61, 88, 94, 144, 2, 3, 529, 556, 81, 143, 307, 137, 188,
             1, 4, 5, 6, 7, 9, 10, 15, 29, 30, 31, 32, 34, 35, 36, 37];
+        const LEAGUE_NAMES = {
+            2:'Champions League', 3:'Europa League', 529:'Conference League',
+            39:'Premier League', 40:'Championship', 45:'FA Cup', 48:'EFL Cup',
+            140:'La Liga', 143:'Copa del Rey',
+            78:'Bundesliga', 135:'Serie A', 137:'Coppa Italia',
+            61:'Ligue 1', 88:'Eredivisie', 94:'Primeira Liga', 144:'Pro League',
+            179:'Scottish Prem', 180:'Scottish Champ', 188:'Austrian Bund.',
+            307:'Saudi Pro League', 81:'Brazil Serie A', 556:'Nations League',
+            1:'World Cup', 4:'Euro Champ.', 5:'Nations Lg B',
+            6:'AFCON', 7:'Asian Cup', 9:'Copa America',
+            10:'CONMEBOL Quals', 15:'Club World Cup',
+            29:'WCQ Asia', 30:'WCQ Asia S', 31:'WCQ S.Am',
+            32:'WCQ Europe', 34:'WCQ Africa', 35:'WCQ Asia 2',
+            36:'WCQ Oceania', 37:'WCQ CONCACAF'
+        };
         const EU_COUNTRIES = ["Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia", "Bulgaria", "Croatia", "Cyprus", "Czech Republic", "Czech-Republic", "Denmark", "England", "Estonia", "Faroe Islands", "Finland", "France", "Georgia", "Germany", "Gibraltar", "Greece", "Hungary", "Iceland", "Ireland", "Israel", "Italy", "Kazakhstan", "Kosovo", "Latvia", "Liechtenstein", "Lithuania", "Luxembourg", "Malta", "Moldova", "Montenegro", "Netherlands", "Northern Ireland", "North Macedonia", "Norway", "Poland", "Portugal", "Romania", "Russia", "San Marino", "Scotland", "Serbia", "Slovakia", "Slovenia", "Spain", "Sweden", "Switzerland", "Ukraine", "Wales"];
 
         let allMatches = [];
@@ -2130,7 +2124,7 @@
                     });
                 } catch(e) {}
             }
-            if(changed) { saveHistory(bets); if(document.getElementById('tabHist').classList.contains('active')) renderHistory(); }
+            if(changed) { saveHistory(bets); }
         }
 
         function renderHistory() {
@@ -2233,6 +2227,7 @@
             document.getElementById('apiCounter').innerText = `API: ${current}`;
         }
         trackAPI(0);
+        loadSchedule();
         setTimeout(() => {
             settlePredictions(true);
             startPredictAutoSettle();
@@ -2240,8 +2235,8 @@
 
         function switchTab(tab) {
             stopChallengeAutoRefresh();
-            const views = ['liveView','schedView','histView','cardView','accView','challengeView','statsView','secondHalfGoalView','botdView','valueView','predictView','scorersView'];
-            const tabs = ['tabLive','tabSched','tabHist','tabCards','tabAcc','tabChallenge','tabStats','tab2hg','tabBotd','tabValue','tabPredict','tabScorers'];
+            const views = ['liveView','schedView','cardView','challengeView','statsView','secondHalfGoalView','botdView','nextBetView','predictView','scorersView'];
+            const tabs = ['tabLive','tabSched','tabCards','tabChallenge','tabStats','tab2hg','tabBotd','tabNextBet','tabPredict','tabScorers'];
             views.forEach(v => document.getElementById(v).style.display = 'none');
             tabs.forEach(t => document.getElementById(t).classList.remove('active'));
             document.getElementById('filterSelect').style.display = 'none';
@@ -2266,33 +2261,24 @@
             } else if(tab === 'cards') {
                 document.getElementById('cardView').style.display = 'block';
                 document.getElementById('tabCards').classList.add('active');
-            } else if(tab === 'acc') {
-                document.getElementById('accView').style.display = 'block';
-                document.getElementById('tabAcc').classList.add('active');
             } else if(tab === '2hg') {
                 document.getElementById('secondHalfGoalView').style.display = 'block';
                 document.getElementById('tab2hg').classList.add('active');
             } else if(tab === 'botd') {
                 document.getElementById('botdView').style.display = 'block';
                 document.getElementById('tabBotd').classList.add('active');
-            } else if(tab === 'value') {
-                document.getElementById('valueView').style.display = 'block';
-                document.getElementById('tabValue').classList.add('active');
-                renderBookmakerButtons();
-                if (window._lastValueScanResults) applyValueFiltersAndRender();
+            } else if(tab === 'nextbet') {
+                document.getElementById('nextBetView').style.display = 'block';
+                document.getElementById('tabNextBet').classList.add('active');
             } else if(tab === 'scorers') {
                 document.getElementById('scorersView').style.display = 'block';
                 document.getElementById('tabScorers').classList.add('active');
+                updateScorerDateLabel();
                 renderGoalscorerCache();
             } else if(tab === 'stats') {
                 document.getElementById('statsView').style.display = 'block';
                 document.getElementById('tabStats').classList.add('active');
                 renderStatsDashboard();
-            } else {
-                document.getElementById('histView').style.display = 'block';
-                document.getElementById('tabHist').classList.add('active');
-                checkBetOutcomes(allMatches); 
-                renderHistory();
             }
         }
 
@@ -3975,466 +3961,275 @@
             btn.disabled = false;
         }
 
-        async function scanValueBets(btn) {
-            const area = document.getElementById('valueContent');
-            const bankrollInput = document.getElementById('valueBankroll');
-            const bankroll = parseFloat(bankrollInput.value) || 100;
-
-            btn.innerText = "🔍 SCANNING FOR VALUE...";
-            btn.disabled = true;
-            area.innerHTML = `<div style='text-align:center; padding:30px; color:var(--cyan);'>Fetching fixtures and Bet365 odds...</div>`;
-
+        // ── Scan for Next Bet ──────────────────────────────────────────────────
+        async function scanNextBet(btn) {
+            const area  = document.getElementById('nextBetContent');
+            const stake = parseFloat(document.getElementById('nextBetStake').value) || 10;
+            btn.innerText  = '🔍 SCANNING...';
+            btn.disabled   = true;
+            area.innerHTML = `<div style='text-align:center; padding:30px; color:var(--cyan);'>Scanning live and upcoming matches...</div>`;
             try {
-                const today = new Date().toISOString().split('T')[0];
-                const season = new Date().getMonth() >= 6 ? new Date().getFullYear() : new Date().getFullYear() - 1;
-
+                const blockedWords = ['friendly','youth','reserve','u19','u20','u21','u23','women','ladies'];
                 trackAPI(1);
-                const res = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}`, { headers: { "x-rapidapi-key": API_KEY } });
-                const data = await res.json();
-
-                if (!data.response || data.response.length === 0) {
-                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'>No fixtures found for today.</div>";
-                    btn.innerText = "🎯 FIND VALUE BETS";
-                    btn.disabled = false;
-                    return;
-                }
-
-                const botdLeagueIds = VALUE_LEAGUES.map(l => l.id);
-                const todayFixtures = data.response.filter(f => botdLeagueIds.includes(f.league.id) && ['NS', 'TBD'].includes(f.fixture.status.short));
-
-                if (todayFixtures.length === 0) {
-                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>🎯</div><p>No upcoming matches in covered leagues today.</p></div>";
-                    btn.innerText = "🎯 FIND VALUE BETS";
-                    btn.disabled = false;
-                    return;
-                }
-
-                const selectedBookmakerIds = getSelectedBookmakerIds();
-                let valueOddsMap = {};
-                try {
-                    trackAPI(1);
-                    const oddsRes = await fetch(`https://v3.football.api-sports.io/odds?date=${today}`, { headers: { "x-rapidapi-key": API_KEY } });
-                    const oddsData = await oddsRes.json();
-                    if (oddsData.response && oddsData.response.length > 0) {
-                        oddsData.response.forEach(entry => {
-                            const fid = entry.fixture?.id;
-                            if (!fid || !entry.bookmakers) return;
-                            valueOddsMap[fid] = {};
-                            entry.bookmakers
-                                .filter(b => selectedBookmakerIds.includes(b.id))
-                                .forEach(b => parseBetsIntoOddsMap(b.bets, valueOddsMap[fid], b.name));
-                        });
-                    }
-                } catch(e) { console.warn("Value odds fetch failed:", e); }
-
-                const fixturesWithOdds = todayFixtures.filter(f => valueOddsMap[f.fixture.id] && Object.keys(valueOddsMap[f.fixture.id]).length > 0);
-
-                if (fixturesWithOdds.length === 0) {
-                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2rem; margin-bottom:10px;'>🎯</div><p>No Bet365 odds available yet for today's matches.</p><p style='font-size:0.78rem; color:#555; margin-top:8px;'>Odds usually appear 24-48hrs before kick-off. Try again closer to match time.</p></div>";
-                    btn.innerText = "🎯 FIND VALUE BETS";
-                    btn.disabled = false;
-                    return;
-                }
-
-                const selectedBookieNames = SUPPORTED_BOOKMAKERS.filter(b => selectedBookmakerIds.includes(b.id)).map(b => b.name).join(', ');
-                area.innerHTML = `<div style='text-align:center; padding:20px; color:#58e6a8;'>Analysing ${fixturesWithOdds.length} matches · Checking: ${selectedBookieNames}...</div>`;
-
-                const leagueFixtures = {};
-                fixturesWithOdds.forEach(f => {
-                    if (!leagueFixtures[f.league.id]) leagueFixtures[f.league.id] = [];
-                    leagueFixtures[f.league.id].push(f);
+                const liveRes  = await fetch('https://v3.football.api-sports.io/fixtures?live=all', { headers:{'x-rapidapi-key':API_KEY} });
+                const liveData = await liveRes.json();
+                const liveMatches = (liveData.response||[]).filter(m => {
+                    const el = m.fixture.status.elapsed||0;
+                    const lg = (m.league.name||'').toLowerCase();
+                    return !blockedWords.some(w=>lg.includes(w)) && el>0 && el<=88;
                 });
-
-                const allValuePicks = [];
-                const prevSnapshot = (() => { try { return JSON.parse(localStorage.getItem('oddsSnapshot') || '{}'); } catch(e) { return {}; } })();
-                const newSnapshot = {};
-
-                for (const league of VALUE_LEAGUES) {
-                    const fixtures = leagueFixtures[league.id];
-                    if (!fixtures || fixtures.length === 0) continue;
-
-                    let standingsData = null;
+                const now  = Date.now();
+                const soon = now + 2*60*60*1000;
+                const today = new Date().toISOString().split('T')[0];
+                trackAPI(1);
+                const upRes  = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}&status=NS`, { headers:{'x-rapidapi-key':API_KEY} });
+                const upData = await upRes.json();
+                const upMatches = (upData.response||[]).filter(m => {
+                    const ko = (m.fixture.timestamp||0)*1000;
+                    const lg = (m.league.name||'').toLowerCase();
+                    return !blockedWords.some(w=>lg.includes(w)) && ko>=now && ko<=soon;
+                });
+                area.innerHTML = `<div style='text-align:center; padding:10px; color:#58a6ff; font-size:0.85rem;'>Found ${liveMatches.length} live · ${upMatches.length} upcoming — analysing...</div>`;
+                const inPlayCandidates = [];
+                await Promise.all(liveMatches.map(async m => {
                     try {
                         trackAPI(1);
-                        const stRes = await fetch(`https://v3.football.api-sports.io/standings?league=${league.id}&season=${season}`, { headers: { "x-rapidapi-key": API_KEY } });
-                        const stData = await stRes.json();
-                        if (stData.response && stData.response[0]) standingsData = stData.response[0].league.standings[0];
+                        const sRes  = await fetch(`https://v3.football.api-sports.io/fixtures/statistics?fixture=${m.fixture.id}`, { headers:{'x-rapidapi-key':API_KEY} });
+                        const sData = await sRes.json();
+                        if (!sData.response||sData.response.length<2) return;
+                        const r = analyzeInPlayBet(m, sData.response[0].statistics, sData.response[1].statistics);
+                        if (r) inPlayCandidates.push(r);
                     } catch(e) {}
-
-                    for (const fix of fixtures) {
-                        const hId = fix.teams.home.id;
-                        const aId = fix.teams.away.id;
-                        const hName = fix.teams.home.name;
-                        const aName = fix.teams.away.name;
-
-                        let homeForm = null, awayForm = null, h2h = null;
-                        try {
-                            [homeForm, awayForm] = await Promise.all([fetchTeamForm(hId), fetchTeamForm(aId)]);
-                        } catch(e) {}
-                        try {
-                            trackAPI(1);
-                            const h2hRes = await fetch(`https://v3.football.api-sports.io/fixtures/headtohead?h2h=${hId}-${aId}&last=10`, { headers: { "x-rapidapi-key": API_KEY } });
-                            const h2hData = await h2hRes.json();
-                            if (h2hData.response && h2hData.response.length >= 3) h2h = analyzeH2H(h2hData.response);
-                        } catch(e) {}
-
-                        let homePos = null, awayPos = null, totalTeams = 20;
-                        if (standingsData) {
-                            const hSt = standingsData.find(s => s.team.id === hId);
-                            const aSt = standingsData.find(s => s.team.id === aId);
-                            if (hSt) homePos = hSt.rank;
-                            if (aSt) awayPos = aSt.rank;
-                            totalTeams = standingsData.length;
-                        }
-
-                        const homeDef = standingsData ? analyzeDefensiveStrength(standingsData, hId) : null;
-                        const awayDef = standingsData ? analyzeDefensiveStrength(standingsData, aId) : null;
-                        const leagueProfile = getLeagueProfile(league.id);
-                        const fixtureOdds = valueOddsMap[fix.fixture.id] || {};
-
-                        const homeAvgScored = homeForm ? homeForm.avgScored : 1.3;
-                        const awayAvgScored = awayForm ? awayForm.avgScored : 1.1;
-                        const homeAvgConceded = homeForm ? homeForm.avgConceded : 1.1;
-                        const awayAvgConceded = awayForm ? awayForm.avgConceded : 1.3;
-                        const combinedAvg = homeAvgScored + awayAvgScored;
-                        const homeHomeAvg = homeForm && homeForm.homeAvgScored ? homeForm.homeAvgScored : homeAvgScored;
-                        const awayAwayAvg = awayForm && awayForm.awayAvgScored ? awayForm.awayAvgScored : awayAvgScored;
-
-                        let o15Prob = 50;
-                        if (combinedAvg >= 3.0) o15Prob += 15; else if (combinedAvg >= 2.5) o15Prob += 10; else if (combinedAvg >= 2.0) o15Prob += 5;
-                        if (homeForm && homeForm.overRate > 0.6) o15Prob += 8;
-                        if (awayForm && awayForm.overRate > 0.6) o15Prob += 8;
-                        if (h2h && h2h.avgGoals >= 3.0) o15Prob += 8; else if (h2h && h2h.avgGoals >= 2.5) o15Prob += 5;
-                        if (awayDef && awayDef.rating === 'leaky') o15Prob += 6;
-                        if (homeDef && homeDef.rating === 'leaky') o15Prob += 6;
-                        if (awayDef && awayDef.rating === 'fortress') o15Prob -= 8;
-                        if (homeDef && homeDef.rating === 'fortress') o15Prob -= 8;
-                        o15Prob = Math.min(95, Math.max(20, o15Prob));
-
-                        let u25Prob = 65;
-                        if (combinedAvg >= 3.5) u25Prob -= 20; else if (combinedAvg >= 3.0) u25Prob -= 14; else if (combinedAvg >= 2.5) u25Prob -= 8;
-                        if (homeForm && homeForm.overRate > 0.6) u25Prob -= 8;
-                        if (awayForm && awayForm.overRate > 0.6) u25Prob -= 8;
-                        if (h2h && h2h.avgGoals >= 3.5) u25Prob -= 10; else if (h2h && h2h.avgGoals >= 2.5) u25Prob -= 5;
-                        if (awayDef && awayDef.rating === 'leaky') u25Prob -= 8;
-                        if (homeDef && homeDef.rating === 'leaky') u25Prob -= 8;
-                        if (awayDef && awayDef.rating === 'fortress') u25Prob += 10;
-                        if (homeDef && homeDef.rating === 'fortress') u25Prob += 10;
-                        u25Prob = Math.min(90, Math.max(15, u25Prob));
-
-                        let o25Prob = 35;
-                        if (combinedAvg >= 3.5) o25Prob += 18; else if (combinedAvg >= 3.0) o25Prob += 12; else if (combinedAvg >= 2.5) o25Prob += 6;
-                        if (homeForm && homeForm.overRate > 0.6) o25Prob += 8;
-                        if (awayForm && awayForm.overRate > 0.6) o25Prob += 8;
-                        if (h2h && h2h.avgGoals >= 3.5) o25Prob += 10; else if (h2h && h2h.avgGoals >= 2.5) o25Prob += 5;
-                        if (awayDef && awayDef.rating === 'leaky') o25Prob += 8;
-                        if (homeDef && homeDef.rating === 'leaky') o25Prob += 8;
-                        if (awayDef && awayDef.rating === 'fortress') o25Prob -= 10;
-                        if (homeDef && homeDef.rating === 'fortress') o25Prob -= 10;
-                        o25Prob = Math.min(92, Math.max(15, o25Prob));
-
-                        let bttsPr = 35;
-                        if (homeForm && homeForm.bttsRate > 0.5) bttsPr += 10;
-                        if (awayForm && awayForm.bttsRate > 0.5) bttsPr += 10;
-                        if (homeAvgScored >= 1.3 && awayAvgScored >= 1.0) bttsPr += 8;
-                        if (homeAvgConceded >= 1.2 && awayAvgConceded >= 1.2) bttsPr += 8;
-                        if (h2h && h2h.bttsRate >= 0.6) bttsPr += 8;
-                        if (homeDef && homeDef.rating === 'fortress') bttsPr -= 12;
-                        if (awayDef && awayDef.rating === 'fortress') bttsPr -= 12;
-                        if (homeForm && homeForm.cleanSheetRate > 0.5) bttsPr -= 8;
-                        if (awayForm && awayForm.cleanSheetRate > 0.5) bttsPr -= 8;
-                        bttsPr = Math.min(90, Math.max(15, bttsPr));
-
-                        let bttsNoPr = 100 - bttsPr;
-                        bttsNoPr = Math.min(85, Math.max(15, bttsNoPr));
-
-                        let homeWinProb = 40;
-                        if (homePos && awayPos) {
-                            const gap = awayPos - homePos;
-                            if (gap >= 8) homeWinProb += 15; else if (gap >= 4) homeWinProb += 8;
-                            else if (gap <= -8) homeWinProb -= 15; else if (gap <= -4) homeWinProb -= 8;
-                        }
-                        if (homeHomeAvg >= 2.0) homeWinProb += 8;
-                        if (homeForm && homeForm.avgScored > homeForm.avgConceded + 0.5) homeWinProb += 6;
-                        if (awayForm && awayForm.avgConceded >= 1.8) homeWinProb += 5;
-                        if (h2h && h2h.homeWinRate >= 0.5) homeWinProb += 5;
-                        if (awayDef && awayDef.rating === 'leaky') homeWinProb += 5;
-                        if (homeDef && homeDef.rating === 'fortress') homeWinProb += 5;
-                        homeWinProb = Math.min(90, Math.max(15, homeWinProb));
-
-                        let awayWinProb = 30;
-                        if (homePos && awayPos) {
-                            const gap = homePos - awayPos;
-                            if (gap >= 8) awayWinProb += 15; else if (gap >= 4) awayWinProb += 8;
-                            else if (gap <= -8) awayWinProb -= 10; else if (gap <= -4) awayWinProb -= 5;
-                        }
-                        if (awayAwayAvg >= 1.5) awayWinProb += 8;
-                        if (awayForm && awayForm.avgScored > awayForm.avgConceded + 0.5) awayWinProb += 6;
-                        if (homeForm && homeForm.avgConceded >= 1.8) awayWinProb += 5;
-                        if (h2h && h2h.awayWinRate >= 0.4) awayWinProb += 5;
-                        if (homeDef && homeDef.rating === 'leaky') awayWinProb += 5;
-                        awayWinProb = Math.min(85, Math.max(10, awayWinProb));
-
-                        let drawProb = Math.max(10, 100 - homeWinProb - awayWinProb);
-                        drawProb = Math.min(40, drawProb);
-
-                        const homeWinBttsPr = Math.round(homeWinProb * bttsPr / 100);
-                        const drawBttsPr    = Math.round(drawProb    * bttsPr / 100);
-                        const awayWinBttsPr = Math.round(awayWinProb * bttsPr / 100);
-                        const homeWinBttsNoPr = Math.round(homeWinProb * bttsNoPr / 100);
-                        const drawBttsNoPr    = Math.round(drawProb    * bttsNoPr / 100);
-                        const awayWinBttsNoPr = Math.round(awayWinProb * bttsNoPr / 100);
-                        const oneXPr = Math.min(95, homeWinProb + drawProb);
-                        const xTwoPr = Math.min(95, drawProb + awayWinProb);
-                        const oneTwoPr = Math.min(95, homeWinProb + awayWinProb);
-
-                        const marketProbPairs = [
-                            { market: 'Over 1.5 Goals', prob: o15Prob },
-                            { market: 'Over 2.5 Goals', prob: o25Prob },
-                            { market: 'Under 2.5 Goals', prob: u25Prob },
-                            { market: 'BTTS', prob: bttsPr },
-                            { market: 'BTTS No', prob: bttsNoPr },
-                            { market: 'Home Win', prob: homeWinProb },
-                            { market: 'Away Win', prob: awayWinProb },
-                            { market: 'Draw', prob: drawProb },
-                            { market: 'Home Win & BTTS', prob: homeWinBttsPr },
-                            { market: 'Draw & BTTS', prob: drawBttsPr },
-                            { market: 'Away Win & BTTS', prob: awayWinBttsPr },
-                            { market: 'Home Win & BTTS No', prob: homeWinBttsNoPr },
-                            { market: 'Draw & BTTS No', prob: drawBttsNoPr },
-                            { market: 'Away Win & BTTS No', prob: awayWinBttsNoPr },
-                            { market: '1X (Home or Draw)', prob: oneXPr },
-                            { market: 'X2 (Draw or Away)', prob: xTwoPr },
-                            { market: '12 (Home or Away)', prob: oneTwoPr }
-                        ];
-
-                        const koTime = new Date(fix.fixture.date);
-                        const kickoff = koTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-                        for (const { market, prob } of marketProbPairs) {
-                            const oddsObj = fixtureOdds[market];
-                            if (!oddsObj) continue;
-                            const odds = oddsObj.odds;
-                            const bookieName = oddsObj.bookie || 'Unknown';
-                            if (!odds || odds < 1.10) continue;
-                            const snapKey = `${fix.fixture.id}_${market}`;
-                            newSnapshot[snapKey] = { odds, ts: Date.now(), home: hName, away: aName, league: league.name, kickoff: new Date(fix.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
-                            const impliedProb = (1 / odds) * 100;
-                            const edgePct = prob - impliedProb;
-                            const ev = ((prob / 100) * odds - 1) * 100;
-                            if (ev < 3) continue;
-
-                            const fullKelly = ev / ((odds - 1) * 100);
-                            const quarterKelly = fullKelly / 4;
-                            const stake = Math.min(bankroll * 0.15, bankroll * quarterKelly);
-
-                            let movement = null;
-                            if (prevSnapshot[snapKey]) {
-                                const prevOdds = prevSnapshot[snapKey].odds;
-                                const change = odds - prevOdds;
-                                const changePct = (change / prevOdds) * 100;
-                                if (Math.abs(changePct) >= 2) movement = { prev: prevOdds, change: Math.round(change * 100) / 100, changePct: Math.round(changePct * 10) / 10 };
-                            }
-
-                            allValuePicks.push({
-                                fixtureId: fix.fixture.id,
-                                home: hName, away: aName,
-                                bookie: bookieName,
-                                homePos, awayPos, totalTeams,
-                                league, market,
-                                modelProb: Math.round(prob),
-                                impliedProb: Math.round(impliedProb * 10) / 10,
-                                edge: Math.round(edgePct * 10) / 10,
-                                ev: Math.round(ev * 10) / 10,
-                                odds,
-                                stake: Math.round(stake * 100) / 100,
-                                kickoff,
-                                movement
-                            });
-                        }
-
-                        await new Promise(r => setTimeout(r, 80));
-                    }
-                }
-
-                try { localStorage.setItem('oddsSnapshot', JSON.stringify(newSnapshot)); } catch(e) {}
-
-                allValuePicks.sort((a, b) => b.ev - a.ev);
-                const seen = new Set();
-                const valuePicks = [];
-                for (const pick of allValuePicks) {
-                    const key = pick.fixtureId + '_' + pick.market;
-                    if (seen.has(key)) continue;
-                    seen.add(key);
-                    valuePicks.push(pick);
-                }
-
-                window._lastValueScanResults = { picks: valuePicks, bankroll };
-                window._accaSelections = {};
-                updateAccaBar();
-                applyValueFiltersAndRender();
-
+                }));
+                inPlayCandidates.sort((a,b)=>b.adjustedScore-a.adjustedScore);
+                const upLeagueIds = [...new Set(upMatches.map(m=>m.league.id))];
+                const season = new Date().getMonth()>=6 ? new Date().getFullYear() : new Date().getFullYear()-1;
+                const standingsMap = {};
+                await Promise.all(upLeagueIds.slice(0,12).map(async lid => {
+                    try {
+                        trackAPI(1);
+                        const stRes  = await fetch(`https://v3.football.api-sports.io/standings?league=${lid}&season=${season}`, { headers:{'x-rapidapi-key':API_KEY} });
+                        const stData = await stRes.json();
+                        if (stData.response&&stData.response[0]) standingsMap[lid]=stData.response[0].league.standings[0];
+                    } catch(e) {}
+                }));
+                const upCandidates = upMatches.map(m=>analyzeUpcomingBet(m,standingsMap[m.league.id])).filter(Boolean);
+                upCandidates.sort((a,b)=>b.score-a.score);
+                window._lastNextBetResults = {
+                    allInPlay:   inPlayCandidates,
+                    allUpcoming: upCandidates,
+                    ipIdx: 0,
+                    upIdx: 0,
+                    stake
+                };
+                renderNextBetResults();
             } catch(e) {
-                console.error("Value Bets Error:", e);
-                area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error scanning for value bets. Please try again.</div>";
+                console.error('Next Bet scan error:',e);
+                area.innerHTML = `<div style='text-align:center; padding:30px; color:var(--red);'>Error scanning. Please try again.</div>`;
             }
-            btn.innerText = "🎯 FIND VALUE BETS";
-            btn.disabled = false;
+            btn.innerText = '🎯 FIND NEXT BET';
+            btn.disabled  = false;
         }
 
-        async function scanOddsMovement(btn) {
-            const area = document.getElementById('valueContent');
-            btn.innerText = "📡 SCANNING ODDS...";
-            btn.disabled = true;
-            area.innerHTML = `<div style='text-align:center; padding:30px; color:#58a6ff;'>Fetching latest Bet365 odds and checking for movements...</div>`;
+        // ── Dismiss a Next Bet tip and show the next alternative ──────────────
+        function dismissNextBet(type) {
+            const r = window._lastNextBetResults;
+            if (!r) return;
+            if (type === 'inplay')   r.ipIdx = Math.min(r.ipIdx + 1, r.allInPlay.length);
+            if (type === 'upcoming') r.upIdx = Math.min(r.upIdx + 1, r.allUpcoming.length);
+            renderNextBetResults();
+        }
 
-            try {
-                const today = new Date().toISOString().split('T')[0];
-                const prevSnapshot = (() => { try { return JSON.parse(localStorage.getItem('oddsSnapshot') || '{}'); } catch(e) { return {}; } })();
+        // ── Place a Next Bet (called from onclick with a simple key) ──────────
+        function placeNextBetByKey(key) {
+            const action = (window._nextBetActions || {})[key];
+            if (!action) return;
+            const { fixtureId, selection, match, league, odds, confidence, homeGoals, awayGoals, leagueId, factorTags } = action;
+            placeChallengebet(fixtureId, selection, match, league, odds, 'Model', homeGoals, awayGoals, confidence, leagueId, factorTags, 'NextBet');
+            const r = window._lastNextBetResults;
+            if (r) {
+                if (!r.placedFids) r.placedFids = new Set();
+                r.placedFids.add(fixtureId);
+            }
+            renderNextBetResults();
+        }
 
-                trackAPI(1);
-                const res = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}`, { headers: { "x-rapidapi-key": API_KEY } });
-                const data = await res.json();
+        // ── Render Next Bet results ────────────────────────────────────────────
+        function renderNextBetResults() {
+            const r    = window._lastNextBetResults;
+            const area = document.getElementById('nextBetContent');
+            if (!r) return;
+            const { allInPlay, allUpcoming, ipIdx, upIdx, stake, placedFids } = r;
+            const bestInPlay   = allInPlay[ipIdx]   || null;
+            const bestUpcoming = allUpcoming[upIdx] || null;
+            const ipRemaining  = allInPlay.length   - ipIdx - 1;
+            const upRemaining  = allUpcoming.length - upIdx - 1;
 
-                if (!data.response || data.response.length === 0) {
-                    area.innerHTML = "<div style='text-align:center; padding:40px; color:#888;'>No fixtures found.</div>";
-                    btn.innerText = "📡 ODDS SIGNALS";
-                    btn.disabled = false;
-                    return;
-                }
+            if (!bestInPlay && !bestUpcoming) {
+                area.innerHTML = `<div style='text-align:center; padding:40px; color:#888;'><div style='font-size:2.5rem; margin-bottom:12px;'>🤷</div><p>No strong bets found right now.</p><p style='font-size:0.75rem; color:#555; margin-top:6px;'>Try again shortly — live matches and upcoming fixtures change rapidly.</p></div>`;
+                return;
+            }
+            window._nextBetActions = {};
+            let html = '';
 
-                const allLeagueIds = VALUE_LEAGUES.map(l => l.id);
-                const fixtures = data.response.filter(f => allLeagueIds.includes(f.league.id) && ['NS', 'TBD'].includes(f.fixture.status.short));
-                const leagueMap = {};
-                VALUE_LEAGUES.forEach(l => { leagueMap[l.id] = l; });
-
-                const selectedBookmakerIds = getSelectedBookmakerIds();
-                trackAPI(1);
-                const oddsRes = await fetch(`https://v3.football.api-sports.io/odds?date=${today}`, { headers: { "x-rapidapi-key": API_KEY } });
-                const oddsData = await oddsRes.json();
-
-                const currentOdds = {};
-                if (oddsData.response) {
-                    oddsData.response.forEach(entry => {
-                        const fid = entry.fixture?.id;
-                        if (!fid || !entry.bookmakers) return;
-                        currentOdds[fid] = {};
-                        entry.bookmakers
-                            .filter(b => selectedBookmakerIds.includes(b.id))
-                            .forEach(b => parseBetsIntoOddsMap(b.bets, currentOdds[fid], b.name));
-                    });
-                }
-
-                const newSnapshot = {};
-                const signals = [];
-
-                for (const fix of fixtures) {
-                    const fid = fix.fixture.id;
-                    const fixOdds = currentOdds[fid];
-                    if (!fixOdds) continue;
-                    const league = leagueMap[fix.league.id];
-                    const kickoff = new Date(fix.fixture.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const home = fix.teams.home.name;
-                    const away = fix.teams.away.name;
-
-                    for (const [market, oddsObj] of Object.entries(fixOdds)) {
-                        const odds = oddsObj.odds;
-                        const bookieName = oddsObj.bookie || '';
-                        const snapKey = `${fid}_${market}`;
-                        newSnapshot[snapKey] = { odds, ts: Date.now(), home, away, league: league ? league.name : fix.league.name, kickoff };
-                        if (prevSnapshot[snapKey]) {
-                            const prevOdds = prevSnapshot[snapKey].odds;
-                            const change = odds - prevOdds;
-                            const changePct = (change / prevOdds) * 100;
-                            if (Math.abs(changePct) >= 3) {
-                                signals.push({ home, away, league: league || { name: fix.league.name, flag: '🌍', country: '' }, market, prevOdds, currOdds: odds, change: Math.round(change * 100) / 100, changePct: Math.round(changePct * 10) / 10, kickoff, bookie: bookieName });
-                            }
-                        }
-                    }
-                }
-
-                try { localStorage.setItem('oddsSnapshot', JSON.stringify({ ...prevSnapshot, ...newSnapshot })); } catch(e) {}
-
-                const snapshotAge = (() => {
-                    const vals = Object.values(prevSnapshot);
-                    if (!vals.length) return null;
-                    const oldest = Math.min(...vals.map(v => v.ts || Date.now()));
-                    const mins = Math.round((Date.now() - oldest) / 60000);
-                    return mins;
-                })();
-
-                if (signals.length === 0) {
-                    const noSnap = Object.keys(prevSnapshot).length === 0;
-                    area.innerHTML = `<div style='text-align:center; padding:40px; color:#888;'>
-                        <div style='font-size:2rem; margin-bottom:10px;'>📡</div>
-                        ${noSnap
-                            ? `<p>Odds snapshot saved. Run <strong style='color:white;'>Value Bets</strong> scan first, then check signals later to detect movements.</p><p style='font-size:0.75rem; color:#555; margin-top:8px;'>Odds shift in the hours before kick-off — best to check again 1-2 hours later.</p>`
-                            : `<p>No significant movements detected${snapshotAge !== null ? ` in the last ${snapshotAge} minute${snapshotAge !== 1 ? 's' : ''}` : ''}.</p><p style='font-size:0.75rem; color:#555; margin-top:8px;'>Markets are stable. Check again closer to kick-off when sharp money typically moves lines.</p>`
-                        }
-                    </div>`;
-                    btn.innerText = "📡 ODDS SIGNALS";
-                    btn.disabled = false;
-                    return;
-                }
-
-                signals.sort((a, b) => Math.abs(b.changePct) - Math.abs(a.changePct));
-
-                let html = `<div style="text-align:center; padding:6px; margin-bottom:10px; color:#888; font-size:0.75rem;">📡 ${signals.length} odds movement${signals.length > 1 ? 's' : ''} detected${snapshotAge !== null ? ` vs snapshot ${snapshotAge}min ago` : ''} · Sorted by magnitude</div>`;
-
-                signals.forEach((sig, idx) => {
-                    const shortened = sig.change < 0;
-                    const sigColor = shortened ? '#58e6a8' : '#f0883e';
-                    const sigBg = shortened ? '88,230,168' : '240,136,62';
-                    const icon = shortened ? '📉' : '📈';
-                    const label = shortened ? 'SHORTENING — Being Backed' : 'DRIFTING — Being Faded';
-                    const interpretation = shortened
-                        ? (Math.abs(sig.changePct) >= 10 ? '🔴 Significant steam move — sharp money backing this heavily' : '🟡 Odds coming in — increased backing activity')
-                        : (Math.abs(sig.changePct) >= 10 ? '🔴 Significant drift — market strongly fading this' : '🟡 Drifting out — reduced confidence from punters');
-
-                    html += `
-                        <div class="match-card" style="border-left:4px solid ${sigColor};">
-                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-                                <div style="font-size:0.7rem; color:#888;">${sig.league.flag || '🌍'} ${sig.league.name} · ${sig.league.country || ''}</div>
-                                <div style="font-size:0.7rem; color:#888;">KO ${sig.kickoff}</div>
-                            </div>
-                            <div style="font-weight:bold; font-size:0.9rem; margin-bottom:8px;">${sig.home} vs ${sig.away}</div>
-
-                            <div style="background:rgba(${sigBg},0.08); border:1px solid rgba(${sigBg},0.25); border-radius:8px; padding:10px; margin-bottom:8px;">
-                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                                    <div style="font-size:0.78rem; font-weight:bold; color:${sigColor};">${icon} ${sig.market}</div>
-                                    <div style="font-size:0.65rem; color:${sigColor}; font-weight:bold;">${shortened ? '' : '+'}${sig.changePct}%</div>
-                                </div>
-                                <div style="display:flex; gap:12px; align-items:center;">
-                                    <div style="text-align:center;">
-                                        <div style="font-size:0.6rem; color:#888; margin-bottom:1px;">WAS</div>
-                                        <div style="font-size:1rem; font-weight:bold; color:#888;">${sig.prevOdds.toFixed(2)}</div>
-                                    </div>
-                                    <div style="font-size:1.2rem; color:${sigColor};">${shortened ? '→' : '→'}</div>
-                                    <div style="text-align:center;">
-                                        <div style="font-size:0.6rem; color:#888; margin-bottom:1px;">NOW</div>
-                                        <div style="font-size:1.2rem; font-weight:bold; color:${sigColor};">${sig.currOdds.toFixed(2)}</div>
-                                    </div>
-                                    <div style="flex:1; text-align:right;">
-                                        <div style="font-size:0.65rem; font-weight:bold; color:${sigColor}; text-transform:uppercase; letter-spacing:0.5px;">${label}</div>
-                                        ${sig.bookie ? `<div style="font-size:0.55rem; color:#888; margin-top:2px;">${(SUPPORTED_BOOKMAKERS.find(b=>b.name===sig.bookie)||{short:sig.bookie.toUpperCase().slice(0,8)}).short}</div>` : ''}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style="font-size:0.7rem; color:#aaa;">${interpretation}</div>
+            // ── In-play card ─────────────────────────────────────────────────
+            if (bestInPlay) {
+                window._nextBetActions['inplay'] = {
+                    fixtureId: bestInPlay.fixtureId, selection: bestInPlay.selection,
+                    match: bestInPlay.matchLabel, league: bestInPlay.league,
+                    odds: bestInPlay.impliedOdds, confidence: Math.round(bestInPlay.prob*100),
+                    homeGoals: bestInPlay.homeGoals, awayGoals: bestInPlay.awayGoals,
+                    leagueId: bestInPlay.leagueId, factorTags: bestInPlay.factorTags||[]
+                };
+                const sugStake  = parseFloat((stake * bestInPlay.stakeMultiplier).toFixed(2));
+                const minLeft   = bestInPlay.minLeft;
+                const meterW    = Math.max(3, Math.round(minLeft/90*100));
+                const altLabel  = ipRemaining > 0 ? `🔄 Try Alternative (${ipRemaining} left)` : '🔄 No More Alternatives';
+                html += `<div style="font-size:0.75rem; font-weight:bold; color:#58e6a8; margin:0 0 8px; text-transform:uppercase; letter-spacing:0.5px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>🔴 Best Live Bet Now</span>
+                    ${ipIdx > 0 ? `<span style="font-size:0.65rem; color:#555; font-weight:normal;">Alt ${ipIdx + 1} of ${allInPlay.length}</span>` : ''}
+                </div>
+                <div class="match-card" style="border:2px solid #58e6a8; box-shadow:0 0 18px rgba(88,230,168,0.14); margin-bottom:18px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                        <div>
+                            <div style="font-size:0.68rem; color:#888; margin-bottom:3px;">🌍 ${bestInPlay.league}</div>
+                            <div style="font-weight:bold; font-size:0.95rem;">${bestInPlay.homeTeam} vs ${bestInPlay.awayTeam}</div>
                         </div>
-                    `;
-                });
-
-                area.innerHTML = html;
-
-            } catch(e) {
-                console.error("Odds Signals Error:", e);
-                area.innerHTML = "<div style='color:#da3633; text-align:center;'>Error fetching odds data. Please try again.</div>";
+                        <div style="text-align:right;">
+                            <div style="font-size:1.2rem; font-weight:bold; color:white;">${bestInPlay.score}</div>
+                            <div style="font-size:0.7rem; color:#58e6a8;">${bestInPlay.elapsed}'</div>
+                        </div>
+                    </div>
+                    <div style="background:#0d1117; border-radius:6px; padding:4px 8px; margin-bottom:10px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.6rem; color:#555; margin-bottom:3px;"><span>0'</span><span>${minLeft} mins left</span><span>90'</span></div>
+                        <div style="background:#21262d; border-radius:4px; height:6px; overflow:hidden;"><div style="width:${meterW}%; height:100%; background:${bestInPlay.riskColor}; border-radius:4px;"></div></div>
+                        <div style="text-align:center; font-size:0.65rem; font-weight:bold; color:${bestInPlay.riskColor}; margin-top:3px;">${bestInPlay.riskLabel} — ${bestInPlay.riskDesc}</div>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-bottom:10px;">
+                        <div style="flex:2; background:rgba(88,230,168,0.07); border:1px solid rgba(88,230,168,0.25); border-radius:8px; padding:10px; text-align:center;">
+                            <div style="font-size:0.58rem; color:#888; margin-bottom:3px;">BET</div>
+                            <div style="font-size:0.9rem; font-weight:bold; color:#58e6a8;">${bestInPlay.market}</div>
+                        </div>
+                        <div style="flex:1; background:rgba(255,255,255,0.04); border:1px solid #30363d; border-radius:8px; padding:10px; text-align:center;">
+                            <div style="font-size:0.58rem; color:#888; margin-bottom:3px;">EST. ODDS</div>
+                            <div style="font-size:1.1rem; font-weight:bold; color:#fbbf24;">${bestInPlay.impliedOdds.toFixed(2)}</div>
+                        </div>
+                        <div style="flex:1; background:rgba(56,139,253,0.07); border:1px solid rgba(56,139,253,0.25); border-radius:8px; padding:10px; text-align:center;">
+                            <div style="font-size:0.58rem; color:#888; margin-bottom:3px;">CONF.</div>
+                            <div style="font-size:1.1rem; font-weight:bold; color:#388bfd;">${Math.round(bestInPlay.prob*100)}%</div>
+                        </div>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); border-radius:8px; padding:8px; margin-bottom:10px;">
+                        <div style="font-size:0.65rem; font-weight:bold; color:#888; margin-bottom:6px;">📊 WHY THIS BET</div>
+                        ${(bestInPlay.factors||[]).map(f=>`<div style="font-size:0.72rem; color:#aaa; margin-bottom:3px; display:flex; align-items:center; gap:6px;"><span style="color:#58e6a8;">✓</span>${f}</div>`).join('')}
+                    </div>
+                    <div style="background:rgba(88,230,168,0.06); border:1px solid rgba(88,230,168,0.2); border-radius:8px; padding:10px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:0.6rem; color:#888; margin-bottom:2px;">SUGGESTED STAKE</div>
+                            <div style="font-size:1.4rem; font-weight:bold; color:#58e6a8;">£${sugStake.toFixed(2)}</div>
+                            <div style="font-size:0.6rem; color:#555;">${bestInPlay.stakeMultiplier<1 ? Math.round(bestInPlay.stakeMultiplier*100)+'% of £'+stake+' (time risk)' : 'Full stake — plenty of time'}</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:0.6rem; color:#888; margin-bottom:2px;">POTENTIAL RETURN</div>
+                            <div style="font-size:1rem; font-weight:bold; color:white;">£${(sugStake*bestInPlay.impliedOdds).toFixed(2)}</div>
+                            <div style="font-size:0.6rem; color:#555;">£${(sugStake*bestInPlay.impliedOdds-sugStake).toFixed(2)} profit</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        ${placedFids?.has(bestInPlay.fixtureId)
+                            ? `<button disabled style="flex:2; background:rgba(88,230,168,0.12); border:2px solid #58e6a8; color:#58e6a8; padding:12px; border-radius:10px; font-size:0.82rem; font-weight:bold; cursor:default;">✅ Bet Placed — tracked in History</button>`
+                            : `<button onclick="placeNextBetByKey('inplay')" style="flex:2; background:linear-gradient(135deg,#1a7f4e,#145c38); border:1px solid #2ea043; color:white; padding:12px; border-radius:10px; font-size:0.82rem; font-weight:bold; cursor:pointer;">📌 Place · £${sugStake.toFixed(2)}</button>`
+                        }
+                        <button onclick="dismissNextBet('inplay')" ${ipRemaining===0?'disabled':''} style="flex:1; background:${ipRemaining>0?'rgba(255,255,255,0.05)':'rgba(255,255,255,0.02)'}; border:1px solid #30363d; color:${ipRemaining>0?'#ccc':'#444'}; padding:12px; border-radius:10px; font-size:0.75rem; font-weight:bold; cursor:${ipRemaining>0?'pointer':'default'};">${altLabel}</button>
+                    </div>
+                </div>`;
+            } else {
+                html += `<div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:20px; text-align:center; margin-bottom:16px; opacity:0.6;">
+                    <div style="font-size:0.75rem; font-weight:bold; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">🔴 Live Bet</div>
+                    <div style="color:#555; font-size:0.82rem;">No strong in-play opportunities right now.<br><span style="font-size:0.72rem; color:#444;">Optimal window: 30-80 min mark in active matches.</span></div>
+                </div>`;
             }
-            btn.innerText = "📡 ODDS SIGNALS";
-            btn.disabled = false;
+
+            // ── Upcoming card ────────────────────────────────────────────────
+            if (bestUpcoming) {
+                window._nextBetActions['upcoming'] = {
+                    fixtureId: bestUpcoming.fixtureId, selection: bestUpcoming.selection,
+                    match: bestUpcoming.matchLabel, league: bestUpcoming.league,
+                    odds: bestUpcoming.impliedOdds, confidence: Math.round(bestUpcoming.prob*100),
+                    homeGoals: 0, awayGoals: 0,
+                    leagueId: bestUpcoming.leagueId, factorTags: bestUpcoming.factorTags||[]
+                };
+                const koInfo    = bestUpcoming.minsToKO<=60 ? `${bestUpcoming.minsToKO} mins to KO` : `KO ${bestUpcoming.koStr}`;
+                const altLabel  = upRemaining > 0 ? `🔄 Try Alternative (${upRemaining} left)` : '🔄 No More Alternatives';
+                html += `<div style="font-size:0.75rem; font-weight:bold; color:#388bfd; margin:0 0 8px; text-transform:uppercase; letter-spacing:0.5px; display:flex; justify-content:space-between; align-items:center;">
+                    <span>📅 Best Upcoming Bet (next 2 hrs)</span>
+                    ${upIdx > 0 ? `<span style="font-size:0.65rem; color:#555; font-weight:normal;">Alt ${upIdx + 1} of ${allUpcoming.length}</span>` : ''}
+                </div>
+                <div class="match-card" style="border:2px solid #388bfd; box-shadow:0 0 14px rgba(56,139,253,0.1); margin-bottom:18px;">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                        <div>
+                            <div style="font-size:0.68rem; color:#888; margin-bottom:3px;">🌍 ${bestUpcoming.league}</div>
+                            <div style="font-weight:bold; font-size:0.95rem;">${bestUpcoming.homeTeam} vs ${bestUpcoming.awayTeam}</div>
+                        </div>
+                        <div style="background:rgba(56,139,253,0.1); border:1px solid rgba(56,139,253,0.25); border-radius:6px; padding:4px 8px;">
+                            <div style="font-size:0.65rem; color:#388bfd; font-weight:bold;">${koInfo}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px; margin-bottom:10px;">
+                        <div style="flex:2; background:rgba(56,139,253,0.07); border:1px solid rgba(56,139,253,0.25); border-radius:8px; padding:10px; text-align:center;">
+                            <div style="font-size:0.58rem; color:#888; margin-bottom:3px;">BET</div>
+                            <div style="font-size:0.9rem; font-weight:bold; color:#388bfd;">${bestUpcoming.market}</div>
+                        </div>
+                        <div style="flex:1; background:rgba(255,255,255,0.04); border:1px solid #30363d; border-radius:8px; padding:10px; text-align:center;">
+                            <div style="font-size:0.58rem; color:#888; margin-bottom:3px;">EST. ODDS</div>
+                            <div style="font-size:1.1rem; font-weight:bold; color:#fbbf24;">${bestUpcoming.impliedOdds.toFixed(2)}</div>
+                        </div>
+                        <div style="flex:1; background:rgba(56,139,253,0.07); border:1px solid rgba(56,139,253,0.25); border-radius:8px; padding:10px; text-align:center;">
+                            <div style="font-size:0.58rem; color:#888; margin-bottom:3px;">CONF.</div>
+                            <div style="font-size:1.1rem; font-weight:bold; color:#388bfd;">${Math.round(bestUpcoming.prob*100)}%</div>
+                        </div>
+                    </div>
+                    <div style="background:rgba(0,0,0,0.3); border-radius:8px; padding:8px; margin-bottom:10px;">
+                        <div style="font-size:0.65rem; font-weight:bold; color:#888; margin-bottom:6px;">📊 WHY THIS BET</div>
+                        ${(bestUpcoming.factors||[]).map(f=>`<div style="font-size:0.72rem; color:#aaa; margin-bottom:3px; display:flex; align-items:center; gap:6px;"><span style="color:#388bfd;">✓</span>${f}</div>`).join('')}
+                    </div>
+                    <div style="background:rgba(56,139,253,0.06); border:1px solid rgba(56,139,253,0.2); border-radius:8px; padding:10px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="font-size:0.6rem; color:#888; margin-bottom:2px;">STAKE</div>
+                            <div style="font-size:1.4rem; font-weight:bold; color:#388bfd;">£${stake.toFixed(2)}</div>
+                            <div style="font-size:0.6rem; color:#555;">Pre-match — no time restriction</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:0.6rem; color:#888; margin-bottom:2px;">POTENTIAL RETURN</div>
+                            <div style="font-size:1rem; font-weight:bold; color:white;">£${(stake*bestUpcoming.impliedOdds).toFixed(2)}</div>
+                            <div style="font-size:0.6rem; color:#555;">£${(stake*bestUpcoming.impliedOdds-stake).toFixed(2)} profit</div>
+                        </div>
+                    </div>
+                    <div style="display:flex; gap:8px;">
+                        ${placedFids?.has(bestUpcoming.fixtureId)
+                            ? `<button disabled style="flex:2; background:rgba(56,139,253,0.12); border:2px solid #388bfd; color:#388bfd; padding:12px; border-radius:10px; font-size:0.82rem; font-weight:bold; cursor:default;">✅ Bet Placed — tracked in History</button>`
+                            : `<button onclick="placeNextBetByKey('upcoming')" style="flex:2; background:linear-gradient(135deg,#1a4f7f,#123a5c); border:1px solid #388bfd; color:white; padding:12px; border-radius:10px; font-size:0.82rem; font-weight:bold; cursor:pointer;">📌 Place · £${stake.toFixed(2)}</button>`
+                        }
+                        <button onclick="dismissNextBet('upcoming')" ${upRemaining===0?'disabled':''} style="flex:1; background:${upRemaining>0?'rgba(255,255,255,0.05)':'rgba(255,255,255,0.02)'}; border:1px solid #30363d; color:${upRemaining>0?'#ccc':'#444'}; padding:12px; border-radius:10px; font-size:0.75rem; font-weight:bold; cursor:${upRemaining>0?'pointer':'default'};">${altLabel}</button>
+                    </div>
+                </div>`;
+            } else {
+                html += `<div style="background:var(--card); border:1px solid #30363d; border-radius:10px; padding:20px; text-align:center; margin-bottom:16px; opacity:0.6;">
+                    <div style="font-size:0.75rem; font-weight:bold; color:#888; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:8px;">📅 Upcoming Bet</div>
+                    <div style="color:#555; font-size:0.82rem;">No matches starting in the next 2 hours.<br><span style="font-size:0.72rem; color:#444;">Check back when fixtures approach kick-off.</span></div>
+                </div>`;
+            }
+
+            document.getElementById('nextBetContent').innerHTML = html;
         }
+
+        // ── Legacy stubs (Value Bets removed) ─────────────────────────────────
+        async function scanValueBets(btn) {
+            console.warn('scanValueBets removed — use scanNextBet');
+        }
+
+        // ── scanOddsMovement removed (was Value Bets feature) ─────────────────
+        async function scanOddsMovement(btn) { /* removed */ }
 
         function renderAccaCards() {
             const area = document.getElementById('accContent');
@@ -4874,6 +4669,16 @@
                     if (isHome) won = goalsAfterHome > 0 && (goalsAfterAway === 0 || goalsAfterHome > goalsAfterAway);
                     else won = goalsAfterAway > 0 && (goalsAfterHome === 0 || goalsAfterAway > goalsAfterHome);
                 }
+            } else if (sel === 'Home Win') {
+                won = finalHome > finalAway;
+            } else if (sel === 'Away Win') {
+                won = finalAway > finalHome;
+            } else if (sel === 'Draw') {
+                won = finalHome === finalAway;
+            } else if (sel === 'Over 2.5 Goals' || sel === 'Over 2.5') {
+                won = totalGoals > 2;
+            } else if (sel === 'Over 1.5 Goals' || sel === 'Over 1.5') {
+                won = totalGoals > 1;
             }
 
             bet.status = 'resolved';
@@ -8128,11 +7933,118 @@
         // ══════════════════════════════════════════════════════════════════════
 
         let _scorerFilter = 'all';
+        let _scorerKickoffFilter = 'all';
+        let _scorerLeagueFilter = 'all';
         let _scorerResults = [];    // Full ranked list for current scan
+        let _scorerDateFrom = new Date().toISOString().split('T')[0];
+        let _scorerDateTo   = new Date().toISOString().split('T')[0];
+        let _scorerPreset   = 'today';
+
+        function scorerDateRange() {
+            const dates = [];
+            const start = new Date(_scorerDateFrom + 'T12:00:00');
+            const end   = new Date(_scorerDateTo   + 'T12:00:00');
+            for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                dates.push(d.toISOString().split('T')[0]);
+            }
+            return dates;
+        }
+
+        function updateScorerDateLabel() {
+            const label = document.getElementById('scorerDateLabel');
+            if (!label) return;
+            if (_scorerDateFrom === _scorerDateTo) {
+                const d = new Date(_scorerDateFrom + 'T12:00:00');
+                const isToday = _scorerDateFrom === new Date().toISOString().split('T')[0];
+                label.textContent = isToday
+                    ? 'Searching: Today — ' + d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'short' })
+                    : 'Searching: ' + d.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'short' });
+            } else {
+                const d1 = new Date(_scorerDateFrom + 'T12:00:00');
+                const d2 = new Date(_scorerDateTo   + 'T12:00:00');
+                const days = Math.round((d2 - d1) / 86400000) + 1;
+                label.textContent = `Searching: ${d1.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} – ${d2.toLocaleDateString('en-GB',{day:'numeric',month:'short'})} (${days} days)`;
+            }
+        }
+
+        function formatKOKey(ts, multiDay) {
+            const d = new Date(ts * 1000);
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            if (multiDay) {
+                const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                return `${days[d.getDay()]} ${hh}:${mm}`;
+            }
+            return `${hh}:${mm}`;
+        }
+
+        function setScorerKickoffFilter(key) {
+            _scorerKickoffFilter = key;
+            renderGoalscorerList();
+        }
+
+        function setScorerLeagueFilter(name) {
+            _scorerLeagueFilter = name;
+            renderGoalscorerList();
+        }
+
+        function setScorerDatePreset(preset) {
+            _scorerKickoffFilter = 'all';
+            _scorerLeagueFilter  = 'all';
+            _scorerPreset = preset;
+            document.querySelectorAll('[id^="sdp-"]').forEach(b => b.classList.remove('sf-active'));
+            const el = document.getElementById('sdp-' + preset);
+            if (el) el.classList.add('sf-active');
+            const customDiv = document.getElementById('scorerCustomDates');
+            const today = new Date();
+            const fmt = d => d.toISOString().split('T')[0];
+            if (preset === 'today') {
+                _scorerDateFrom = _scorerDateTo = fmt(today);
+                if (customDiv) customDiv.style.display = 'none';
+            } else if (preset === 'tomorrow') {
+                const t = new Date(today); t.setDate(t.getDate() + 1);
+                _scorerDateFrom = _scorerDateTo = fmt(t);
+                if (customDiv) customDiv.style.display = 'none';
+            } else if (preset === '3days') {
+                const t = new Date(today); t.setDate(t.getDate() + 2);
+                _scorerDateFrom = fmt(today);
+                _scorerDateTo   = fmt(t);
+                if (customDiv) customDiv.style.display = 'none';
+            } else if (preset === '7days') {
+                const t = new Date(today); t.setDate(t.getDate() + 6);
+                _scorerDateFrom = fmt(today);
+                _scorerDateTo   = fmt(t);
+                if (customDiv) customDiv.style.display = 'none';
+            } else if (preset === 'custom') {
+                if (customDiv) {
+                    customDiv.style.display = 'flex';
+                    const fromEl = document.getElementById('scorerDateFrom');
+                    const toEl   = document.getElementById('scorerDateTo');
+                    if (fromEl) fromEl.value = _scorerDateFrom;
+                    if (toEl)   toEl.value   = _scorerDateTo;
+                }
+            }
+            updateScorerDateLabel();
+        }
+
+        function applyCustomScorerDates() {
+            const fromEl = document.getElementById('scorerDateFrom');
+            const toEl   = document.getElementById('scorerDateTo');
+            if (fromEl && fromEl.value) _scorerDateFrom = fromEl.value;
+            if (toEl   && toEl.value)   _scorerDateTo   = toEl.value;
+            if (_scorerDateTo < _scorerDateFrom) {
+                _scorerDateTo = _scorerDateFrom;
+                if (toEl) toEl.value = _scorerDateTo;
+            }
+            _scorerKickoffFilter = 'all';
+            _scorerLeagueFilter  = 'all';
+            updateScorerDateLabel();
+        }
 
         function getScorerCacheKey() {
-            const d = new Date();
-            return `scorer_tips_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+            const from = _scorerDateFrom.replace(/-/g, '');
+            const to   = _scorerDateTo.replace(/-/g, '');
+            return from === to ? `scorer_tips_${from}` : `scorer_tips_${from}_${to}`;
         }
 
         function renderGoalscorerCache() {
@@ -8160,11 +8072,20 @@
             const content = document.getElementById('scorerContent');
             if (!API_KEY) { showToast('API key required'); return; }
 
+            if (_scorerPreset === 'custom') applyCustomScorerDates();
+            _scorerKickoffFilter = 'all';
+            _scorerLeagueFilter  = 'all';
+
+            const dates = scorerDateRange().slice(0, 7);   // max 7 days
+            const dateLabel = dates.length === 1
+                ? dates[0]
+                : `${dates[0]} – ${dates[dates.length - 1]}`;
+
             btn.disabled = true;
             btn.textContent = '⏳ Scanning fixtures...';
             content.innerHTML = `<div style="padding:30px; text-align:center; color:#888;">
                 <div class="spinner" style="margin:0 auto 12px;"></div>
-                <div id="scorerProgress">Fetching today's elite fixtures…</div>
+                <div id="scorerProgress">Fetching elite fixtures…</div>
             </div>`;
 
             const setProgress = txt => {
@@ -8173,22 +8094,38 @@
             };
 
             try {
-                const season = new Date().getFullYear();
-                const today  = new Date().toISOString().split('T')[0];
+                // European leagues store season as the year it STARTED (e.g. 2025 for 2025-26).
+                // If we're Jan–Jun the season started last year; Jul–Dec it started this year.
+                const season = new Date().getMonth() >= 6 ? new Date().getFullYear() : new Date().getFullYear() - 1;
 
-                // ── Step 1: Get today's fixtures ──────────────────────────
-                setProgress('Fetching today\'s elite fixtures…');
-                const fixtRes = await fetch(`https://v3.football.api-sports.io/fixtures?date=${today}`, { headers: { 'x-rapidapi-key': API_KEY } });
-                const fixtData = await fixtRes.json();
-                const allFixtures = (fixtData.response || []).filter(f => ELITE_IDS.includes(f.league.id));
+                // ── Step 1: Get fixtures for all dates in range ───────────
+                // Only keep games not yet started or currently live — never finished/cancelled/postponed
+                const DONE_STATUSES = new Set(['FT','AET','PEN','PST','CANC','ABD','AWD','WO']);
+                setProgress(`Fetching elite fixtures for ${dates.length > 1 ? dates.length + ' days' : dateLabel}…`);
+                const allFixtures = [];
+                let totalElite = 0;
+                for (const date of dates) {
+                    try {
+                        const fixtRes = await fetch(`https://v3.football.api-sports.io/fixtures?date=${date}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                        const fixtData = await fixtRes.json();
+                        const eliteDay = (fixtData.response || []).filter(f => ELITE_IDS.includes(f.league.id));
+                        totalElite += eliteDay.length;
+                        const dayFix = eliteDay.filter(f => !DONE_STATUSES.has(f.fixture.status.short));
+                        allFixtures.push(...dayFix);
+                    } catch(e) { /* skip day */ }
+                }
 
                 if (!allFixtures.length) {
-                    content.innerHTML = `<div style="padding:30px; text-align:center; color:#888;"><p>No elite fixtures found for today.</p></div>`;
-                    btn.disabled = false; btn.textContent = '⚽ SCAN TODAY\'S GOALSCORER TIPS';
+                    const reason = totalElite > 0
+                        ? `All ${totalElite} elite fixture${totalElite !== 1 ? 's' : ''} for this period have already finished, been postponed or cancelled. Try selecting a future date.`
+                        : `No elite fixtures found for the selected period.`;
+                    content.innerHTML = `<div style="padding:30px; text-align:center; color:#888;"><p>${reason}</p></div>`;
+                    btn.disabled = false; btn.textContent = '⚽ SCAN GOALSCORER TIPS';
                     return;
                 }
 
-                info.textContent = `${allFixtures.length} elite fixtures found`;
+                const skipped = totalElite - allFixtures.length;
+                info.textContent = `${allFixtures.length} upcoming/live elite fixture${allFixtures.length !== 1 ? 's' : ''}${skipped > 0 ? ` (${skipped} already finished excluded)` : ''}`;
 
                 // ── Step 2: Group by league, collect unique teams ─────────
                 const leagueMap   = {};   // leagueId → { leagueName, fixtures[] }
@@ -8201,15 +8138,42 @@
                     teamLeague[f.teams.away.id] = lid;
                 });
 
-                // ── Step 3: Fetch top scorers per league (parallel) ───────
-                setProgress(`Fetching top scorers for ${Object.keys(leagueMap).length} leagues…`);
-                const leagueScorers = {};  // leagueId → scorers array
-                await Promise.all(Object.keys(leagueMap).map(async lid => {
+                // ── Step 3: Fetch full squad stats per playing team (parallel) ───
+                // Fetching per-team gives every player in the squad, not just
+                // the top-20 league scorers — far more comprehensive coverage.
+                const uniqueTeamsEarly = [...new Set(allFixtures.flatMap(f => [f.teams.home.id, f.teams.away.id]))];
+                setProgress(`Fetching player stats for ${uniqueTeamsEarly.length} squads…`);
+                const teamPlayers = {};  // teamId → players array
+                await Promise.all(uniqueTeamsEarly.map(async tid => {
                     try {
-                        const r = await fetch(`https://v3.football.api-sports.io/players/topscorers?league=${lid}&season=${season}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                        const r = await fetch(`https://v3.football.api-sports.io/players?team=${tid}&season=${season}&page=1`, { headers: { 'x-rapidapi-key': API_KEY } });
                         const d = await r.json();
-                        leagueScorers[lid] = d.response || [];
-                    } catch(e) { leagueScorers[lid] = []; }
+                        teamPlayers[tid] = d.response || [];
+                    } catch(e) { teamPlayers[tid] = []; }
+                }));
+
+                // ── Step 3b: Fetch injury / suspension data per fixture ───────
+                setProgress(`Checking player availability for ${allFixtures.length} fixtures…`);
+                const injuredIds     = {};   // fixtureId → Set of confirmed-out player IDs
+                const questionableIds = {};  // fixtureId → Set of doubtful player IDs
+                await Promise.all(allFixtures.map(async f => {
+                    const fid = f.fixture.id;
+                    injuredIds[fid]      = new Set();
+                    questionableIds[fid] = new Set();
+                    try {
+                        const r = await fetch(`https://v3.football.api-sports.io/injuries?fixture=${fid}`, { headers: { 'x-rapidapi-key': API_KEY } });
+                        const d = await r.json();
+                        (d.response || []).forEach(entry => {
+                            const pid  = entry.player?.id;
+                            const type = (entry.type || '').toLowerCase();
+                            if (!pid) return;
+                            if (type.includes('missing') || type.includes('suspend')) {
+                                injuredIds[fid].add(pid);
+                            } else if (type.includes('question') || type.includes('doubt')) {
+                                questionableIds[fid].add(pid);
+                            }
+                        });
+                    } catch(e) { /* injury data optional */ }
                 }));
 
                 // ── Step 4: Fetch team statistics per playing team (parallel) ──
@@ -8258,29 +8222,37 @@
                     const hForm5 = (hSt.form || '').slice(-5);
                     const aForm5 = (aSt.form || '').slice(-5);
 
-                    const scorers = leagueScorers[lid] || [];
-
-                    // Filter to only players in today's teams
-                    const playingTeamIds = new Set([hId, aId]);
-                    const relevantScorers = scorers.filter(p => {
-                        const tid = p.statistics?.[0]?.team?.id;
-                        return tid && playingTeamIds.has(tid);
-                    });
-
-                    // Minimum appearances threshold
+                    // Combine both squads; tag each player with which side they play
                     const MIN_APPS = 3;
+                    const homeEntries = (teamPlayers[hId] || []).map(p => ({ p, isHome: true  }));
+                    const awayEntries = (teamPlayers[aId] || []).map(p => ({ p, isHome: false }));
+                    const seenInFixture = new Set();
 
-                    relevantScorers.forEach(p => {
-                        const st   = p.statistics?.[0];
+                    const fid = fixture.fixture.id;
+                    ;[...homeEntries, ...awayEntries].forEach(({ p, isHome }) => {
+                        const pid = p.player?.id;
+                        if (pid) { if (seenInFixture.has(pid)) return; seenInFixture.add(pid); }
+
+                        // ── Eligibility: skip confirmed injured / suspended ────
+                        if (pid && injuredIds[fid]?.has(pid)) return;
+                        const isQuestionable = !!(pid && questionableIds[fid]?.has(pid));
+
+                        // Prefer stats from this exact league+season, then any same-season, then first entry
+                        const st = p.statistics?.find(s => s.league?.id === lid && s.league?.season === season)
+                                || p.statistics?.find(s => s.league?.season === season)
+                                || p.statistics?.[0];
                         if (!st) return;
                         const apps = st.games?.appearences || 0;
                         if (apps < MIN_APPS) return;
-                        const goals       = st.goals?.total || 0;
+                        const goals = st.goals?.total || 0;
                         if (goals < 1) return;
                         const goalsPerGame = goals / apps;
-                        const pos         = st.games?.position || 'Unknown';
-                        const playerTeamId = st.team?.id;
-                        const isHome       = playerTeamId === hId;
+                        const pos          = st.games?.position || 'Unknown';
+                        const playerTeamId = st.team?.id || (isHome ? hId : aId);
+
+                        // ── Start likelihood: ratio of starts to appearances ──
+                        const starts     = st.games?.lineups || 0;
+                        const startRatio = apps > 0 ? starts / apps : 0;
                         const playerTeam   = isHome ? hName : aName;
                         const oppTeam      = isHome ? aName : hName;
                         const oppTeamId    = isHome ? aId  : hId;
@@ -8342,6 +8314,9 @@
                             isHome,
                             goals,
                             apps,
+                            starts,
+                            startRatio: parseFloat(startRatio.toFixed(2)),
+                            isQuestionable,
                             goalsPerGame: parseFloat(goalsPerGame.toFixed(3)),
                             teamAvgScore: mySt.avgScored,
                             oppAvgConcede: oppSt.avgConceded,
@@ -8360,8 +8335,8 @@
                 players.sort((a, b) => b.confidence - a.confidence || b.goalsPerGame - a.goalsPerGame);
 
                 if (!players.length) {
-                    content.innerHTML = `<div style="padding:30px; text-align:center; color:#888;"><p>No scorer data available for today's elite fixtures yet. Try later in the day when team sheets are closer to confirmed.</p></div>`;
-                    btn.disabled = false; btn.textContent = '⚽ SCAN TODAY\'S GOALSCORER TIPS';
+                    content.innerHTML = `<div style="padding:30px; text-align:center; color:#888;"><p>No scorer data available for the selected period yet. Try later when team sheets are confirmed.</p></div>`;
+                    btn.disabled = false; btn.textContent = '⚽ SCAN GOALSCORER TIPS';
                     return;
                 }
 
@@ -8376,12 +8351,44 @@
                 content.innerHTML = `<div style="padding:20px; text-align:center; color:var(--red);">Error: ${err.message}</div>`;
             } finally {
                 btn.disabled = false;
-                btn.textContent = '⚽ SCAN TODAY\'S GOALSCORER TIPS';
+                btn.textContent = '⚽ SCAN GOALSCORER TIPS';
             }
         }
 
         function getScorerBetKey(p) {
             return `${p.fixtureId}_Anytime Goalscorer: ${p.name}`;
+        }
+
+        function _scorerTrackAreaHtml(globalIdx, tracked, playerName) {
+            return tracked
+                ? `<div style="display:flex; gap:8px; align-items:center;">
+                       <div style="flex:1; padding:11px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.3); border-radius:10px; text-align:center; font-size:0.8rem; color:#34d399; font-weight:bold;">✓ Bet Tracked — auto-settles after match</div>
+                       <button onclick="untrackScorerBet(${globalIdx})" style="padding:11px 14px; border-radius:10px; border:1px solid rgba(218,54,51,0.4); background:rgba(218,54,51,0.08); color:#da3633; font-size:0.75rem; font-weight:bold; cursor:pointer;">Remove</button>
+                   </div>`
+                : `<button onclick="trackScorerBet(${globalIdx})" style="width:100%; padding:13px; background:linear-gradient(135deg,#064e3b,#059669); border:1px solid #34d399; border-radius:10px; color:white; font-size:0.88rem; font-weight:bold; cursor:pointer; letter-spacing:0.3px;">
+                       ⚽ Track Bet — ${playerName} Anytime Scorer
+                   </button>`;
+        }
+
+        function updateScorerBetButtons(idx, tracked) {
+            // ── Leaderboard row button ──────────────────────────────────────
+            const lbBtn = document.getElementById(`scorer-lb-btn-${idx}`);
+            if (lbBtn) {
+                lbBtn.setAttribute('onclick', `${tracked ? 'untrack' : 'track'}ScorerBet(${idx})`);
+                lbBtn.style.border     = `1px solid ${tracked ? '#da3633' : '#34d399'}`;
+                lbBtn.style.background = tracked ? 'rgba(218,54,51,0.15)' : 'rgba(52,211,153,0.12)';
+                lbBtn.style.color      = tracked ? '#da3633' : '#34d399';
+                lbBtn.textContent      = tracked ? '✓ On' : '+ Track';
+            }
+            // ── Header "✓ Tracking" badge ───────────────────────────────────
+            const badge = document.getElementById(`scorer-track-badge-${idx}`);
+            if (badge) badge.style.display = tracked ? 'inline' : 'none';
+            // ── Full card track area ────────────────────────────────────────
+            const area = document.getElementById(`scorer-track-area-${idx}`);
+            if (area) {
+                const p = _scorerResults[idx];
+                area.innerHTML = _scorerTrackAreaHtml(idx, tracked, p ? p.name : '');
+            }
         }
 
         function trackScorerBet(idx) {
@@ -8413,7 +8420,7 @@
             });
             savePlacedChallenges(bets);
             showToast(`✅ Tracking ${p.name} — Anytime Goalscorer`);
-            renderGoalscorerList();
+            updateScorerBetButtons(idx, true);
         }
 
         function untrackScorerBet(idx) {
@@ -8423,7 +8430,7 @@
             const bets = getPlacedChallenges().filter(b => !(b.fixtureId === p.fixtureId && b.selection === sel));
             savePlacedChallenges(bets);
             showToast(`Removed tracking for ${p.name}`);
-            renderGoalscorerList();
+            updateScorerBetButtons(idx, false);
         }
 
         function renderGoalscorerList() {
@@ -8441,6 +8448,72 @@
             if (_scorerFilter === 'high') filtered = filtered.filter(p => p.confidence >= 70);
             else if (_scorerFilter === 'med') filtered = filtered.filter(p => p.confidence >= 50 && p.confidence < 70);
             else if (_scorerFilter === 'fwd') filtered = filtered.filter(p => p.pos === 'Attacker');
+            else if (_scorerFilter === 'starter') filtered = filtered.filter(p => p.startRatio >= 0.60);
+
+            // ── Build & render kick-off time filter bar ────────────────
+            const multiDay = _scorerDateFrom !== _scorerDateTo;
+            const koSlots = {};
+            _scorerResults.forEach(p => {
+                if (!p.kickoff) return;
+                const key = formatKOKey(p.kickoff, multiDay);
+                if (!koSlots[key]) koSlots[key] = { key, ts: p.kickoff, count: 0 };
+                koSlots[key].count++;
+            });
+            const sortedKO = Object.values(koSlots).sort((a, b) => a.ts - b.ts);
+            const koBar = document.getElementById('scorerKOFilterBar');
+            if (koBar) {
+                if (sortedKO.length > 1) {
+                    const allActive = _scorerKickoffFilter === 'all' ? 'sf-active' : '';
+                    let koHtml = `<span style="font-size:0.7rem; color:#888; white-space:nowrap;">Kick-off:</span>
+                        <button onclick="setScorerKickoffFilter('all')" class="scorer-filter-btn ${allActive}">All Times</button>`;
+                    sortedKO.forEach(s => {
+                        const act = _scorerKickoffFilter === s.key ? 'sf-active' : '';
+                        koHtml += `<button onclick="setScorerKickoffFilter('${s.key}')" class="scorer-filter-btn ${act}">${s.key} <span style="opacity:0.55; font-size:0.65rem;">(${s.count})</span></button>`;
+                    });
+                    koBar.innerHTML = koHtml;
+                    koBar.style.display = 'flex';
+                } else {
+                    koBar.style.display = 'none';
+                    _scorerKickoffFilter = 'all';
+                }
+            }
+
+            // Apply kick-off time filter
+            if (_scorerKickoffFilter !== 'all') {
+                filtered = filtered.filter(p => p.kickoff && formatKOKey(p.kickoff, multiDay) === _scorerKickoffFilter);
+            }
+
+            // ── Build & render league filter bar ──────────────────────
+            const leagueSlots = {};
+            _scorerResults.forEach(p => {
+                if (!p.league) return;
+                if (!leagueSlots[p.league]) leagueSlots[p.league] = 0;
+                leagueSlots[p.league]++;
+            });
+            const sortedLeagues = Object.entries(leagueSlots).sort((a, b) => b[1] - a[1]);
+            const lgBar = document.getElementById('scorerLeagueFilterBar');
+            if (lgBar) {
+                if (sortedLeagues.length > 1) {
+                    const allAct = _scorerLeagueFilter === 'all' ? 'sf-active' : '';
+                    let lgHtml = `<span style="font-size:0.7rem; color:#888; white-space:nowrap;">League:</span>
+                        <button onclick="setScorerLeagueFilter('all')" class="scorer-filter-btn ${allAct}">All</button>`;
+                    sortedLeagues.forEach(([name, cnt]) => {
+                        const act = _scorerLeagueFilter === name ? 'sf-active' : '';
+                        const safe = name.replace(/'/g, "\\'");
+                        lgHtml += `<button onclick="setScorerLeagueFilter('${safe}')" class="scorer-filter-btn ${act}">${name} <span style="opacity:0.55; font-size:0.65rem;">(${cnt})</span></button>`;
+                    });
+                    lgBar.innerHTML = lgHtml;
+                    lgBar.style.display = 'flex';
+                } else {
+                    lgBar.style.display = 'none';
+                    _scorerLeagueFilter = 'all';
+                }
+            }
+
+            // Apply league filter
+            if (_scorerLeagueFilter !== 'all') {
+                filtered = filtered.filter(p => p.league === _scorerLeagueFilter);
+            }
 
             const countEl = document.getElementById('scorerFilterCount');
             if (countEl) countEl.textContent = `${filtered.length} player${filtered.length !== 1 ? 's' : ''}`;
@@ -8472,12 +8545,12 @@
                 html += `<div style="display:grid; grid-template-columns:22px 1fr auto auto auto; gap:4px 8px; align-items:center; padding:6px 4px; border-top:1px solid #21262d; font-size:0.72rem;">
                     <span style="color:${c}; font-weight:bold;">${i < 3 ? medals[i] : (i+1)+'.'}</span>
                     <div style="cursor:pointer;" onclick="document.getElementById('scorer-detail-${_scorerResults.indexOf(p)}').scrollIntoView({behavior:'smooth'})">
-                        <div style="color:white; font-weight:${i < 3 ? 'bold' : 'normal'};">${p.name}</div>
+                        <div style="color:white; font-weight:${i < 3 ? 'bold' : 'normal'};">${p.name}${p.isQuestionable ? ' <span style="color:#f97316; font-size:0.6rem;">⚠️</span>' : ''}${p.startRatio > 0 && p.startRatio < 0.40 ? ' <span style="color:#60a5fa; font-size:0.58rem;">(sub)</span>' : ''}</div>
                         <div style="color:#555; font-size:0.6rem;">${p.team} vs ${p.opponent}</div>
                     </div>
                     <span style="color:#888; font-size:0.68rem;">${p.goalsPerGame.toFixed(2)}</span>
                     <span style="font-weight:bold; color:${c};">${p.confidence}%</span>
-                    <button onclick="${isTracked ? 'untrackScorerBet' : 'trackScorerBet'}(${globalIdx})"
+                    <button id="scorer-lb-btn-${globalIdx}" onclick="${isTracked ? 'untrackScorerBet' : 'trackScorerBet'}(${globalIdx})"
                         style="padding:3px 8px; border-radius:8px; border:1px solid ${isTracked ? '#da3633' : '#34d399'}; background:${isTracked ? 'rgba(218,54,51,0.15)' : 'rgba(52,211,153,0.12)'}; color:${isTracked ? '#da3633' : '#34d399'}; font-size:0.62rem; font-weight:bold; cursor:pointer; white-space:nowrap;">
                         ${isTracked ? '✓ On' : '+ Track'}
                     </button>
@@ -8499,6 +8572,13 @@
                     return `<span style="display:inline-block; width:16px; height:16px; border-radius:3px; background:${bc}; font-size:0.55rem; color:white; text-align:center; line-height:16px;">${c}</span>`;
                 }).join('');
                 const koTime     = p.kickoff ? new Date(p.kickoff * 1000).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) : '';
+                const startLabel = p.startRatio >= 0.70 ? ['🟢','Prob. Starter','#22c55e']
+                                 : p.startRatio >= 0.40 ? ['🟡','Squad Player','#fbbf24']
+                                 : p.startRatio >  0    ? ['🔵','Sub/Rotation','#60a5fa']
+                                 :                        ['⬜','No Data','#555'];
+                const availBadge = p.isQuestionable
+                    ? `<span style="font-size:0.6rem; color:#f97316; background:rgba(249,115,22,0.12); padding:2px 6px; border-radius:8px; border:1px solid rgba(249,115,22,0.3);">⚠️ Doubtful</span>`
+                    : '';
 
                 html += `<div class="scorer-card tier-${tier}" id="scorer-detail-${globalIdx}">
 
@@ -8508,8 +8588,10 @@
                             <div style="display:flex; align-items:center; gap:6px; margin-bottom:3px; flex-wrap:wrap;">
                                 <span style="font-size:0.75rem; color:${confColor}; font-weight:bold; background:rgba(0,0,0,0.3); padding:2px 7px; border-radius:10px; border:1px solid ${confColor}44;">${rank <= 3 ? medals[rank-1]+' ' : ''}#${rank}</span>
                                 <span style="font-size:0.62rem; color:#555; padding:2px 6px; background:#21262d; border-radius:8px;">${p.pos}</span>
+                                <span style="font-size:0.6rem; color:${startLabel[2]}; background:${startLabel[2]}18; padding:2px 6px; border-radius:8px; border:1px solid ${startLabel[2]}33;">${startLabel[0]} ${startLabel[1]}${p.startRatio > 0 ? ' (' + Math.round(p.startRatio*100) + '%)' : ''}</span>
+                                ${availBadge}
                                 ${koTime ? `<span style="font-size:0.62rem; color:#555;">KO ${koTime}</span>` : ''}
-                                ${isTracked ? `<span style="font-size:0.62rem; color:#34d399; background:rgba(52,211,153,0.1); padding:2px 7px; border-radius:8px; border:1px solid rgba(52,211,153,0.3);">✓ Tracking</span>` : ''}
+                                <span id="scorer-track-badge-${globalIdx}" style="font-size:0.62rem; color:#34d399; background:rgba(52,211,153,0.1); padding:2px 7px; border-radius:8px; border:1px solid rgba(52,211,153,0.3); display:${isTracked ? 'inline' : 'none'};">✓ Tracking</span>
                             </div>
                             <div style="font-size:1rem; font-weight:bold; color:white;">${p.name}</div>
                             <div style="font-size:0.72rem; color:#888; margin-top:1px;">${p.team} ${p.isHome ? '🏠' : '✈️'} vs ${p.opponent}</div>
@@ -8563,15 +8645,9 @@
                     </div>
 
                     <!-- Track Bet button -->
-                    ${isTracked
-                        ? `<div style="display:flex; gap:8px; align-items:center;">
-                            <div style="flex:1; padding:11px; background:rgba(52,211,153,0.08); border:1px solid rgba(52,211,153,0.3); border-radius:10px; text-align:center; font-size:0.8rem; color:#34d399; font-weight:bold;">✓ Bet Tracked — auto-settles after match</div>
-                            <button onclick="untrackScorerBet(${globalIdx})" style="padding:11px 14px; border-radius:10px; border:1px solid rgba(218,54,51,0.4); background:rgba(218,54,51,0.08); color:#da3633; font-size:0.75rem; font-weight:bold; cursor:pointer;">Remove</button>
-                          </div>`
-                        : `<button onclick="trackScorerBet(${globalIdx})" style="width:100%; padding:13px; background:linear-gradient(135deg,#064e3b,#059669); border:1px solid #34d399; border-radius:10px; color:white; font-size:0.88rem; font-weight:bold; cursor:pointer; letter-spacing:0.3px;">
-                            ⚽ Track Bet — ${p.name} Anytime Scorer
-                          </button>`
-                    }
+                    <div id="scorer-track-area-${globalIdx}">
+                        ${_scorerTrackAreaHtml(globalIdx, isTracked, p.name)}
+                    </div>
                 </div>`;
             });
 
@@ -9306,8 +9382,8 @@
                 html += `</div></div>`;
             }
 
-            // ── Value Bets tracker ────────────────────────────────────────
-            html += renderValueBetsTrackerSection();
+            // ── Next Bet tracker ──────────────────────────────────────────
+            html += renderNextBetStatsSection();
 
             html += `<button class="export-btn" onclick="exportCSV()" style="margin-top:10px;">📥 Export All History (CSV)</button>`;
 
