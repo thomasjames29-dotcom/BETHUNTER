@@ -791,48 +791,88 @@
             };
             const elapsed   = match.fixture.status.elapsed || 0;
             if (elapsed < 5) return null;
+            const hName = match.teams.home.name, aName = match.teams.away.name;
             const homeGoals = match.goals.home || 0;
             const awayGoals = match.goals.away || 0;
             const totalGoals = homeGoals + awayGoals;
-            const homeSoT    = getStat(hStatsArr, 'Shots on Goal');
-            const awaySoT    = getStat(aStatsArr, 'Shots on Goal');
-            const homeXG     = getStat(hStatsArr, 'expected_goals');
-            const awayXG     = getStat(aStatsArr, 'expected_goals');
+            const minLeft = Math.max(0, 90 - elapsed);
+            const safeEl  = Math.max(elapsed, 1);
+
+            // Core stats
+            const homeSoT     = getStat(hStatsArr, 'Shots on Goal');
+            const awaySoT     = getStat(aStatsArr, 'Shots on Goal');
+            const homeXG      = getStat(hStatsArr, 'expected_goals');
+            const awayXG      = getStat(aStatsArr, 'expected_goals');
             const homeCorners = getStat(hStatsArr, 'Corner Kicks');
             const awayCorners = getStat(aStatsArr, 'Corner Kicks');
-            const homeTotal  = getStat(hStatsArr, 'Total Shots');
-            const awayTotal  = getStat(aStatsArr, 'Total Shots');
-            const totalSoT   = homeSoT + awaySoT;
-            const totalXG    = homeXG + awayXG;
-            const totalCorners = homeCorners + awayCorners;
-            const minLeft    = Math.max(0, 90 - elapsed);
-            const safeEl     = Math.max(elapsed, 1);
+            const homeTotal   = getStat(hStatsArr, 'Total Shots');
+            const awayTotal   = getStat(aStatsArr, 'Total Shots');
+            // Extended stats — all available in the same statistics API call
+            const homePoss      = getStat(hStatsArr, 'Ball Possession') || 50;
+            const awayPoss      = getStat(aStatsArr, 'Ball Possession') || (100 - homePoss);
+            const homeBlocked   = getStat(hStatsArr, 'Blocked Shots');
+            const awayBlocked   = getStat(aStatsArr, 'Blocked Shots');
+            const homeShotsBox  = getStat(hStatsArr, 'Shots insidebox');
+            const awayShotsBox  = getStat(aStatsArr, 'Shots insidebox');
+            const homeGKSaves   = getStat(hStatsArr, 'Goalkeeper Saves');
+            const awayGKSaves   = getStat(aStatsArr, 'Goalkeeper Saves');
+            const homeDangerous = getStat(hStatsArr, 'Dangerous Attacks');
+            const awayDangerous = getStat(aStatsArr, 'Dangerous Attacks');
+            const homeFouls     = getStat(hStatsArr, 'Fouls');
+            const awayFouls     = getStat(aStatsArr, 'Fouls');
+
+            const totalSoT      = homeSoT + awaySoT;
+            const totalXG       = homeXG + awayXG;
+            const totalCorners  = homeCorners + awayCorners;
+            const totalBlocked  = homeBlocked + awayBlocked;
+            const totalDangerous= homeDangerous + awayDangerous;
+
             if (totalSoT < 1 && totalXG < 0.15 && minLeft < 5) return null;
+
+            // Dominance index (xG + SoT weighted, plus possession + dangerous attacks)
+            const homeAtk  = homeXG*3.5 + homeSoT*2 + homeCorners*0.4 + homeTotal*0.25 + homeShotsBox*0.7 + homeDangerous*0.04;
+            const awayAtk  = awayXG*3.5 + awaySoT*2 + awayCorners*0.4 + awayTotal*0.25 + awayShotsBox*0.7 + awayDangerous*0.04;
+            const homeShare = (homeAtk + awayAtk) > 0 ? homeAtk / (homeAtk + awayAtk) : 0.5;
+
+            const timeRisk   = getTimeRisk(elapsed);
             const xgPerMin   = totalXG / safeEl;
             const projXG     = xgPerMin * minLeft;
             const convRate   = (totalSoT > 0 && totalGoals > 0) ? Math.min(0.20, totalGoals / totalSoT) : 0.09;
-            const homeAtk    = homeXG*3 + homeSoT*2 + homeCorners*0.5 + homeTotal*0.3;
-            const awayAtk    = awayXG*3 + awaySoT*2 + awayCorners*0.5 + awayTotal*0.3;
-            const homeShare  = (homeAtk + awayAtk) > 0 ? homeAtk / (homeAtk + awayAtk) : 0.5;
-            const timeRisk   = getTimeRisk(elapsed);
+
+            // Score context
+            const homeLeading = homeGoals > awayGoals;
+            const awayLeading = awayGoals > homeGoals;
+            const goalDiff    = Math.abs(homeGoals - awayGoals);
+            const losingTeam  = homeLeading ? aName : (awayLeading ? hName : null);
+            const losingXG    = homeLeading ? awayXG : (awayLeading ? homeXG : 0);
+            const losingSoT   = homeLeading ? awaySoT : (awayLeading ? homeSoT : 0);
+            const losingShare = homeLeading ? (1-homeShare) : homeShare;
+
             const candidates = [];
 
-            // Market 1: Over 0.5 remaining goals
+            // ── Market 1: Over 0.5 remaining goals ──────────────────────────
             if (minLeft >= 5) {
                 const projGoals = Math.max(projXG * 0.8, (totalSoT / safeEl) * minLeft * convRate);
-                const prob = Math.min(0.93, Math.max(0.05, 1 - Math.exp(-projGoals)));
+                const urgencyBoost = (losingTeam && minLeft <= 25 && goalDiff === 1) ? 0.07 : 0;
+                const prob = Math.min(0.93, Math.max(0.05, 1 - Math.exp(-projGoals) + urgencyBoost));
                 if (prob >= 0.52) {
                     const facs = []; const fTags = [];
-                    if (totalXG >= 0.5)  { facs.push(`xG combined: ${totalXG.toFixed(1)}`); fTags.push('nb_high_xg'); }
-                    if (totalSoT >= 3)   { facs.push(`${totalSoT} shots on target`); fTags.push('nb_high_sot'); }
-                    if (totalGoals === 0 && elapsed >= 30) { facs.push('Goalless — pressure building'); fTags.push('nb_goalless'); }
-                    if (totalCorners >= 5) { facs.push(`${totalCorners} corners — sustained pressure`); fTags.push('nb_corners'); }
-                    if (!facs.length) facs.push(`${projXG.toFixed(1)} xG projected remaining`);
-                    candidates.push({ market:'Over 0.5 Goals (Remaining)', selection:'Over 0.5 Goals', prob, impliedOdds:parseFloat(Math.max(1.05,1/prob).toFixed(2)), factors:facs, factorTags:fTags });
+                    if (totalXG >= 0.8)  { facs.push(`xG total ${totalXG.toFixed(2)} — high-quality chances both sides`); fTags.push('nb_high_xg'); }
+                    else if (totalXG >= 0.4) { facs.push(`${totalXG.toFixed(2)} combined xG accumulated`); fTags.push('nb_high_xg'); }
+                    if (totalSoT >= 5)   { facs.push(`${totalSoT} shots on target (${homeSoT} ${hName} · ${awaySoT} ${aName})`); fTags.push('nb_high_sot'); }
+                    else if (totalSoT >= 3) { facs.push(`${totalSoT} shots on target — keepers under pressure`); fTags.push('nb_high_sot'); }
+                    if (totalBlocked >= 3)  { facs.push(`${totalBlocked} blocked shots — clear attempts being stopped`); fTags.push('nb_blocked'); }
+                    if (losingTeam && goalDiff === 1 && minLeft <= 25) { facs.push(`${losingTeam} trailing — pushing for equaliser`); fTags.push('nb_goalless'); }
+                    else if (totalGoals === 0 && elapsed >= 30) { facs.push(`0-0 at ${elapsed}' with ${totalXG.toFixed(2)} xG — overdue`); fTags.push('nb_goalless'); }
+                    if (totalCorners >= 7)  { facs.push(`${totalCorners} corners — relentless set-piece pressure`); fTags.push('nb_corners'); }
+                    else if (totalCorners >= 4) { facs.push(`${totalCorners} corners won`); fTags.push('nb_corners'); }
+                    if (totalDangerous >= 50) { facs.push(`${totalDangerous} dangerous attacks — very open game`); fTags.push('nb_dangerous'); }
+                    if (!facs.length) facs.push(`Projected ${projXG.toFixed(2)} xG remaining`);
+                    candidates.push({ market:'Over 0.5 Goals (Remaining)', selection:'Over 0.5 Goals', prob, impliedOdds:parseFloat(Math.max(1.05,1/prob).toFixed(2)), factors:facs.slice(0,4), factorTags:fTags });
                 }
             }
 
-            // Market 2: Both Teams to Score
+            // ── Market 2: Both Teams to Score ───────────────────────────────
             if ((homeGoals === 0 || awayGoals === 0) && minLeft >= 8) {
                 const hProj = homeXG > 0 ? 1-Math.exp(-homeXG*(minLeft/safeEl)) : 1-Math.exp(-(homeSoT/safeEl)*minLeft*0.09);
                 const aProj = awayXG > 0 ? 1-Math.exp(-awayXG*(minLeft/safeEl)) : 1-Math.exp(-(awaySoT/safeEl)*minLeft*0.09);
@@ -842,91 +882,218 @@
                 const prob = Math.min(0.88, bttsProb);
                 if (prob >= 0.40) {
                     const facs = []; const fTags = [];
-                    if (homeGoals >= 1 && awayXG >= 0.3) { facs.push(`${match.teams.away.name} xG: ${awayXG.toFixed(1)}`); fTags.push('nb_btts_away_threat'); }
-                    if (awayGoals >= 1 && homeXG >= 0.3) { facs.push(`${match.teams.home.name} xG: ${homeXG.toFixed(1)}`); fTags.push('nb_btts_home_threat'); }
-                    if (totalSoT >= 4) { facs.push(`${totalSoT} shots on target`); fTags.push('nb_high_sot'); }
-                    if (!facs.length) facs.push('Both teams creating chances');
-                    candidates.push({ market:'Both Teams to Score', selection:'Both Teams to Score', prob, impliedOdds:parseFloat(Math.max(1.05,1/prob).toFixed(2)), factors:facs, factorTags:fTags });
+                    if (homeGoals >= 1 && awayXG >= 0.3) { facs.push(`${aName}: ${awayXG.toFixed(2)} xG, ${awaySoT} SoT — equaliser threat is real`); fTags.push('nb_btts_away_threat'); }
+                    if (awayGoals >= 1 && homeXG >= 0.3) { facs.push(`${hName}: ${homeXG.toFixed(2)} xG, ${homeSoT} SoT — pressing back`); fTags.push('nb_btts_home_threat'); }
+                    if (awayGKSaves >= 3) { facs.push(`${aName} GK has made ${awayGKSaves} saves — under heavy siege`); fTags.push('nb_gk_busy'); }
+                    if (homeGKSaves >= 3) { facs.push(`${hName} GK made ${homeGKSaves} saves — ${aName} creating real chances`); fTags.push('nb_gk_busy'); }
+                    if (totalSoT >= 4)   { facs.push(`${totalSoT} total SoT — both keepers well-tested`); fTags.push('nb_high_sot'); }
+                    if (!facs.length) facs.push('Both teams generating clear chances — BTTS looks likely');
+                    candidates.push({ market:'Both Teams to Score', selection:'Both Teams to Score', prob, impliedOdds:parseFloat(Math.max(1.05,1/prob).toFixed(2)), factors:facs.slice(0,4), factorTags:fTags });
                 }
             }
 
-            // Market 3: Next Goal (dominant team)
+            // ── Market 3: Next Goal (dominant side) ─────────────────────────
             if (minLeft >= 5) {
-                const domShare = Math.max(homeShare, 1-homeShare);
-                const domTeam  = homeShare >= 0.5 ? match.teams.home : match.teams.away;
-                const domXG    = homeShare >= 0.5 ? homeXG : awayXG;
-                const domSoT   = homeShare >= 0.5 ? homeSoT : awaySoT;
+                const domShare  = Math.max(homeShare, 1-homeShare);
+                const isHomeDom = homeShare >= 0.5;
+                const domTeam   = isHomeDom ? match.teams.home : match.teams.away;
+                const domXG     = isHomeDom ? homeXG : awayXG;
+                const domSoT    = isHomeDom ? homeSoT : awaySoT;
+                const domBlk    = isHomeDom ? homeBlocked : awayBlocked;
+                const domPoss   = isHomeDom ? homePoss : awayPoss;
+                const domDng    = isHomeDom ? homeDangerous : awayDangerous;
+                const domCorner = isHomeDom ? homeCorners : awayCorners;
                 if (domShare >= 0.55) {
                     const projGoals = Math.max(projXG*0.8, (totalSoT/safeEl)*minLeft*convRate);
                     const probGoal  = Math.min(0.92, Math.max(0.1, 1-Math.exp(-projGoals)));
                     const prob = Math.min(0.87, probGoal * domShare);
                     if (prob >= 0.32) {
                         const facs = []; const fTags = [];
-                        if (domXG >= 0.4)   { facs.push(`${domTeam.name} xG: ${domXG.toFixed(1)}`); fTags.push('nb_next_goal_xg'); }
-                        if (domSoT >= 2)    { facs.push(`${domSoT} SoT for ${domTeam.name}`); fTags.push('nb_next_goal_sot'); }
-                        if (domShare >= 0.65) { facs.push(`${Math.round(domShare*100)}% attacking dominance`); fTags.push('nb_next_goal_dominant'); }
-                        if (!facs.length) facs.push(`${domTeam.name} leading chance creation`);
-                        candidates.push({ market:`Next Goal: ${domTeam.name}`, selection:`Next Goal: ${domTeam.name}`, prob, impliedOdds:parseFloat(Math.max(1.10,1/prob).toFixed(2)), factors:facs, factorTags:fTags });
+                        if (domXG >= 0.5)   { facs.push(`${domTeam.name} xG: ${domXG.toFixed(2)} — top-quality chances`); fTags.push('nb_next_goal_xg'); }
+                        else if (domXG >= 0.2) { facs.push(`${domTeam.name} xG: ${domXG.toFixed(2)}`); fTags.push('nb_next_goal_xg'); }
+                        if (domSoT >= 3)    { facs.push(`${domSoT} SoT for ${domTeam.name} — keeper constantly tested`); fTags.push('nb_next_goal_sot'); }
+                        else if (domSoT >= 1) { facs.push(`${domTeam.name}: ${domSoT} shots on target`); fTags.push('nb_next_goal_sot'); }
+                        if (domBlk >= 2)    { facs.push(`${domBlk} blocked shots — pressure building in the box`); fTags.push('nb_blocked'); }
+                        if (domPoss >= 60)  { facs.push(`${Math.round(domPoss)}% possession — total territorial control`); fTags.push('nb_next_goal_dominant'); }
+                        else if (domShare >= 0.65) { facs.push(`${Math.round(domShare*100)}% of all attacking metrics`); fTags.push('nb_next_goal_dominant'); }
+                        if (domCorner >= 4) { facs.push(`${domCorner} corners — set-piece threat adding up`); fTags.push('nb_corners'); }
+                        if (domDng >= 40)   { facs.push(`${domDng} dangerous attacks — relentless pressure`); fTags.push('nb_dangerous'); }
+                        if (!facs.length)   facs.push(`${domTeam.name} controlling every attacking stat`);
+                        candidates.push({ market:`Next Goal: ${domTeam.name}`, selection:`Next Goal: ${domTeam.name}`, prob, impliedOdds:parseFloat(Math.max(1.10,1/prob).toFixed(2)), factors:facs.slice(0,4), factorTags:fTags });
                     }
                 }
             }
 
-            if (!candidates.length) return null;
+            // ── Market 4: Over 1.5 Remaining Goals ─────────────────────────
+            if (minLeft >= 20 && totalXG >= 0.5) {
+                const projGoals = Math.max(projXG, (totalSoT/safeEl)*minLeft*convRate*1.1);
+                const prob = Math.min(0.84, Math.max(0.05, 1 - Math.exp(-Math.max(0, projGoals - 1.0))));
+                if (prob >= 0.42) {
+                    const facs = []; const fTags = ['nb_high_xg'];
+                    facs.push(`${totalXG.toFixed(2)} xG with ${minLeft} mins still to play`);
+                    if (totalSoT >= 4)    { facs.push(`${totalSoT} SoT — both keepers busy`); fTags.push('nb_high_sot'); }
+                    if (totalCorners >= 6){ facs.push(`${totalCorners} corners — relentlessly attacking game`); fTags.push('nb_corners'); }
+                    if (homeGoals === awayGoals && totalXG >= 0.7) facs.push('Open, equal match — scoring from both ends likely');
+                    candidates.push({ market:'Over 1.5 Goals (Remaining)', selection:'Over 1.5 Goals', prob, impliedOdds:parseFloat(Math.max(1.05,1/prob).toFixed(2)), factors:facs.slice(0,4), factorTags:fTags, _scoreMod:0.93 });
+                }
+            }
 
+            // ── Market 5: Win for trailing team (comeback) ──────────────────
+            if (losingTeam && goalDiff === 1 && minLeft >= 10 && minLeft <= 35 && (losingXG >= 0.25 || losingSoT >= 2)) {
+                const losingIsHome = awayLeading;
+                const prob = Math.min(0.62, 0.28 + losingShare*0.25 + (losingXG/Math.max(0.5,totalXG))*0.15);
+                if (prob >= 0.34) {
+                    const sel = losingIsHome ? 'Home Win' : 'Away Win';
+                    const facs = []; const fTags = [losingIsHome ? 'nb_home_win' : 'nb_away_win'];
+                    facs.push(`${losingTeam} trailing by 1 — pressing urgently with ${minLeft} mins left`);
+                    if (losingXG >= 0.25) { facs.push(`${losingXG.toFixed(2)} xG created — quality is there`); fTags.push('nb_next_goal_xg'); }
+                    if (losingSoT >= 2)   { facs.push(`${losingSoT} SoT for ${losingTeam} — keeper under threat`); fTags.push('nb_next_goal_sot'); }
+                    candidates.push({ market:`${losingTeam} to Win`, selection:sel, prob, impliedOdds:parseFloat(Math.max(1.30,1/prob).toFixed(2)), factors:facs.slice(0,4), factorTags:fTags, _scoreMod:0.88 });
+                }
+            }
+
+            if (!candidates.length) return null;
             candidates.forEach(c => {
                 const fw = c.factorTags.reduce((s,t) => s + getFactorWeight(t,10), 0) / Math.max(1, c.factorTags.length);
-                c.adjustedScore = c.prob * 100 * timeRisk.riskFactor * (fw / 10);
+                c.adjustedScore = c.prob * 100 * timeRisk.riskFactor * (fw/10) * (c._scoreMod||1);
             });
             candidates.sort((a,b) => b.adjustedScore - a.adjustedScore);
             const best = candidates[0];
-            return { ...best, matchLabel:`${match.teams.home.name} vs ${match.teams.away.name}`, homeTeam:match.teams.home.name, awayTeam:match.teams.away.name, score:`${homeGoals}-${awayGoals}`, elapsed, minLeft, ...timeRisk, league:match.league.name, leagueId:match.league.id, fixtureId:match.fixture.id, homeGoals, awayGoals, totalSoT, totalXG, isInPlay:true };
+            return { ...best, matchLabel:`${hName} vs ${aName}`, homeTeam:hName, awayTeam:aName, score:`${homeGoals}-${awayGoals}`, elapsed, minLeft, ...timeRisk, league:match.league.name, leagueId:match.league.id, fixtureId:match.fixture.id, homeGoals, awayGoals, totalSoT, totalXG, isInPlay:true };
         }
 
         // ── Analyse an upcoming match for the best pre-match bet ──────────────
         function analyzeUpcomingBet(match, standings) {
             const hId=match.teams.home.id, aId=match.teams.away.id;
             const hName=match.teams.home.name, aName=match.teams.away.name;
-            let homePos=10,awayPos=10,totalTeams=20,homeForm=0.5,awayForm=0.5;
-            let homeGF=1.3,homeGA=1.2,awayGF=1.2,awayGA=1.3;
+            let homePos=10, awayPos=10, totalTeams=20;
+            let homeGF=1.3, homeGA=1.2, awayGF=1.2, awayGA=1.3;
+            let homeForm=0.5, awayForm=0.5, homeFormStr='', awayFormStr='';
+            let homeWinRateH=0.42, awayWinRateA=0.32;
+            let homeGD=0, awayGD=0, homePoints=0, awayPoints=0;
+
             if (standings && standings.length) {
-                const hSt=standings.find(s=>s.team.id===hId), aSt=standings.find(s=>s.team.id===aId);
-                totalTeams=standings.length;
-                if (hSt) { homePos=hSt.rank; homeGF=hSt.all.goals.for/Math.max(1,hSt.all.played); homeGA=hSt.all.goals.against/Math.max(1,hSt.all.played); homeForm=((hSt.form||'').slice(-5).match(/W/g)||[]).length/5; }
-                if (aSt) { awayPos=aSt.rank; awayGF=aSt.all.goals.for/Math.max(1,aSt.all.played); awayGA=aSt.all.goals.against/Math.max(1,aSt.all.played); awayForm=((aSt.form||'').slice(-5).match(/W/g)||[]).length/5; }
+                const hSt=standings.find(s=>s.team.id===hId);
+                const aSt=standings.find(s=>s.team.id===aId);
+                totalTeams = standings.length;
+                if (hSt) {
+                    homePos = hSt.rank; homePoints = hSt.points||0; homeGD = hSt.goalsDiff||0;
+                    homeFormStr = (hSt.form||'').slice(-5);
+                    homeForm = (homeFormStr.match(/W/g)||[]).length / Math.max(1, homeFormStr.length);
+                    // HOME-specific stats for the home team (more predictive than overall)
+                    const hp = hSt.home;
+                    if (hp && hp.played > 0) {
+                        homeGF = hp.goals.for / hp.played;
+                        homeGA = hp.goals.against / hp.played;
+                        homeWinRateH = hp.win / hp.played;
+                    } else {
+                        homeGF = hSt.all.goals.for / Math.max(1,hSt.all.played);
+                        homeGA = hSt.all.goals.against / Math.max(1,hSt.all.played);
+                        homeWinRateH = hSt.all.win / Math.max(1,hSt.all.played);
+                    }
+                }
+                if (aSt) {
+                    awayPos = aSt.rank; awayPoints = aSt.points||0; awayGD = aSt.goalsDiff||0;
+                    awayFormStr = (aSt.form||'').slice(-5);
+                    awayForm = (awayFormStr.match(/W/g)||[]).length / Math.max(1, awayFormStr.length);
+                    // AWAY-specific stats for the away team
+                    const ap = aSt.away;
+                    if (ap && ap.played > 0) {
+                        awayGF = ap.goals.for / ap.played;
+                        awayGA = ap.goals.against / ap.played;
+                        awayWinRateA = ap.win / ap.played;
+                    } else {
+                        awayGF = aSt.all.goals.for / Math.max(1,aSt.all.played);
+                        awayGA = aSt.all.goals.against / Math.max(1,aSt.all.played);
+                        awayWinRateA = aSt.all.win / Math.max(1,aSt.all.played);
+                    }
+                }
             }
-            const homeLambda = Math.max(0.3,(homeGF*0.6+awayGA*0.4)*(1+homeForm*0.25)*1.1);
-            const awayLambda = Math.max(0.3,(awayGF*0.6+homeGA*0.4)*(1+awayForm*0.25)*0.9);
+
+            const homeLambda = Math.max(0.3, (homeGF*0.6+awayGA*0.4)*(1+homeForm*0.25)*1.1);
+            const awayLambda = Math.max(0.3, (awayGF*0.6+homeGA*0.4)*(1+awayForm*0.25)*0.9);
+            const combinedL  = homeLambda + awayLambda;
             const candidates = [];
 
-            // Over 2.5 Goals
+            // ── Over 2.5 Goals ───────────────────────────────────────────────
             let pU25=0;
             for (let h=0;h<=7;h++) for (let a=0;a<=7;a++) if (h+a<=2) pU25+=poissonProb(h,homeLambda)*poissonProb(a,awayLambda);
             const o25p=Math.min(0.88,Math.max(0.05,1-pU25));
-            if (o25p>=0.48) { const io=parseFloat(Math.max(1.10,1/o25p).toFixed(2)); const facs=[]; const fTags=[]; if(homeLambda>=1.4){facs.push(`${hName} avg ${homeGF.toFixed(1)} goals/game`);fTags.push('nb_home_goals');} if(awayLambda>=1.2){facs.push(`${aName} avg ${awayGF.toFixed(1)} goals/game`);fTags.push('nb_away_goals');} if(homeForm>=0.6){facs.push(`${hName} form: ${Math.round(homeForm*5)}/5`);fTags.push('nb_form_strong');} if(!facs.length)facs.push(`Combined avg: ${(homeLambda+awayLambda).toFixed(1)} goals/game`); candidates.push({market:'Over 2.5 Goals',selection:'Over 2.5 Goals',prob:o25p,impliedOdds:io,factors:facs,factorTags:fTags,score:o25p*100}); }
+            if (o25p>=0.48) {
+                const io=parseFloat(Math.max(1.10,1/o25p).toFixed(2));
+                const facs=[]; const fTags=[];
+                if (homeGF>=1.8) { facs.push(`${hName} avg ${homeGF.toFixed(1)} goals/home game — prolific`); fTags.push('nb_home_goals'); }
+                else if (homeGF>=1.3) { facs.push(`${hName} scoring ${homeGF.toFixed(1)}/game at home`); fTags.push('nb_home_goals'); }
+                if (awayGF>=1.5) { facs.push(`${aName} avg ${awayGF.toFixed(1)} goals/away game`); fTags.push('nb_away_goals'); }
+                else if (awayGF>=1.0) { facs.push(`${aName} scoring ${awayGF.toFixed(1)}/game on road`); fTags.push('nb_away_goals'); }
+                if (homeGA>=1.3) { facs.push(`${hName} conceding ${homeGA.toFixed(1)}/home game — leaky`); fTags.push('nb_home_goals'); }
+                if (awayGA>=1.4) { facs.push(`${aName} leaking ${awayGA.toFixed(1)}/away game`); fTags.push('nb_away_goals'); }
+                if ((homeFormStr.match(/W/g)||[]).length>=3) { facs.push(`${hName} form: ${homeFormStr} — in-form side`); fTags.push('nb_form_strong'); }
+                if (!facs.length) facs.push(`Model projects ${combinedL.toFixed(2)} combined goals`);
+                candidates.push({market:'Over 2.5 Goals',selection:'Over 2.5 Goals',prob:o25p,impliedOdds:io,factors:facs.slice(0,4),factorTags:fTags,score:o25p*100});
+            }
 
-            // Over 1.5 Goals
+            // ── Over 1.5 Goals ───────────────────────────────────────────────
             let pU15=0;
             for (let h=0;h<=7;h++) for (let a=0;a<=7;a++) if (h+a<=1) pU15+=poissonProb(h,homeLambda)*poissonProb(a,awayLambda);
             const o15p=Math.min(0.92,Math.max(0.05,1-pU15));
-            if (o15p>=0.62) { const io=parseFloat(Math.max(1.05,1/o15p).toFixed(2)); const facs=[`Combined avg: ${(homeLambda+awayLambda).toFixed(1)} goals/game`]; const fTags=['nb_o15']; if(homeForm>=0.5||awayForm>=0.5){facs.push('Both sides in reasonable form');fTags.push('nb_form_ok');} candidates.push({market:'Over 1.5 Goals',selection:'Over 1.5 Goals',prob:o15p,impliedOdds:io,factors:facs,factorTags:fTags,score:o15p*100*0.85}); }
-
-            // BTTS
-            const hBTTS=1-Math.exp(-homeLambda), aBTTS=1-Math.exp(-awayLambda);
-            const bttsP=Math.min(0.85,hBTTS*aBTTS);
-            if (bttsP>=0.42) { const io=parseFloat(Math.max(1.10,1/bttsP).toFixed(2)); candidates.push({market:'Both Teams to Score',selection:'Both Teams to Score',prob:bttsP,impliedOdds:io,factors:[`${hName} scores ~${Math.round(hBTTS*100)}% of games`,`${aName} scores ~${Math.round(aBTTS*100)}% of games`],factorTags:['nb_btts_both_scoring'],score:bttsP*100}); }
-
-            // Home Win
-            if (homeForm>=0.55 && (awayPos===10||homePos<awayPos-2)) {
-                const posBonus=totalTeams>0?Math.min(0.15,(awayPos-homePos)/totalTeams*0.3):0;
-                const hwP=Math.min(0.78,0.32+homeForm*0.25+posBonus+(homeLambda-awayLambda)*0.08);
-                if (hwP>=0.42) { const io=parseFloat(Math.max(1.20,1/hwP).toFixed(2)); candidates.push({market:'Home Win',selection:'Home Win',prob:hwP,impliedOdds:io,factors:[`${hName} form: ${Math.round(homeForm*5)}/5`,`${hName} rank ${homePos} vs ${aName} rank ${awayPos}`],factorTags:['nb_home_win','nb_form_strong'],score:hwP*100*0.95}); }
+            if (o15p>=0.62) {
+                const io=parseFloat(Math.max(1.05,1/o15p).toFixed(2));
+                const facs=[`Model projects ${combinedL.toFixed(2)} goals — both teams capable`]; const fTags=['nb_o15'];
+                if (homeFormStr) { facs.push(`${hName} last 5: ${homeFormStr}`); fTags.push('nb_form_ok'); }
+                if (awayFormStr) { facs.push(`${aName} last 5: ${awayFormStr}`); }
+                candidates.push({market:'Over 1.5 Goals',selection:'Over 1.5 Goals',prob:o15p,impliedOdds:io,factors:facs.slice(0,4),factorTags:fTags,score:o15p*100*0.85});
             }
 
-            // Away Win
-            if (awayForm>=0.55 && (homePos===10||awayPos<homePos-2)) {
-                const posBonus=totalTeams>0?Math.min(0.12,(homePos-awayPos)/totalTeams*0.25):0;
-                const awP=Math.min(0.70,0.28+awayForm*0.22+posBonus+(awayLambda-homeLambda)*0.08);
-                if (awP>=0.38) { const io=parseFloat(Math.max(1.30,1/awP).toFixed(2)); candidates.push({market:'Away Win',selection:'Away Win',prob:awP,impliedOdds:io,factors:[`${aName} form: ${Math.round(awayForm*5)}/5`,`${aName} rank ${awayPos} vs ${hName} rank ${homePos}`],factorTags:['nb_away_win','nb_form_strong'],score:awP*100*0.90}); }
+            // ── BTTS ─────────────────────────────────────────────────────────
+            const hBTTS=1-Math.exp(-homeLambda), aBTTS=1-Math.exp(-awayLambda);
+            const bttsP=Math.min(0.85,hBTTS*aBTTS);
+            if (bttsP>=0.42) {
+                const io=parseFloat(Math.max(1.10,1/bttsP).toFixed(2));
+                const facs=[]; const fTags=['nb_btts_both_scoring'];
+                facs.push(`${hName} score in ~${Math.round(hBTTS*100)}% of home games`);
+                facs.push(`${aName} score in ~${Math.round(aBTTS*100)}% of away games`);
+                if (homeGA>=1.2) facs.push(`${hName} concede ${homeGA.toFixed(1)}/game — ${aName} will get chances`);
+                if (awayGA>=1.2) facs.push(`${aName} concede ${awayGA.toFixed(1)} away — ${hName} should score`);
+                candidates.push({market:'Both Teams to Score',selection:'Both Teams to Score',prob:bttsP,impliedOdds:io,factors:facs.slice(0,4),factorTags:fTags,score:bttsP*100});
+            }
+
+            // ── Home Win ─────────────────────────────────────────────────────
+            if (homeForm>=0.45 || homePos<awayPos) {
+                const posDiff = awayPos - homePos;
+                const posBonus = totalTeams>0 ? Math.min(0.12, posDiff/totalTeams*0.28) : 0;
+                const gdBonus  = Math.min(0.06, Math.max(0,(homeGD-awayGD)/30));
+                const hwP = Math.min(0.78, 0.28+homeForm*0.22+posBonus+gdBonus+(homeLambda-awayLambda)*0.07+homeWinRateH*0.14);
+                if (hwP>=0.40) {
+                    const io=parseFloat(Math.max(1.20,1/hwP).toFixed(2));
+                    const facs=[]; const fTags=['nb_home_win'];
+                    if (homeWinRateH>=0.50) { facs.push(`${hName} win ${Math.round(homeWinRateH*100)}% of home games`); fTags.push('nb_form_strong'); }
+                    if (homeFormStr) facs.push(`${hName} form: ${homeFormStr}`);
+                    if (posDiff>=4)  facs.push(`League table: ${hName} ranked ${homePos} vs ${aName} ${awayPos}`);
+                    if (homeGD>awayGD+5) facs.push(`Superior goal diff: ${homeGD>0?'+':''}${homeGD} vs ${awayGD>0?'+':''}${awayGD}`);
+                    if (homeGF>=1.6)  facs.push(`${hName} prolific at home — ${homeGF.toFixed(1)} goals/game`);
+                    if (!facs.length) facs.push(`${hName} home advantage + stronger record`);
+                    candidates.push({market:'Home Win',selection:'Home Win',prob:hwP,impliedOdds:io,factors:facs.slice(0,4),factorTags:fTags,score:hwP*100*0.95});
+                }
+            }
+
+            // ── Away Win ─────────────────────────────────────────────────────
+            if (awayForm>=0.45 || awayPos<homePos) {
+                const posDiff = homePos - awayPos;
+                const posBonus = totalTeams>0 ? Math.min(0.10, posDiff/totalTeams*0.24) : 0;
+                const gdBonus  = Math.min(0.05, Math.max(0,(awayGD-homeGD)/35));
+                const awP = Math.min(0.68, 0.22+awayForm*0.20+posBonus+gdBonus+(awayLambda-homeLambda)*0.07+awayWinRateA*0.15);
+                if (awP>=0.34) {
+                    const io=parseFloat(Math.max(1.30,1/awP).toFixed(2));
+                    const facs=[]; const fTags=['nb_away_win'];
+                    if (awayWinRateA>=0.38) { facs.push(`${aName} win ${Math.round(awayWinRateA*100)}% of away games`); fTags.push('nb_form_strong'); }
+                    if (awayFormStr) facs.push(`${aName} form: ${awayFormStr}`);
+                    if (posDiff>=4)  facs.push(`${aName} ranked ${awayPos} — ${posDiff} places above host`);
+                    if (awayGD>homeGD+5) facs.push(`${aName} goal diff: ${awayGD>0?'+':''}${awayGD} — class shows`);
+                    if (awayGF>=1.3)  facs.push(`${aName} scoring ${awayGF.toFixed(1)} away goals/game`);
+                    if (!facs.length) facs.push(`${aName} strong road record`);
+                    candidates.push({market:'Away Win',selection:'Away Win',prob:awP,impliedOdds:io,factors:facs.slice(0,4),factorTags:fTags,score:awP*100*0.90});
+                }
             }
 
             if (!candidates.length) return null;
@@ -4046,6 +4213,7 @@
             if (!action) return;
             const { fixtureId, selection, match, league, odds, confidence, homeGoals, awayGoals, leagueId, factorTags } = action;
             placeChallengebet(fixtureId, selection, match, league, odds, 'Model', homeGoals, awayGoals, confidence, leagueId, factorTags, 'NextBet');
+            startChallengeCheckInterval();
             const r = window._lastNextBetResults;
             if (r) {
                 if (!r.placedFids) r.placedFids = new Set();
